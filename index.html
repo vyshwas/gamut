@@ -11,11 +11,29 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800;900&family=Geist:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+
+    <!-- No-flash theme stamp. Light (warm paper) is the default
+         deployment and lives in :root, so only an explicit "dark"
+         choice needs stamping. Runs before first paint; if storage is
+         unavailable (private mode, file:// in some browsers) the site
+         simply renders light. -->
+    <script>
+        (function () {
+            try {
+                if (localStorage.getItem("gamut.theme") === "dark") {
+                    document.documentElement.setAttribute("data-theme", "dark");
+                }
+            } catch (e) { /* no storage: stay on the light default */ }
+        })();
+    </script>
 </head>
 <body>
 
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <div class="grain-overlay" aria-hidden="true"></div>
+
     <nav>
-        <a href="#top" class="logo">Gamut<span class="logo-dot">.</span></a>
+        <a href="#top" class="logo wordmark" aria-label="Gamut, home"><span class="wm-text">Gamut</span><span class="logo-dot wm-dot" aria-hidden="true">.</span></a>
         <div class="nav-links" id="nav-links">
             <a href="#assistant">Assistant</a>
             <a href="#engine">Engine</a>
@@ -25,16 +43,38 @@
             <a href="#method">Method</a>
             <a href="#pricing">Pricing</a>
         </div>
+        <!-- Toggle button, not a switch: static accessible name plus
+             aria-pressed, so it announces "Dark mode, toggle button,
+             pressed/not pressed" instead of relabelling itself. The
+             glyph shown is the mode you'd switch TO (CSS picks one). -->
+        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Dark mode" aria-pressed="false" title="Switch to dark mode">
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                <path d="M20.5 14.3A8.5 8.5 0 0 1 9.7 3.5a8.5 8.5 0 1 0 10.8 10.8z"/>
+            </svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                <circle cx="12" cy="12" r="4.2"/>
+                <path d="M12 2.2v2.4M12 19.4v2.4M4.1 4.1l1.7 1.7M18.2 18.2l1.7 1.7M2.2 12h2.4M19.4 12h2.4M4.1 19.9l1.7-1.7M18.2 5.8l1.7-1.7"/>
+            </svg>
+        </button>
         <a href="#pricing" class="btn btn-primary nav-cta">Start free</a>
         <button class="nav-toggle" id="nav-toggle" aria-label="Menu" aria-expanded="false">
             <span></span><span></span>
         </button>
     </nav>
 
+    <main id="main-content" tabindex="-1">
+
     <!-- ================= HERO ================= -->
     <header class="hero" id="top">
+        <canvas class="hero-mesh" id="hero-mesh" aria-hidden="true"></canvas>
+        <div class="hero-reg" aria-hidden="true">
+            <span class="reg-mark lime reg-tl"></span>
+            <span class="reg-mark reg-tr"></span>
+            <span class="reg-mark reg-bl"></span>
+            <span class="reg-mark reg-br"></span>
+        </div>
         <div class="hero-text">
-            <h1>Pick palettes like a strategist.</h1>
+            <h1 class="kinetic"><span class="w">Pick</span> <span class="w">palettes</span> <span class="w">like</span> <span class="w">a</span> <span class="w">strategist.</span></h1>
             <p class="hero-sub">Generate, fix, and pair brand color systems built on the 60-30-10 rule, ten laws of color, and print-checked values.</p>
             <div class="hero-ctas">
                 <a href="#engine" class="btn btn-primary">Generate a palette</a>
@@ -42,6 +82,7 @@
             </div>
         </div>
         <div class="hero-card" id="hero-card" aria-label="Live palette preview">
+            <span class="halftone" aria-hidden="true"></span>
             <div class="hero-band" id="hero-band"></div>
             <div class="hero-card-meta">
                 <span id="hero-card-name" class="mono"></span>
@@ -59,7 +100,7 @@
 
         <div class="assistant">
             <div class="assistant-input-row">
-                <textarea id="assistant-input" rows="2" placeholder="e.g. a calm, trustworthy wellness brand with a modern edge" spellcheck="false"></textarea>
+                <textarea id="assistant-input" rows="2" placeholder="e.g. a calm, trustworthy wellness brand with a modern edge" spellcheck="false" aria-label="Describe your brand brief, mood, or feeling"></textarea>
                 <button class="btn btn-primary" id="assistant-run" type="button">Interpret</button>
             </div>
 
@@ -86,7 +127,7 @@
 
             <div class="assistant-result" id="assistant-result" hidden>
                 <p class="assistant-provider mono" id="assistant-provider-used"></p>
-                <p class="assistant-explanation" id="assistant-explanation"></p>
+                <p class="assistant-explanation" id="assistant-explanation" aria-live="polite"></p>
                 <div class="assistant-chips" id="assistant-chips"></div>
                 <button class="btn btn-primary" id="assistant-generate" type="button" disabled>Generate this palette</button>
             </div>
@@ -134,7 +175,7 @@
                 </div>
                 <button class="btn btn-primary btn-generate" id="ctl-generate" type="button">Generate</button>
                 <p class="hint hint-space">or press <kbd>space</kbd> anywhere on the page</p>
-                <p class="signal-line" id="engine-signal"></p>
+                <p class="signal-line" id="engine-signal" aria-live="polite"></p>
 
                 <div class="saved-block" id="saved-block" hidden>
                     <span class="exports-label mono">Saved palettes</span>
@@ -143,8 +184,17 @@
             </div>
 
             <div class="output">
+                <div class="engine-reg" aria-hidden="true">
+                    <span class="reg-mark reg-tl"></span>
+                    <span class="reg-mark reg-tr"></span>
+                    <span class="reg-mark reg-bl"></span>
+                    <span class="reg-mark reg-br"></span>
+                </div>
                 <div class="output-meta">
-                    <span class="mono" id="seed-label"></span>
+                    <span class="output-meta-seed">
+                        <span class="cmyk-ticks" aria-hidden="true" title="Process color bar"><i class="c-c"></i><i class="c-m"></i><i class="c-y"></i><i class="c-k"></i></span>
+                        <span class="mono" id="seed-label"></span>
+                    </span>
                     <div class="output-meta-actions">
                         <button class="btn-mini" id="save-palette" type="button">Save palette</button>
                         <button class="btn-mini" id="copy-link" type="button">Copy link to this palette</button>
@@ -161,13 +211,13 @@
                 </div>
                 <div class="ratio-band" id="ratio-band" aria-label="60-30-10 proportion band"></div>
 
-                <div class="vision-row" aria-label="Color vision simulation">
+                <div class="vision-row" role="group" aria-label="Color vision simulation">
                     <span class="exports-label mono">Vision</span>
-                    <button class="btn-mini vision-btn active" data-vision="none" type="button">Typical</button>
-                    <button class="btn-mini vision-btn" data-vision="protanopia" type="button">Protanopia</button>
-                    <button class="btn-mini vision-btn" data-vision="deuteranopia" type="button">Deuteranopia</button>
-                    <button class="btn-mini vision-btn" data-vision="tritanopia" type="button">Tritanopia</button>
-                    <button class="btn-mini vision-btn" data-vision="achromatopsia" type="button">Greyscale</button>
+                    <button class="btn-mini vision-btn active" data-vision="none" type="button" aria-pressed="true">Typical</button>
+                    <button class="btn-mini vision-btn" data-vision="protanopia" type="button" aria-pressed="false">Protanopia</button>
+                    <button class="btn-mini vision-btn" data-vision="deuteranopia" type="button" aria-pressed="false">Deuteranopia</button>
+                    <button class="btn-mini vision-btn" data-vision="tritanopia" type="button" aria-pressed="false">Tritanopia</button>
+                    <button class="btn-mini vision-btn" data-vision="achromatopsia" type="button" aria-pressed="false">Greyscale</button>
                 </div>
 
                 <div class="deployments">
@@ -479,8 +529,10 @@
         </div>
     </section>
 
+    </main>
+
     <footer>
-        <a href="#top" class="logo">Gamut<span class="logo-dot">.</span></a>
+        <a href="#top" class="logo wordmark" aria-label="Gamut, back to top"><span class="wm-text">Gamut</span><span class="logo-dot wm-dot" aria-hidden="true">.</span></a>
         <p>Built on The Brand Color Bible by Designare. Color is the fastest signal a brand sends.</p>
         <p class="mono footer-handle">@itsdesignare</p>
     </footer>
@@ -488,7 +540,10 @@
     <!-- Printable brand sheet: populated by JS, styled by @media print -->
     <div id="print-sheet-area" aria-hidden="true"></div>
 
-    <div class="toast" id="toast" role="status"></div>
+    <div class="toast" id="toast" role="status">
+        <span id="toast-msg"></span>
+        <button class="toast-undo" id="toast-undo" type="button" hidden>Undo</button>
+    </div>
 
     <!-- Color-vision simulation matrices (applied via CSS filter: url()) -->
     <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
