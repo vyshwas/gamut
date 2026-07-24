@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>The Brand Color Bible v2.0 — Designare</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=Geist:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* =========================================================
+   THE BRAND COLOR BIBLE v2.0 — print master
+   A4 pages. Charcoal + bone + one lime weapon, per Combo 06.
+   ========================================================= */
+:root {
+    --charcoal: #141414;
+    --ink: #1B1B1A;
+    --bone: #EFEEE8;
+    --bone-deep: #E6E4DB;
+    --muted: #6E6D65;
+    --muted-dark: #8F8E86;
+    --lime: #D4FF00;
+    --line: #D8D6CC;
+    --line-dark: #2C2C2A;
+    --blue: #2242E5;
+    --display: 'Archivo', sans-serif;
+    --body: 'Geist', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+@page { size: A4; margin: 0; }
+html, body { background: #333; }
+body { font-family: var(--body); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+.page {
+    width: 210mm; height: 296.5mm;
+    background: var(--bone); color: var(--ink);
+    padding: 16mm 15mm 14mm;
+    margin: 0 auto 10px;
+    position: relative;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    page-break-after: always;
+    break-after: page;
+}
+.page.dark { background: var(--charcoal); color: var(--bone); }
+@media print { .page { margin: 0; } html, body { background: none; } }
+
+/* Shared atoms */
+.kicker { font-family: var(--mono); font-size: 7.4pt; letter-spacing: 0.14em; color: var(--muted); text-transform: uppercase; margin-bottom: 7mm; }
+.dark .kicker { color: var(--muted-dark); }
+h1 { font-family: var(--display); font-weight: 900; font-size: 34pt; line-height: 0.98; letter-spacing: -0.015em; text-transform: uppercase; margin-bottom: 6mm; }
+h1 .pop { color: var(--lime); }
+.page:not(.dark) h1 .pop { color: var(--blue); }
+.lede { font-size: 10.3pt; line-height: 1.55; max-width: 158mm; margin-bottom: 7mm; }
+.lede b { font-weight: 600; }
+.footer {
+    margin-top: auto; padding-top: 4mm;
+    border-top: 1px solid var(--line);
+    display: flex; justify-content: space-between;
+    font-family: var(--mono); font-size: 6.6pt; letter-spacing: 0.12em; color: var(--muted); text-transform: uppercase;
+}
+.dark .footer { border-top-color: var(--line-dark); color: var(--muted-dark); }
+
+.verdict {
+    background: var(--charcoal); color: var(--bone);
+    border-radius: 3mm; padding: 5mm 6mm;
+    font-family: var(--display); font-weight: 700; font-size: 10.5pt; line-height: 1.45;
+}
+.verdict .pop { color: var(--lime); }
+
+.gamut-chip {
+    margin-top: 4.5mm;
+    border: 1px solid var(--line);
+    border-left: 2.5mm solid var(--lime);
+    padding: 3mm 4mm;
+    font-size: 8pt; line-height: 1.5; color: var(--muted);
+}
+.gamut-chip b { font-family: var(--mono); font-size: 6.8pt; letter-spacing: 0.12em; color: var(--ink); display: block; margin-bottom: 1mm; }
+.dark .gamut-chip { border-color: var(--line-dark); color: var(--muted-dark); }
+.dark .gamut-chip b { color: var(--bone); }
+
+.rainbow { position: absolute; left: 0; right: 0; height: 6mm; background: linear-gradient(90deg,#D52518,#F66015,#FFCA26,#9ABC05,#19532B,#0A1F44,#7B2FBE,#FF006E); }
+
+/* ---------- Cover ---------- */
+.cover { justify-content: flex-start; }
+.cover .rainbow { top: 0; }
+.badge { display: inline-block; background: var(--lime); color: var(--charcoal); font-family: var(--mono); font-weight: 600; font-size: 7.5pt; letter-spacing: 0.12em; padding: 2mm 4mm; border-radius: 6mm; margin: 18mm 0 12mm; align-self: flex-start; }
+.cover h1 { font-size: 64pt; }
+.cover .lede { font-size: 11pt; max-width: 150mm; }
+.stats { display: flex; gap: 4mm; margin-top: 10mm; }
+.stat { border: 1px solid var(--line-dark); border-radius: 2mm; padding: 4mm 5mm; min-width: 44mm; }
+.stat .s-label { font-family: var(--mono); font-size: 6.5pt; letter-spacing: 0.12em; color: var(--muted-dark); text-transform: uppercase; }
+.stat .s-val { font-family: var(--display); font-weight: 900; font-size: 14pt; color: var(--lime); margin-top: 1mm; }
+
+/* ---------- Psychology grid ---------- */
+.psych-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3.5mm; }
+.psych { background: #fff; border: 1px solid var(--line); border-radius: 2mm; overflow: hidden; font-size: 8pt; line-height: 1.45; }
+.psych-head { font-family: var(--display); font-weight: 800; font-size: 9.5pt; padding: 2.6mm 3.5mm; }
+.psych-body { padding: 2.8mm 3.5mm 3.2mm; color: #3A3935; }
+.usefor { display: block; margin-top: 2mm; padding-top: 2mm; border-top: 1px dashed var(--line); font-size: 7.2pt; color: var(--muted); }
+.usefor b { font-family: var(--mono); font-size: 6.2pt; letter-spacing: 0.1em; background: var(--charcoal); color: #fff; padding: 0.6mm 1.6mm; border-radius: 0.8mm; font-weight: 600; }
+
+/* ---------- 60-30-10 ---------- */
+.role-card { background: #fff; border: 1px solid var(--line); border-radius: 2mm; padding: 5mm 6mm; margin-bottom: 4mm; display: grid; grid-template-columns: 26mm 1fr; gap: 5mm; align-items: start; }
+.role-pct { font-family: var(--display); font-weight: 900; font-size: 22pt; color: var(--blue); line-height: 1; }
+.role-card h3 { font-family: var(--display); font-weight: 800; font-size: 11.5pt; margin-bottom: 1.6mm; }
+.role-card p { font-size: 9pt; line-height: 1.5; color: #3A3935; }
+.role-card .ex { margin-top: 2mm; font-size: 7.6pt; color: var(--muted); }
+.role-card .ex b { font-family: var(--mono); font-size: 6.2pt; letter-spacing: 0.1em; background: var(--lime); color: var(--charcoal); padding: 0.6mm 1.6mm; border-radius: 0.8mm; }
+
+/* ---------- Laws ---------- */
+.law { background: #fff; border: 1px solid var(--line); border-left: 1.8mm solid var(--lime); padding: 3.6mm 5mm; margin-bottom: 3.2mm; display: grid; grid-template-columns: 13mm 1fr; gap: 4mm; align-items: start; }
+.law-n { font-family: var(--display); font-weight: 900; font-size: 14pt; color: var(--blue); }
+.law h3 { font-family: var(--display); font-weight: 800; font-size: 10.3pt; margin-bottom: 1.2mm; }
+.law p { font-size: 8.6pt; line-height: 1.5; color: #3A3935; }
+.law.amend { border-left-color: var(--blue); }
+.law.amend .law-n { color: var(--charcoal); }
+
+/* ---------- Science + tables ---------- */
+.sci-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; margin-bottom: 4.5mm; }
+.sci { background: #fff; border: 1px solid var(--line); border-radius: 2mm; padding: 4.5mm 5mm; font-size: 8.8pt; line-height: 1.52; color: #3A3935; }
+.sci h3 { font-family: var(--display); font-weight: 800; font-size: 10.5pt; color: var(--ink); margin-bottom: 1.8mm; }
+.sci .tag { font-family: var(--mono); font-size: 6.4pt; letter-spacing: 0.12em; color: var(--blue); text-transform: uppercase; display: block; margin-bottom: 1.4mm; }
+.ramp { display: flex; height: 9mm; border-radius: 1.5mm; overflow: hidden; margin: 2.5mm 0 1.5mm; border: 1px solid var(--line); }
+.ramp div { flex: 1; }
+.ramp-cap { font-family: var(--mono); font-size: 6.6pt; color: var(--muted); }
+
+table.map { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--line); font-size: 7.9pt; line-height: 1.4; }
+table.map th, table.map td { padding: 2.4mm 3mm; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+table.map th { font-family: var(--mono); font-size: 6.6pt; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); border-bottom: 2px solid var(--charcoal); }
+table.map td:first-child { font-family: var(--display); font-weight: 800; font-size: 8.8pt; white-space: nowrap; }
+.dot { display: inline-block; width: 3.2mm; height: 3.2mm; border-radius: 50%; margin-right: 1.6mm; vertical-align: -0.5mm; border: 1px solid rgba(0,0,0,0.15); }
+
+/* ---------- Trends ---------- */
+.trend { background: #fff; border: 1px solid var(--line); border-radius: 2mm; padding: 4mm 5mm; margin-bottom: 3.4mm; display: grid; grid-template-columns: 30mm 1fr; gap: 4.5mm; align-items: start; }
+.trend-chips { display: flex; flex-direction: column; gap: 1.2mm; }
+.t-chip { height: 8mm; border-radius: 1.2mm; border: 1px solid rgba(0,0,0,0.12); position: relative; }
+.t-chip span { position: absolute; right: 2mm; top: 50%; transform: translateY(-50%); font-family: var(--mono); font-size: 5.8pt; }
+.trend h3 { font-family: var(--display); font-weight: 800; font-size: 10.3pt; margin-bottom: 1.2mm; }
+.trend p { font-size: 8.4pt; line-height: 1.5; color: #3A3935; }
+.trend .verdict-line { margin-top: 1.6mm; font-size: 7.6pt; color: var(--muted); }
+.trend .verdict-line b { font-family: var(--mono); font-size: 6.2pt; letter-spacing: 0.1em; background: var(--charcoal); color: var(--lime); padding: 0.6mm 1.6mm; border-radius: 0.8mm; }
+
+/* ---------- Combos ---------- */
+.combo { background: #fff; border: 1px solid var(--line); border-radius: 2mm; overflow: hidden; margin-bottom: 5mm; }
+.combo-title { display: flex; align-items: baseline; gap: 3mm; padding: 3.2mm 5mm; }
+.combo-title .n { font-family: var(--display); font-weight: 900; font-size: 12pt; color: var(--blue); }
+.combo-title h3 { font-family: var(--display); font-weight: 800; font-size: 13pt; }
+.combo-band { display: flex; height: 17mm; }
+.combo-band div { flex: 1; padding: 2.6mm 4mm; color: #fff; }
+.combo-band .cname { font-family: var(--display); font-weight: 800; font-size: 9.5pt; display: block; }
+.combo-band .chex { font-family: var(--mono); font-size: 6.8pt; opacity: 0.85; }
+.combo-mood { padding: 2.6mm 5mm; font-style: italic; font-size: 8.8pt; color: #3A3935; border-bottom: 1px solid var(--line); }
+.combo-sig { padding: 2.6mm 5mm; font-size: 8.2pt; line-height: 1.5; color: #3A3935; border-bottom: 1px solid var(--line); }
+.combo-sig b, .combo-row b { font-family: var(--mono); font-size: 6.2pt; letter-spacing: 0.1em; padding: 0.6mm 1.8mm; border-radius: 0.8mm; font-weight: 600; margin-right: 1.5mm; white-space: nowrap; }
+.combo-sig b { background: var(--blue); color: #fff; }
+.combo-deploy { display: grid; grid-template-columns: 1fr 1fr 1fr; border-bottom: 1px solid var(--line); }
+.combo-deploy > div { padding: 2.8mm 4mm; font-size: 7.8pt; line-height: 1.45; color: #3A3935; }
+.combo-deploy > div + div { border-left: 1px solid var(--line); }
+.combo-deploy .pct { font-family: var(--display); font-weight: 900; font-size: 11pt; color: var(--blue); display: block; margin-bottom: 1mm; }
+.combo-row { padding: 2.4mm 5mm; font-size: 8pt; line-height: 1.5; color: #3A3935; }
+.combo-row + .combo-row { border-top: 1px solid var(--line); }
+.combo-row b.do { background: var(--lime); color: var(--charcoal); }
+.combo-row b.dont { background: #D52518; color: #fff; }
+
+/* ---------- Accessibility ---------- */
+.contrast-table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--line); font-size: 8.4pt; margin-bottom: 4.5mm; }
+.contrast-table th, .contrast-table td { padding: 2.6mm 3.5mm; border-bottom: 1px solid var(--line); text-align: left; }
+.contrast-table th { font-family: var(--mono); font-size: 6.6pt; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); border-bottom: 2px solid var(--charcoal); }
+.contrast-table td:first-child { font-family: var(--mono); font-weight: 600; }
+
+/* ---------- Closing ---------- */
+.close h1 { font-size: 42pt; }
+.close .lede { font-size: 11pt; }
+.funnel {
+    margin-top: 8mm; background: var(--lime); color: var(--charcoal);
+    border-radius: 3mm; padding: 6mm 7mm;
+}
+.funnel b { font-family: var(--mono); font-size: 6.8pt; letter-spacing: 0.14em; display: block; margin-bottom: 2mm; }
+.funnel p { font-family: var(--display); font-weight: 800; font-size: 13pt; line-height: 1.3; }
+</style>
+</head>
+<body>
+
+<!-- ============ PAGE 1 · COVER ============ -->
+<section class="page dark cover">
+    <div class="rainbow"></div>
+    <span class="badge">DESIGNARE · FREE RESOURCE · 2026 EDITION</span>
+    <h1>The Brand<br>Color<br><span class="pop">Bible 2.0</span></h1>
+    <p class="lede">What every color signifies — and where in the world it flips. The rules that make a brand pop, the color science that stopped being optional, the 2026 trends read like a strategist, and eight combos deconstructed into deployable recipes. From the team at @itsdesignare.</p>
+    <div class="stats">
+        <div class="stat"><span class="s-label">Colors mapped</span><div class="s-val">9 + PSYCH</div></div>
+        <div class="stat"><span class="s-label">Recipes</span><div class="s-val">8 COMBOS</div></div>
+        <div class="stat"><span class="s-label">Rules</span><div class="s-val">7 LAWS + 3</div></div>
+    </div>
+    <div class="stats">
+        <div class="stat"><span class="s-label">New in 2.0</span><div class="s-val">COLOR SCIENCE</div></div>
+        <div class="stat"><span class="s-label">New in 2.0</span><div class="s-val">CULTURE MAP</div></div>
+        <div class="stat"><span class="s-label">New in 2.0</span><div class="s-val">2026 TRENDS</div></div>
+    </div>
+    <div class="footer"><span>DESIGNARE · THE BRAND COLOR BIBLE</span><span>v2.0</span></div>
+</section>
+
+<!-- ============ PAGE 2 · THESIS ============ -->
+<section class="page">
+    <p class="kicker">Start here · The shift that changes everything</p>
+    <h1>Color isn't<br>decoration.<br><span class="pop">It's a decision.</span></h1>
+    <p class="lede">Most designers pick colors because they look nice together. That's decoration. A brand pops because every color in the system has a job — to anchor, to lead, or to accent — and refuses to do anyone else's job. Color is the fastest signal a brand sends. Get it right and you communicate before anyone reads a word.</p>
+    <p class="lede">This Bible is structured the way you should actually build a palette. Start with what each color signifies — and check where in the world that meaning flips. Learn how color actually behaves, because the tools you grew up with quietly lie about lightness. Follow 60-30-10 to assign jobs. Obey the seven laws, plus the three amendments this decade forced. Read the 2026 trends like ingredients, not identities. Then deploy a combo exactly as written.</p>
+    <p class="lede"><b>What's new in 2.0:</b> a color science chapter (perceptual color, OKLCH, why HSL misleads you), a cultural color map for shipping across borders, an accessibility chapter with the contrast numbers that actually matter, the 2026 trend read, two new combos built from it, and a final chapter on turning a palette into a system — ramps, tokens, and dark mode.</p>
+    <div class="verdict">A great palette doesn't make a brand pop. <span class="pop">A great palette deployed correctly</span> makes a brand pop. The colors are the easy part. The job each color does is the brand.</div>
+    <div class="footer"><span>DESIGNARE · THE BRAND COLOR BIBLE</span><span>01</span></div>
+</section>
+
+<!-- ============ PAGE 3 · COLOR SCIENCE ============ -->
+<section class="page">
+    <p class="kicker">New in 2.0 · How color actually works</p>
+    <h1>Your color picker<br><span class="pop">lies to you.</span></h1>
+    <p class="lede">Every color is three decisions: <b>hue</b> (which color), <b>lightness</b> (how bright it reads), and <b>chroma</b> (how colorful it is). The problem: the HSL sliders every tool shows you measure none of these the way your eye does. Two colors with identical HSL lightness can differ wildly in how bright they look. This is why palettes that compute fine still look wrong.</p>
+    <div class="sci-grid">
+        <div class="sci">
+            <span class="tag">The trap</span>
+            <h3>HSL is lightness-blind</h3>
+            <p>HSL yellow at 50% lightness glows; HSL blue at 50% lightness is nearly dark. Mute a mid-lightness amber by dropping HSL saturation and you don't get "quieter amber" — you get khaki sludge. Darken it for contrast without re-saturating and you get olive-grey. If your accents keep coming out muddy, this is why.</p>
+        </div>
+        <div class="sci">
+            <span class="tag">The fix</span>
+            <h3>Think perceptually: OKLCH</h3>
+            <p>OKLCH measures lightness and chroma the way people actually perceive them, and it's now native CSS supported in every modern browser. Equal steps in OKLCH lightness <i>look</i> equal — across every hue. Build your ramps and tokens there, ship hex codes out the other side.</p>
+        </div>
+    </div>
+    <div class="sci" style="margin-bottom:4.5mm;">
+        <span class="tag">Proof</span>
+        <h3>The same ramp, two ways</h3>
+        <p>Ten steps of one blue, evenly stepped. The HSL row bunches: the middle steps blur together and the ends jump. The perceptual row spaces evenly — every step is a usable UI state.</p>
+        <div class="ramp">
+            <div style="background:#E8EBFB"></div><div style="background:#C6CEF5"></div><div style="background:#A3B1F0"></div><div style="background:#8194EA"></div><div style="background:#5F77E4"></div><div style="background:#3C5ADF"></div><div style="background:#2242C4"></div><div style="background:#1B3494"></div><div style="background:#132565"></div><div style="background:#0C1736"></div>
+        </div>
+        <p class="ramp-cap">Perceptually stepped: every neighbor pair is the same visual distance apart.</p>
+    </div>
+    <div class="sci">
+        <span class="tag">One more thing</span>
+        <h3>Screens got wider than your hex codes</h3>
+        <p>Modern displays show Display-P3 — roughly 25–30% more colors than sRGB, mostly in the saturated greens, cyans and magentas. Hex codes can't reach them. You don't need P3 to build a great brand, but know it exists: the electric accent you see on your MacBook may quietly dull on the office monitor, the projector, and the printed page. Test the places your brand will actually live.</p>
+    </div>
+    <div class="gamut-chip"><b>IN GAMUT</b>Our palette engine re-saturates colors as it darkens them for contrast, so accents land ochre and terracotta instead of khaki and mud. The shade-scale tool builds the ten-step ramps for you.</div>
+    <div class="footer"><span>DESIGNARE · THE BRAND COLOR BIBLE</span><span>02</span></div>
+</section>
+
+<!-- ============ PAGE 4 · PSYCHOLOGY ============ -->
+<section class="page">
+    <p class="kicker">Color psychology · What every color is secretly saying</p>
+    <h1>9 colors.<br><span class="pop">9 signals.</span></h1>
+    <p class="lede">Every color triggers an emotional response before the viewer is consciously aware of it. Red raises pulse. Blue calms. Green reassures. Scan this before picking anything else — then check the culture map on the next page, because these are the <b>Western defaults</b>, not universal law. Context, category, and culture bend all of them.</p>
+    <div class="psych-grid">
+        <div class="psych"><div class="psych-head" style="background:#D52518;color:#fff">RED</div><div class="psych-body">Urgency, appetite, danger, passion. Triggers a physical response — raises heart rate slightly. Use it for movement, sales, action. Avoid for anything that must feel calm.<span class="usefor"><b>USE FOR</b> F&amp;B, sale events, sports, alerts.</span></div></div>
+        <div class="psych"><div class="psych-head" style="background:#F66015;color:#fff">ORANGE</div><div class="psych-body">Warmth, friendliness, creativity, affordability. Lower-threat than red. Reads approachable and energetic. The color of "we're fun but not chaotic."<span class="usefor"><b>USE FOR</b> Creator tools, kids, retail, casual F&amp;B.</span></div></div>
+        <div class="psych"><div class="psych-head" style="background:#FFCA26;color:#141414">YELLOW</div><div class="psych-body">Optimism, attention, warning, energy. The most visible color to the human eye — safety signs use it for a reason. In branding: warmth and confidence.<span class="usefor"><b>USE FOR</b> Delivery, kids, energy drinks, attention products.</span></div></div>
+        <div class="psych"><div class="psych-head" style="background:#19532B;color:#fff">GREEN</div><div class="psych-body">Trust, growth, money, wellness, calm. Wide range — lime is fresh and tech-forward, forest is established and premium. Universally calming.<span class="usefor"><b>USE FOR</b> Finance, wellness, sustainability, healthtech.</span></div></div>
+        <div class="psych"><div class="psych-head" style="background:#2242E5;color:#fff">BLUE</div><div class="psych-body">Trust, competence, professionalism, distance. The safest color. Overused in tech because it never offends. Cool, dependable, occasionally cold.<span class="usefor"><b>USE FOR</b> SaaS, banking, healthcare, B2B, enterprise.</span></div></div>
+        <div class="psych"><div class="psych-head" style="background:#7B2FBE;color:#fff">PURPLE</div><div class="psych-body">Luxury, creativity, mystery, premium. Less common, so it stands out. Signals "we're not like the others" without screaming.<span class="usefor"><b>USE FOR</b> Beauty, luxury, creative tools, niche premium.</span></div></div>
+        <div class="psych"><div class="psych-head" style="background:#FF006E;color:#fff">PINK / MAGENTA</div><div class="psych-body">Boldness, fun, femininity-when-soft, irreverence-when-hot. Hot pink is loud confidence; soft pink is warmth and care.<span class="usefor"><b>USE FOR</b> Beauty, dating, creator economy, lifestyle.</span></div></div>
+        <div class="psych"><div class="psych-head" style="background:#141414;color:#fff">BLACK</div><div class="psych-body">Premium, authority, sophistication, weight. The most expensive-feeling color. As a base it elevates everything next to it.<span class="usefor"><b>USE FOR</b> Luxury, premium tech, fashion, fine F&amp;B.</span></div></div>
+        <div class="psych"><div class="psych-head" style="background:#F5F2E8;color:#141414;border-bottom:1px solid #D8D6CC">WHITE / CREAM</div><div class="psych-body">Space, cleanliness, calm, craft. White is clinical; cream is warm and considered. Your base color decision is half your brand feeling.<span class="usefor"><b>USE FOR</b> Wellness, premium, editorial, hospitality.</span></div></div>
+    </div>
+    <div class="footer"><span>DESIGNARE · THE BRAND COLOR BIBLE</span><span>03</span></div>
+</section>
+
+<!-- ============ PAGE 5 · CULTURE MAP ============ -->
+<section class="page">
+    <p class="kicker">New in 2.0 · The world map of color</p>
+    <h1>Meanings<br><span class="pop">don't travel.</span></h1>
+    <p class="lede">Color psychology is mostly learned, not hardwired — shaped by religion, history, and environment. A 64-country research review confirmed it: some associations hold broadly, but red, white, and green swing hard by region. McDonald's runs saturated red as a background in India, where red is auspicious — and reduces the same red to an accent in Sweden. Same brand, same color, different deployment. That's the lesson.</p>
+    <table class="map">
+        <tr><th>Color</th><th>The West</th><th>China</th><th>India</th><th>Japan</th><th>Middle East</th></tr>
+        <tr><td><span class="dot" style="background:#D52518"></span>Red</td><td>Urgency, passion, danger</td><td>Luck, celebration, joy — the premium color</td><td>Auspicious, bridal, purity</td><td>Energy, life; paired with white for celebration</td><td>Caution, danger — context-heavy</td></tr>
+        <tr><td><span class="dot" style="background:#F5F2E8"></span>White</td><td>Purity, weddings, clean</td><td>Mourning, funerals</td><td>Mourning, simplicity</td><td>Sacred, but also mourning</td><td>Purity, pilgrimage</td></tr>
+        <tr><td><span class="dot" style="background:#19532B"></span>Green</td><td>Wellness, money, eco</td><td>Growth, health — avoid green hats</td><td>Nature, new beginnings, Islam</td><td>Youth, freshness</td><td>Sacred — the color of Islam; use with respect</td></tr>
+        <tr><td><span class="dot" style="background:#FFCA26"></span>Yellow</td><td>Optimism, budget, caution</td><td>Historically imperial, premium</td><td>Sacred, knowledge, spring</td><td>Courage, refinement</td><td>Happiness, prosperity</td></tr>
+        <tr><td><span class="dot" style="background:#7B2FBE"></span>Purple</td><td>Luxury, creativity</td><td>Nobility, spirituality</td><td>Reincarnation, sorrow in some regions</td><td>Rank, ceremony</td><td>Wealth</td></tr>
+        <tr><td><span class="dot" style="background:#141414"></span>Black</td><td>Premium, authority</td><td>Water element, formality</td><td>Evil-eye protection, but also inauspicious gifts</td><td>Formality, elegance</td><td>Mystery, mourning, elegance</td></tr>
+    </table>
+    <div class="verdict" style="margin-top:4.5mm;">The rule: <span class="pop">psychology picks the shortlist, culture makes the cut.</span> Before a palette ships in a new market, check what your 30% color means at a funeral there.</div>
+    <div class="footer"><span>DESIGNARE · THE BRAND COLOR BIBLE</span><span>04</span></div>
+</section>
+
+<!-- ============ PAGE 6 · 60-30-10 ============ -->
+<section class="page">
+    <p class="kicker">The deployment rule · Where most palettes go wrong</p>
+    <h1>60 - 30 - 10.<br><span class="pop">The rule.</span></h1>
+    <p class="lede">Every great brand palette is three colors deployed in roughly these proportions. The math isn't exact — the principle is. Equal-weight colors fight. Stacked-weight colors sing. This is why every brand you respect feels effortless: it isn't. It's deployed.</p>
+    <div class="role-card"><div class="role-pct">60%</div><div><h3>The Dominant</h3><p>The base color the eye spends most time on. Usually the lightest or most neutral of your three. It's the canvas, not the brand. Backgrounds, large surfaces, breathing room.</p><p class="ex"><b>EXAMPLES</b> Cream, off-white, deep black, soft grey.</p></div></div>
+    <div class="role-card"><div class="role-pct">30%</div><div><h3>The Brand</h3><p>The color people will remember as "your brand color." Logo, primary buttons, hero blocks, anchor moments. Strong but not overwhelming.</p><p class="ex"><b>EXAMPLES</b> Forest green, navy, hot magenta, kiwi green.</p></div></div>
+    <div class="role-card"><div class="role-pct">10%</div><div><h3>The Accent</h3><p>The pop. The thing that catches the eye. Highlights, CTAs, illustration moments, micro-interactions. Used sparingly so it stays special.</p><p class="ex"><b>EXAMPLES</b> Golden yellow, electric lime, coral, carrot orange.</p></div></div>
+    <div class="verdict">Two bright colors at 50/50 is a fight. One dominant, one supporting, one accent is <span class="pop">a brand.</span> Pick which color is doing which job before you pick the colors.</div>
+    <div class="gamut-chip"><b>IN GAMUT</b>Every palette the engine generates ships with the four jobs pre-assigned — Dominant, Brand, Accent, and the Ink anchor — with the percentage printed on the swatch.</div>
+    <div class="footer"><span>DESIGNARE · THE BRAND COLOR BIBLE</span><span>05</span></div>
+</section>
+
+<!-- ============ PAGE 7 · SEVEN LAWS ============ -->
+<section class="page">
+    <p class="kicker">The laws · The seven things most designers get wrong</p>
+    <h1>7 laws<br><span class="pop">of color.</span></h1>
+    <p class="lede">These aren't style preferences — they're structural rules separating "student work" from "brand identity." Every palette in this Bible follows them. Most failed palettes break at least one.</p>
+    <div class="law"><div class="law-n">01</div><div><h3>Pick a dark anchor before you pick a bright</h3><p>Bright + bright = chaos. Bright + dark = identity. Every loud brand that works has a black, navy, or charcoal grounding the noise.</p></div></div>
+    <div class="law"><div class="law-n">02</div><div><h3>Saturate the brand color, mute the accent</h3><p>If both colors are at full saturation, they fight. If both are muted, the brand looks tired. One leads at full power, the other supports at 60–80%.</p></div></div>
+    <div class="law"><div class="law-n">03</div><div><h3>Test it at 5% of the screen, not 50%</h3><p>Most combos look great as a giant swatch and terrible as a real interface. Build a fake landing page mock with realistic proportions before locking the palette.</p></div></div>
+    <div class="law"><div class="law-n">04</div><div><h3>Always design the dark mode at the same time as the light</h3><p>If your brand color only works on white, you don't have a brand color — you have a website background. Test every accent against both black and white.</p></div></div>
+    <div class="law"><div class="law-n">05</div><div><h3>One bold color is a brand. Three bold colors is a circus</h3><p>If you need a third loud color, the first two aren't doing their job. Add neutrals, not more brights.</p></div></div>
+    <div class="law"><div class="law-n">06</div><div><h3>Use color for hierarchy, not decoration</h3><p>Color should tell the eye where to go. Headline &gt; body &gt; CTA. If you can't name what each color is doing for the user, the palette is decoration, not design.</p></div></div>
+    <div class="law"><div class="law-n">07</div><div><h3>Borrow a palette from a category you're NOT in</h3><p>Beauty-brand colors for a SaaS, hospitality colors for fintech, sportswear colors for healthtech. Standing out is mostly refusing to look like your category.</p></div></div>
+    <div class="footer"><span>DESIGNARE · THE BRAND COLOR BIBLE</span><span>06</span></div>
+</section>
+
+<!-- ============ PAGE 8 · AMENDMENTS ============ -->
+<section class="page">
+    <p class="kicker">New in 2.0 · What this decade forced</p>
+    <h1>The 2026<br><span class="pop">amendments.</span></h1>
+    <p class="lede">The seven laws stand. But brands now live in more places than the laws anticipated — ten interface states, two color modes, forty countries, a hundred screen types. Three amendments cover the gap.</p>
+    <div class="law amend"><div class="law-n">08</div><div><h3>Build the ramp, not the swatch</h3><p>A brand color isn't one hex anymore — it's a family. Hover states, pressed states, tinted surfaces, borders, disabled states, charts. Build a ten-step tint-to-shade ramp for your Brand and Accent the day you pick them, stepped perceptually so every neighbor pair looks evenly spaced. If the color only works at one step, it's a poster, not a system.</p></div></div>
+    <div class="law amend"><div class="law-n">09</div><div><h3>Contrast is a floor, not a vibe</h3><p>Body text needs 4.5:1 against its background (WCAG AA); large text and UI elements need 3:1. That's the legal-grade floor — meet it in BOTH your light and dark deployments. And know where the standard is heading: newer perceptual models (APCA, the candidate for WCAG 3) score dark-on-light and light-on-dark differently and demand more contrast from thin, small type. Translation: test with your real font at real sizes, in both modes, not with a giant bold swatch.</p></div></div>
+    <div class="law amend"><div class="law-n">10</div><div><h3>Check the culture map before crossing borders</h3><p>Your palette ships worldwide by default now — app stores don't have borders. Before entering a market, check what your Brand color means there (page 04). You don't have to change the color. McDonald's didn't. You change the deployment: what's a 30% hero in Mumbai may need to be a 10% accent in Stockholm.</p></div></div>
+    <div class="verdict" style="margin-top:4.5mm;">The seven laws make a palette <span class="pop">work.</span> The three amendments make it <span class="pop">survive contact with the world.</span></div>
+    <div class="gamut-chip"><b>IN GAMUT</b>The engine enforces laws 01–05 and 09 numerically on every palette, previews law 04 in both modes side by side, and simulates four types of color-blind vision before you ship.</div>
+    <div class="footer"><span>DESIGNARE · THE BRAND COLOR BIBLE</span><span>07</span></div>
+</section>
+
+<!-- ============ PAGE 9 · TRENDS 2026 ============ -->
+<section class="page">
+    <p class="kicker">New in 2.0 · The 2026 trend read</p>
+    <h1>Trends are<br><span class="pop">ingredients.</span></h1>
+    <p class="lede">A trend is not an identity — it's an ingredient you deploy through 60-30-10. Here is what's actually moving in 2026, and the strategist's read on each. The pattern underneath all five: flat, cold, and generic is out; calm bases with one expressive, textured signal are in.</p>
+    <div class="trend">
+        <div class="trend-chips"><div class="t-chip" style="background:#F2F1EC"><span style="color:#666">#F2F1EC</span></div><div class="t-chip" style="background:#E9E6DD"><span style="color:#666">#E9E6DD</span></div></div>
+        <div><h3>Soft whites replace stark white</h3><p>Pantone's 2026 pick, Cloud Dancer, is the first white in Color-of-the-Year history. The signal: brands want calm without the hospital. Warm off-whites and creams as the 60% base, not #FFFFFF.</p><p class="verdict-line"><b>DEPLOY</b> As your Dominant. It makes every color next to it feel more considered.</p></div>
+    </div>
+    <div class="trend">
+        <div class="trend-chips"><div class="t-chip" style="background:#0F5E63"><span style="color:#fff">#0F5E63</span></div><div class="t-chip" style="background:#16808A"><span style="color:#fff">#16808A</span></div></div>
+        <div><h3>Transformative teal</h3><p>WGSN's 2026 forecast: dependable blue fused with regenerative green. It carries blue's trust without blue's fatigue — and reads sustainable without shouting it. The escape hatch for every "we don't want to be another blue tech brand" brief.</p><p class="verdict-line"><b>DEPLOY</b> As your Brand 30%. Keep it deep; let it drift bright and it turns budget-cyan.</p></div>
+    </div>
+    <div class="trend">
+        <div class="trend-chips"><div class="t-chip" style="background:#5E1A24"><span style="color:#fff">#5E1A24</span></div><div class="t-chip" style="background:#7A3B2E"><span style="color:#fff">#7A3B2E</span></div></div>
+        <div><h3>Deep jewel &amp; oxblood</h3><p>Terracotta matured into oxblood, burgundy, and deep reds with old-money gravity. Luxury's move away from black-does-everything. Instant heritage, even for a brand founded last quarter.</p><p class="verdict-line"><b>DEPLOY</b> As a Brand color over warm sand or cream. Never over pure white — it goes flat.</p></div>
+    </div>
+    <div class="trend">
+        <div class="trend-chips"><div class="t-chip" style="background:#C7E052"><span style="color:#333">#C7E052</span></div><div class="t-chip" style="background:#D4FF00"><span style="color:#333">#D4FF00</span></div></div>
+        <div><h3>Wasabi and the surviving neons</h3><p>Electric chartreuse — wasabi — is the neon that made it out of 2024 alive. Still the fastest "we are new" signal on a dark canvas. But neon inflation is real: every AI startup grabbed one.</p><p class="verdict-line"><b>DEPLOY</b> Strictly at 10%, strictly against a dark anchor. At 30% it's a hackathon.</p></div>
+    </div>
+    <div class="trend">
+        <div class="trend-chips"><div class="t-chip" style="background:linear-gradient(135deg,#2242E5,#7B2FBE,#FF006E)"><span style="color:#fff">blend</span></div><div class="t-chip" style="background:linear-gradient(135deg,#F2F1EC,#E0D5C0)"><span style="color:#666">texture</span></div></div>
+        <div><h3>Dimensional over flat</h3><p>Flat color blocking is fading. The elevated 2026 look layers color: gradients with a purpose, visible grain and material texture, soft edges. Color behaves like a surface, not a fill.</p><p class="verdict-line"><b>DEPLOY</b> Dimension lives inside ONE role — usually the Brand 30%. Gradient everything and you've built a screensaver.</p></div>
+    </div>
+    <div class="footer"><span>DESIGNARE · THE BRAND COLOR BIBLE</span><span>08</span></div>
+</section>
+
+<!-- ============ PAGE 10 · COMBOS 01-02 ============ -->
+<section class="page">
+    <p class="kicker">The combos · Recipes 01 – 02</p>
+    <h1>8 combos.<br><span class="pop">Fully loaded.</span></h1>
+    <p class="lede" style="margin-bottom:5mm;">Each combo: the hex codes, the mood, what it signifies, who it fits, the 60-30-10 deployment, and the rules to follow or break. Six classics, two new for 2026. Copy the recipe. Deploy the palette. Watch it pop.</p>
+    <div class="combo">
+        <div class="combo-title"><span class="n">01</span><h3>Tomato Burst + Sunshine</h3></div>
+        <div class="combo-band"><div style="background:#D52518"><span class="cname">Tomato Burst</span><span class="chex">#D52518</span></div><div style="background:#FFCA26;color:#141414"><span class="cname">Sunshine</span><span class="chex">#FFCA26</span></div></div>
+        <div class="combo-mood">Loud, hungry, impossible to scroll past</div>
+        <div class="combo-sig"><b>SIGNIFIES</b> Red is urgency, appetite, movement; yellow is optimism, energy, welcome. Together — unstoppable retail energy. <b style="background:#141414;color:#fff">WORKS FOR</b> F&amp;B, fast-casual, retail, sale-driven e-commerce, sports, energy drinks, kids.</div>
+        <div class="combo-deploy">
+            <div><span class="pct">60%</span>Sunshine yellow as the warm base — packaging, app background, the dominant feeling.</div>
+            <div><span class="pct">30%</span>Tomato red on hero blocks, headlines, photo backgrounds. The shouter.</div>
+            <div><span class="pct">10%</span>Charcoal or jet black for text + small UI. The grown-up in the room.</div>
+        </div>
+        <div class="combo-row"><b class="do">DO</b> Pair with rounded type, oversized headlines, high-contrast photography. Heat sells.</div>
+        <div class="combo-row"><b class="dont">DON'T</b> Not for finance, healthcare, or anything that needs to feel safe — this combo screams. In China and India this red reads celebratory, not alarming: deploy it even harder there.</div>
+    </div>
+    <div class="combo">
+        <div class="combo-title"><span class="n">02</span><h3>Cream + Forest Green</h3></div>
+        <div class="combo-band"><div style="background:#F3E6CC;color:#141414"><span class="cname">Cream</span><span class="chex">#F3E6CC</span></div><div style="background:#19532B"><span class="cname">Forest Green</span><span class="chex">#19532B</span></div></div>
+        <div class="combo-mood">Considered, premium, like the brand has been around longer than it has</div>
+        <div class="combo-sig"><b>SIGNIFIES</b> Cream is warmth, craft, softness; deep green is trust, abundance, money. Together — a brand with its act together. <b style="background:#141414;color:#fff">WORKS FOR</b> Wellness, organic skincare, boutique hospitality, slow fashion, premium F&amp;B, sustainable D2C.</div>
+        <div class="combo-deploy">
+            <div><span class="pct">60%</span>Cream as the canvas — backgrounds, packaging, web sections. The breathing room.</div>
+            <div><span class="pct">30%</span>Forest green for hero blocks, navigation, primary buttons, footers. The anchor.</div>
+            <div><span class="pct">10%</span>A brass or muted-gold brand mark, hand-drawn or letterpress-style. The luxury beat.</div>
+        </div>
+        <div class="combo-row"><b class="do">DO</b> Pair with editorial serif type, generous whitespace, warm-tinted photography.</div>
+        <div class="combo-row"><b class="dont">DON'T</b> Avoid pure white — it kills the cream and the whole system reads hospital.</div>
+    </div>
+    <div class="footer"><span>DESIGNARE · THE BRAND COLOR BIBLE</span><span>09</span></div>
+</section>
+
+<!-- ============ PAGE 11 · COMBOS 03-04 ============ -->
+<section class="page">
+    <p class="kicker">The combos · Recipes 03 – 04</p>
+    <h1>Recipes <span class="pop">03 – 04.</span></h1>
+    <div class="combo" style="margin-top:3mm;">
+        <div class="combo-title"><span class="n">03</span><h3>Kiwi + Crisp Carrot</h3></div>
+        <div class="combo-band"><div style="background:#9ABC05;color:#141414"><span class="cname">Kiwi</span><span class="chex">#9ABC05</span></div><div style="background:#F66015"><span class="cname">Crisp Carrot</span><span class="chex">#F66015</span></div></div>
+        <div class="combo-mood">Fresh, friendly, just-shipped a new product</div>
+        <div class="combo-sig"><b>SIGNIFIES</b> Lime green is freshness, growth, modern energy; carrot orange is friendliness and confidence without aggression. Young but not childish. <b style="background:#141414;color:#fff">WORKS FOR</b> SaaS, dev tools, modern fintech, healthtech, productivity, learning platforms.</div>
+        <div class="combo-deploy">
+            <div><span class="pct">60%</span>Off-white or very light grey as the base — it lets the brights breathe.</div>
+            <div><span class="pct">30%</span>Kiwi green as the primary brand color. Logo, hero, primary CTA, key illustrations.</div>
+            <div><span class="pct">10%</span>Carrot orange for the second action — toggles, highlights, secondary CTA.</div>
+        </div>
+        <div class="combo-row"><b class="do">DO</b> Pair with geometric sans, isometric or 3D illustration, motion micro-interactions.</div>
+        <div class="combo-row"><b class="dont">DON'T</b> Never both at full saturation across large surfaces — they'll fight. One leads, one accents. Saturated lime is also a print-gamut risk: proof it on paper before packaging.</div>
+    </div>
+    <div class="combo">
+        <div class="combo-title"><span class="n">04</span><h3>Hot Magenta + Golden Yellow</h3></div>
+        <div class="combo-band"><div style="background:#FF006E"><span class="cname">Hot Magenta</span><span class="chex">#FF006E</span></div><div style="background:#FFD60A;color:#141414"><span class="cname">Golden Yellow</span><span class="chex">#FFD60A</span></div></div>
+        <div class="combo-mood">Loud, unapologetic, designed to be remembered</div>
+        <div class="combo-sig"><b>SIGNIFIES</b> Magenta is boldness, irreverence, confidence; golden yellow is optimism, attention, warmth. A brand that doesn't ask to be liked. <b style="background:#141414;color:#fff">WORKS FOR</b> Creator brands, music, streetwear, beauty disruptors, dating apps, Gen-Z DTC, events.</div>
+        <div class="combo-deploy">
+            <div><span class="pct">60%</span>Jet black or deep navy as the base. Without a dark anchor this combo goes nuclear.</div>
+            <div><span class="pct">30%</span>Hot magenta as the identity hero — logo, hero text, packaging side panels.</div>
+            <div><span class="pct">10%</span>Golden yellow for accents — highlight strokes, sticker shapes, small CTAs, animation pops.</div>
+        </div>
+        <div class="combo-row"><b class="do">DO</b> Pair with heavy display type, bold motion design, high-contrast photography.</div>
+        <div class="combo-row"><b class="dont">DON'T</b> Never on light grey — it reads 2014 startup. The black is mandatory.</div>
+    </div>
+    <div class="footer"><span>DESIGNARE · THE BRAND COLOR BIBLE</span><span>10</span></div>
+</section>
+
+<!-- ============ PAGE 12 · COMBOS 05-06 ============ -->
+<section class="page">
+    <p class="kicker">The combos · Recipes 05 – 06</p>
+    <h1>Recipes <span class="pop">05 – 06.</span></h1>
+    <div class="combo" style="margin-top:3mm;">
+        <div class="combo-title"><span class="n">05</span><h3>Ocean + Coral</h3></div>
+        <div class="combo-band"><div style="background:#0A1F44"><span class="cname">Ocean</span><span class="chex">#0A1F44</span></div><div style="background:#FF7A59"><span class="cname">Coral</span><span class="chex">#FF7A59</span></div></div>
+        <div class="combo-mood">Trustworthy with a pulse — serious brand, alive brand</div>
+        <div class="combo-sig"><b>SIGNIFIES</b> Deep navy is authority, trust, competence; coral is warmth and human-ness. A brand you trust with money that doesn't feel like a bank. <b style="background:#141414;color:#fff">WORKS FOR</b> Modern fintech, B2B SaaS, professional services, healthtech, consultancies.</div>
+        <div class="combo-deploy">
+            <div><span class="pct">60%</span>Soft off-white or pale grey base. Lets the navy do the heavy lifting without bleeding.</div>
+            <div><span class="pct">30%</span>Ocean navy as the dominant brand color — navigation, headers, primary buttons.</div>
+            <div><span class="pct">10%</span>Coral as the human moment — accent lines, illustration highlights, key CTAs.</div>
+        </div>
+        <div class="combo-row"><b class="do">DO</b> Pair with a clean grotesk, structured layouts, editorial photography. Professional with a heartbeat.</div>
+        <div class="combo-row"><b class="dont">DON'T</b> No bright stock illustration — it cheapens the navy instantly.</div>
+    </div>
+    <div class="combo">
+        <div class="combo-title"><span class="n">06</span><h3>Charcoal + Electric Lime</h3></div>
+        <div class="combo-band"><div style="background:#1A1A1A"><span class="cname">Charcoal</span><span class="chex">#1A1A1A</span></div><div style="background:#D4FF00;color:#141414"><span class="cname">Electric Lime</span><span class="chex">#D4FF00</span></div></div>
+        <div class="combo-mood">Tech-forward, premium, slightly aggressive in the best way</div>
+        <div class="combo-sig"><b>SIGNIFIES</b> Near-black is premium, focused, no-nonsense; electric lime is innovation and now. A brand from the future, priced like one. <b style="background:#141414;color:#fff">WORKS FOR</b> AI products, dev tools, premium fitness, performance brands, audio/music tech.</div>
+        <div class="combo-deploy">
+            <div><span class="pct">60%</span>Charcoal black as the dominant canvas — backgrounds, packaging, app shells.</div>
+            <div><span class="pct">30%</span>Off-white or warm grey for body text and most UI surfaces — the breathing space.</div>
+            <div><span class="pct">10%</span>Electric lime as the single accent — logo highlight, key CTA, status indicators. A weapon.</div>
+        </div>
+        <div class="combo-row"><b class="do">DO</b> Pair with monospace + grotesk type, sharp geometry, high-contrast product photography.</div>
+        <div class="combo-row"><b class="dont">DON'T</b> Lime above 10% of any surface stops feeling premium and starts feeling hackathon. And neon inflation is real (page 08) — earn it or skip it.</div>
+    </div>
+    <div class="footer"><span>DESIGNARE · THE BRAND COLOR BIBLE</span><span>11</span></div>
+</section>
+
+<!-- ============ PAGE 13 · NEW COMBOS 07-08 ============ -->
+<section class="page">
+    <p class="kicker">The combos · New for 2026 · Recipes 07 – 08</p>
+    <h1>Recipes <span class="pop">07 – 08.</span></h1>
+    <div class="combo" style="margin-top:3mm;">
+        <div class="combo-title"><span class="n">07</span><h3>Cloud + Deep Teal</h3></div>
+        <div class="combo-band"><div style="background:#F2F1EC;color:#141414"><span class="cname">Cloud</span><span class="chex">#F2F1EC</span></div><div style="background:#0F5E63"><span class="cname">Deep Teal</span><span class="chex">#0F5E63</span></div></div>
+        <div class="combo-mood">Calm futurism — competent, regenerative, quietly confident</div>
+        <div class="combo-sig"><b>SIGNIFIES</b> Soft white is calm and considered space (the 2026 base); deep teal fuses blue's trust with green's growth. Together — the escape route from default tech blue. <b style="background:#141414;color:#fff">WORKS FOR</b> Climate tech, healthtech, premium SaaS, fintech that wants softness, wellness tech.</div>
+        <div class="combo-deploy">
+            <div><span class="pct">60%</span>Cloud white as the canvas — warmer than #FFF, calmer than grey. The considered base.</div>
+            <div><span class="pct">30%</span>Deep teal for navigation, heroes, primary buttons. Trust with a pulse of green.</div>
+            <div><span class="pct">10%</span>Warm apricot <span style="font-family:var(--mono);font-size:6.8pt">#D9814E</span> for CTAs and highlights — the human warmth against the cool teal.</div>
+        </div>
+        <div class="combo-row"><b class="do">DO</b> Pair with a humanist sans, real photography with warm grading, one purposeful gradient in the hero.</div>
+        <div class="combo-row"><b class="dont">DON'T</b> Don't let the teal drift bright — at full brightness it turns budget-cyan and the premium evaporates.</div>
+    </div>
+    <div class="combo">
+        <div class="combo-title"><span class="n">08</span><h3>Oxblood + Warm Sand</h3></div>
+        <div class="combo-band"><div style="background:#5E1A24"><span class="cname">Oxblood</span><span class="chex">#5E1A24</span></div><div style="background:#E7DBC4;color:#141414"><span class="cname">Warm Sand</span><span class="chex">#E7DBC4</span></div></div>
+        <div class="combo-mood">Old money, new brand — heritage you can launch on a Tuesday</div>
+        <div class="combo-sig"><b>SIGNIFIES</b> Oxblood is depth, gravity, quiet luxury — red matured past urgency into permanence; warm sand is craft and patience. Together — instant establishment. <b style="background:#141414;color:#fff">WORKS FOR</b> Luxury fashion, boutique finance, wine &amp; spirits, hospitality, premium editorial, heritage DTC.</div>
+        <div class="combo-deploy">
+            <div><span class="pct">60%</span>Warm sand as the canvas — packaging, interiors, page backgrounds. Never pure white.</div>
+            <div><span class="pct">30%</span>Oxblood for hero blocks, covers, primary actions. The gravity.</div>
+            <div><span class="pct">10%</span>Brass <span style="font-family:var(--mono);font-size:6.8pt">#A9762F</span> for rules, marks, and detail lines. The jewelry, not the outfit.</div>
+        </div>
+        <div class="combo-row"><b class="do">DO</b> Pair with a high-contrast editorial serif, letterpress texture, photography with shadow depth.</div>
+        <div class="combo-row"><b class="dont">DON'T</b> No neon accents, no pure white, no rounded-bubbly type — each one breaks the spell instantly.</div>
+    </div>
+    <div class="footer"><span>DESIGNARE · THE BRAND COLOR BIBLE</span><span>12</span></div>
+</section>
+
+<!-- ============ PAGE 14 · ACCESSIBILITY ============ -->
+<section class="page">
+    <p class="kicker">New in 2.0 · Accessibility is deployment</p>
+    <h1>If they can't<br>read it, <span class="pop">it isn't branding.</span></h1>
+    <p class="lede">Roughly 1 in 12 men and 1 in 200 women have some form of color-vision deficiency. Add sunlight on a phone screen, cheap projectors, and aging eyes, and a meaningful slice of every audience sees a different palette than the one you shipped. Accessibility isn't a compliance chore bolted on at the end — it's Law 03 and Law 04 taken seriously.</p>
+    <table class="contrast-table">
+        <tr><th>Ratio</th><th>What it clears</th><th>Use it for</th></tr>
+        <tr><td>4.5 : 1</td><td>WCAG AA, normal text</td><td>Body copy, labels, anything under ~18pt. Your non-negotiable floor.</td></tr>
+        <tr><td>3 : 1</td><td>WCAG AA, large text &amp; UI</td><td>Headlines 18pt+, buttons, icons, input borders, focus states.</td></tr>
+        <tr><td>7 : 1</td><td>WCAG AAA</td><td>Long-form reading, small dense UI, anything for older audiences. Aim here for Ink-on-Dominant.</td></tr>
+    </table>
+    <div class="sci-grid">
+        <div class="sci"><span class="tag">Rule of thumb 1</span><h3>Never color-only</h3><p>If a state is communicated only by hue — red vs green status dots, colored-but-unstyled links — 8% of your male users can't see it. Pair every color signal with a shape, icon, label, or weight change.</p></div>
+        <div class="sci"><span class="tag">Rule of thumb 2</span><h3>Both polarities, real text</h3><p>Dark-on-light and light-on-dark with the same ratio don't read equally — perception is polarity-aware, and thin small type needs more contrast than the math suggests. Test your actual font, weights, and sizes in both modes. A ratio calculated on a bold swatch proves nothing about your 14px regular body.</p></div>
+    </div>
+    <div class="sci" style="margin-top:4mm;"><span class="tag">Where the standard is going</span><h3>WCAG 2.2 today, perceptual tomorrow</h3><p>WCAG 2.2 AA is the compliance target now and for the next few years. WCAG 3 is coming with a perceptual contrast model (APCA is the leading candidate — polarity-aware, font-size-aware, not yet final). The two-layer strategy: WCAG 2 ratios as your floor, perceptual thinking as your ceiling. Nothing in this Bible requires you to choose — a palette that respects Laws 01, 04, and 09 clears both.</p></div>
+    <div class="gamut-chip"><b>IN GAMUT</b>Every generated palette ships with the three contrast ratios pre-checked and graded, both deployments tested, plus protanopia / deuteranopia / tritanopia / greyscale previews one click away.</div>
+    <div class="footer"><span>DESIGNARE · THE BRAND COLOR BIBLE</span><span>13</span></div>
+</section>
+
+<!-- ============ PAGE 15 · PALETTE TO SYSTEM ============ -->
+<section class="page">
+    <p class="kicker">New in 2.0 · From palette to system</p>
+    <h1>A palette is a poster.<br><span class="pop">A system ships.</span></h1>
+    <p class="lede">The gap between "we picked colors" and "our product looks coherent" is systemization. Four moves take you across it.</p>
+    <div class="sci-grid">
+        <div class="sci"><span class="tag">Move 1</span><h3>Name colors by job, not by hue</h3><p>Tokens named <span style="font-family:var(--mono);font-size:7.5pt">brand</span>, <span style="font-family:var(--mono);font-size:7.5pt">accent</span>, <span style="font-family:var(--mono);font-size:7.5pt">dominant</span>, <span style="font-family:var(--mono);font-size:7.5pt">ink</span> survive a rebrand; tokens named <span style="font-family:var(--mono);font-size:7.5pt">teal-500</span> don't. The 60-30-10 roles ARE your token architecture — one variable per job, light and dark values behind each.</p></div>
+        <div class="sci"><span class="tag">Move 2</span><h3>Ship both deployments as one artifact</h3><p>Law 04 operationalized: your CSS custom properties carry the light values, a <span style="font-family:var(--mono);font-size:7.5pt">prefers-color-scheme</span> block carries the dark. One file, two moods, zero "we'll do dark mode later."</p></div>
+        <div class="sci"><span class="tag">Move 3</span><h3>Ramp every working color</h3><p>Amendment 08: Brand and Accent each get a ten-step tint-to-shade ramp, perceptually stepped. Tints become surfaces and hovers; shades become borders and pressed states. The ramp is where a palette becomes an interface.</p></div>
+        <div class="sci"><span class="tag">Move 4</span><h3>Respect the print gamut</h3><p>Process inks can't reproduce every screen color — saturated limes, cyans, and violets dull the most on press. Carry CMYK values from day one, flag the risky swatches, and proof against a calibrated profile before packaging. The screen is not the only surface your brand lives on.</p></div>
+    </div>
+    <div class="verdict" style="margin-top:5mm;">Hand a developer four hexes and you've given them <span class="pop">homework.</span> Hand them roles, ramps, and both modes and you've given them <span class="pop">a brand.</span></div>
+    <div class="gamut-chip"><b>IN GAMUT</b>One click exports the whole system: CSS variables with the dark-mode block included, Tailwind v4 theme, SCSS, JSON with CMYK + print-risk flags, an SVG swatch card, and a client-ready printed brand sheet — white-labeled with your studio's name if you're an agency.</div>
+    <div class="footer"><span>DESIGNARE · THE BRAND COLOR BIBLE</span><span>14</span></div>
+</section>
+
+<!-- ============ PAGE 16 · CLOSING ============ -->
+<section class="page dark close">
+    <p class="kicker" style="margin-top:10mm;">The close</p>
+    <h1>Colors don't<br>make brands.<br><span class="pop">Decisions do.</span></h1>
+    <p class="lede">The brands that pop don't use better colors than you. They use the same colors with clearer intent — one anchors, one leads, one accents, and every surface gets the right one. The combo is the easy part. Knowing which color does which job is the brand.</p>
+    <p class="lede">Use this Bible like a recipe book. Read the psychology to pick the right base, and the culture map before it travels. Follow 60-30-10 to assign jobs. Obey the seven laws and the three amendments. Treat trends as ingredients. Pick the combo that matches the mood you need, deploy it exactly as written, ramp it, check the contrast, ship both modes. Watch the brand stop blending in.</p>
+    <div class="funnel">
+        <b>THE BIBLE, RUNNING AS SOFTWARE</b>
+        <p>Everything in these pages is automated in Gamut — the palette engine, the seven-law Fixer, shade ramps, color-blind previews, and one-click exports. Built by Designare. Generate a palette in ten seconds; it will already obey the laws.</p>
+    </div>
+    <div class="footer" style="border-top-color:var(--line-dark)"><span>DESIGNARE · THE BRAND COLOR BIBLE · @itsdesignare</span><span>v2.0 · 2026</span></div>
+    <div class="rainbow" style="bottom:0;"></div>
+</section>
+
+</body>
+</html>

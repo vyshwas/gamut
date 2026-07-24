@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gamut - Brand palettes built like decisions</title>
+    <meta name="description" content="Generate, fix, and pair brand color systems built on the 60-30-10 rule, the ten laws of color, and print-ready values. For designers, agencies, and brand teams.">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23D4FF00'/%3E%3Ctext x='16' y='23' font-family='Arial Black,sans-serif' font-size='20' font-weight='900' text-anchor='middle' fill='%23141414'%3EG%3C/text%3E%3C/svg%3E">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800;900&family=Geist:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <nav>
+        <a href="#top" class="logo">Gamut<span class="logo-dot">.</span></a>
+        <div class="nav-links" id="nav-links">
+            <a href="#assistant">Assistant</a>
+            <a href="#engine">Engine</a>
+            <a href="#fixer">Fixer</a>
+            <a href="#type">Type</a>
+            <a href="#system">System</a>
+            <a href="#method">Method</a>
+            <a href="#pricing">Pricing</a>
+        </div>
+        <a href="#pricing" class="btn btn-primary nav-cta">Start free</a>
+        <button class="nav-toggle" id="nav-toggle" aria-label="Menu" aria-expanded="false">
+            <span></span><span></span>
+        </button>
+    </nav>
+
+    <!-- ================= HERO ================= -->
+    <header class="hero" id="top">
+        <div class="hero-text">
+            <h1>Pick palettes like a strategist.</h1>
+            <p class="hero-sub">Generate, fix, and pair brand color systems built on the 60-30-10 rule, ten laws of color, and print-checked values.</p>
+            <div class="hero-ctas">
+                <a href="#engine" class="btn btn-primary">Generate a palette</a>
+                <a href="#fixer" class="btn btn-ghost">Fix an existing palette</a>
+            </div>
+        </div>
+        <div class="hero-card" id="hero-card" aria-label="Live palette preview">
+            <div class="hero-band" id="hero-band"></div>
+            <div class="hero-card-meta">
+                <span id="hero-card-name" class="mono"></span>
+                <button class="btn-mini" id="hero-regen" type="button">Regenerate</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ================= STUDIO ASSISTANT ================= -->
+    <section class="section" id="assistant">
+        <div class="section-head">
+            <h2>Studio Assistant</h2>
+            <p>Describe a mood, feeling, or brand brief in plain language. It gets mapped onto Gamut's own frameworks &mdash; the mood lexicon and the ten business archetypes &mdash; never onto invented colors, so the Engine's laws and contrast guarantees still hold underneath whatever it understood.</p>
+        </div>
+
+        <div class="assistant">
+            <div class="assistant-input-row">
+                <textarea id="assistant-input" rows="2" placeholder="e.g. a calm, trustworthy wellness brand with a modern edge" spellcheck="false"></textarea>
+                <button class="btn btn-primary" id="assistant-run" type="button">Interpret</button>
+            </div>
+
+            <div class="assistant-settings">
+                <div class="field field-inline">
+                    <label for="assistant-provider">Interpreter</label>
+                    <select id="assistant-provider">
+                        <option value="ollama">Local (Ollama)</option>
+                        <option value="claude">Claude API (your key)</option>
+                        <option value="offline">Offline keyword match</option>
+                    </select>
+                </div>
+                <div class="field field-inline" id="assistant-ollama-fields">
+                    <label for="assistant-ollama-model">Ollama model</label>
+                    <input type="text" id="assistant-ollama-model" class="mono" placeholder="llama3.2" spellcheck="false">
+                </div>
+                <div class="field field-inline" id="assistant-claude-fields" hidden>
+                    <label for="assistant-claude-key">Claude API key</label>
+                    <input type="password" id="assistant-claude-key" class="mono" placeholder="sk-ant-..." spellcheck="false">
+                </div>
+                <button class="btn-mini" id="assistant-settings-save" type="button">Save settings</button>
+            </div>
+            <p class="hint">Local runs entirely on this machine via <a href="https://ollama.com" target="_blank" rel="noopener">Ollama</a>, nothing leaves your browser. Claude API needs your own key, stored only in this browser&rsquo;s local storage. Offline mode does a plain keyword search with no network call at all.</p>
+
+            <div class="assistant-result" id="assistant-result" hidden>
+                <p class="assistant-provider mono" id="assistant-provider-used"></p>
+                <p class="assistant-explanation" id="assistant-explanation"></p>
+                <div class="assistant-chips" id="assistant-chips"></div>
+                <button class="btn btn-primary" id="assistant-generate" type="button" disabled>Generate this palette</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= ENGINE ================= -->
+    <section class="section" id="engine">
+        <div class="section-head">
+            <h2>The Engine</h2>
+            <p>Every palette it produces has four colors with four jobs: a Dominant canvas, a Brand voice, a muted Accent, and a dark Ink anchor. Both deployments ship together, because a brand color that only works on white is a website background.</p>
+        </div>
+
+        <div class="workbench">
+            <div class="controls">
+                <div class="field">
+                    <label for="ctl-category">Category</label>
+                    <select id="ctl-category">
+                        <option value="saas" selected>SaaS / dev tools</option>
+                        <option value="fnb">Food and drink / retail</option>
+                        <option value="wellness">Wellness / premium D2C</option>
+                        <option value="creator">Creator / streetwear</option>
+                        <option value="fintech">Fintech / B2B services</option>
+                        <option value="aitech">AI / premium tech</option>
+                        <option value="beauty">Beauty / luxury</option>
+                        <option value="hospitality">Hospitality / dining</option>
+                        <option value="climate">Climate / healthtech</option>
+                        <option value="heritage">Heritage / quiet luxury</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="ctl-brand">Lock a brand color <span class="optional">optional</span></label>
+                    <div class="lock-row">
+                        <input type="text" id="ctl-brand" class="mono" placeholder="#1F3FFF" maxlength="7" spellcheck="false">
+                        <button class="btn-mini" id="ctl-brand-clear" type="button" hidden>Clear</button>
+                    </div>
+                </div>
+                <div class="field field-toggle">
+                    <label class="toggle">
+                        <input type="checkbox" id="ctl-borrow">
+                        <span class="toggle-track" aria-hidden="true"></span>
+                        Break category
+                    </label>
+                    <p class="hint">Law 7: borrow a palette from a category you are not in. Standing out is mostly refusing to look like your neighbors.</p>
+                </div>
+                <button class="btn btn-primary btn-generate" id="ctl-generate" type="button">Generate</button>
+                <p class="hint hint-space">or press <kbd>space</kbd> anywhere on the page</p>
+                <p class="signal-line" id="engine-signal"></p>
+
+                <div class="saved-block" id="saved-block" hidden>
+                    <span class="exports-label mono">Saved palettes</span>
+                    <div class="saved-list" id="saved-list"></div>
+                </div>
+            </div>
+
+            <div class="output">
+                <div class="output-meta">
+                    <span class="mono" id="seed-label"></span>
+                    <div class="output-meta-actions">
+                        <button class="btn-mini" id="save-palette" type="button">Save palette</button>
+                        <button class="btn-mini" id="copy-link" type="button">Copy link to this palette</button>
+                    </div>
+                </div>
+                <div class="swatch-row" id="swatch-row"></div>
+                <div class="shades-panel" id="shades-panel" hidden>
+                    <div class="shades-head">
+                        <span class="mono" id="shades-title"></span>
+                        <button class="btn-mini" id="shades-close" type="button">Close</button>
+                    </div>
+                    <div class="shades-strip" id="shades-strip"></div>
+                    <p class="hint">Ten steps of one hue: tints for surfaces and hover states, shades for borders and pressed states. Law 8: build the ramp, not the swatch. Click any step to copy.</p>
+                </div>
+                <div class="ratio-band" id="ratio-band" aria-label="60-30-10 proportion band"></div>
+
+                <div class="vision-row" aria-label="Color vision simulation">
+                    <span class="exports-label mono">Vision</span>
+                    <button class="btn-mini vision-btn active" data-vision="none" type="button">Typical</button>
+                    <button class="btn-mini vision-btn" data-vision="protanopia" type="button">Protanopia</button>
+                    <button class="btn-mini vision-btn" data-vision="deuteranopia" type="button">Deuteranopia</button>
+                    <button class="btn-mini vision-btn" data-vision="tritanopia" type="button">Tritanopia</button>
+                    <button class="btn-mini vision-btn" data-vision="achromatopsia" type="button">Greyscale</button>
+                </div>
+
+                <div class="deployments">
+                    <figure class="deploy" id="deploy-light">
+                        <figcaption>Light deployment</figcaption>
+                        <div class="deploy-mock" data-mode="light">
+                            <div class="mock-nav"><span class="mock-brand">Marlowe&nbsp;Goods</span><span class="mock-menu">Shop&nbsp;&nbsp;Story&nbsp;&nbsp;Contact</span></div>
+                            <div class="mock-hero">
+                                <p class="mock-h">Made to be remembered.</p>
+                                <p class="mock-p">Real words at interface size, so you judge legibility, not swatches.</p>
+                                <div class="mock-btn-row"><span class="mock-btn">Shop now</span><span class="mock-link">See the story</span></div>
+                            </div>
+                        </div>
+                    </figure>
+                    <figure class="deploy" id="deploy-dark">
+                        <figcaption>Dark deployment</figcaption>
+                        <div class="deploy-mock" data-mode="dark">
+                            <div class="mock-nav"><span class="mock-brand">Marlowe&nbsp;Goods</span><span class="mock-menu">Shop&nbsp;&nbsp;Story&nbsp;&nbsp;Contact</span></div>
+                            <div class="mock-hero">
+                                <p class="mock-h">Made to be remembered.</p>
+                                <p class="mock-p">Real words at interface size, so you judge legibility, not swatches.</p>
+                                <div class="mock-btn-row"><span class="mock-btn">Shop now</span><span class="mock-link">See the story</span></div>
+                            </div>
+                        </div>
+                    </figure>
+                </div>
+
+                <div class="checks" id="contrast-checks"></div>
+
+                <div class="history-block" id="history-block" hidden>
+                    <span class="exports-label mono">History</span>
+                    <div class="history-row" id="history-row"></div>
+                </div>
+
+                <div class="agency-panel" id="agency-panel">
+                    <div class="agency-head">
+                        <span class="exports-label mono">Client documentation</span>
+                        <label class="toggle toggle-mini">
+                            <input type="checkbox" id="agency-whitelabel">
+                            <span class="toggle-track" aria-hidden="true"></span>
+                            White-label
+                        </label>
+                    </div>
+                    <div class="agency-fields">
+                        <div class="field">
+                            <label for="agency-name">Your studio name</label>
+                            <input type="text" id="agency-name" placeholder="Marlowe Studio" spellcheck="false">
+                        </div>
+                        <div class="field">
+                            <label for="agency-client">Prepared for <span class="optional">client or project</span></label>
+                            <input type="text" id="agency-client" placeholder="Acme Co — Brand refresh" spellcheck="false">
+                        </div>
+                        <div class="field">
+                            <label for="agency-logo">Logo <span class="optional">optional, under 500KB</span></label>
+                            <div class="lock-row">
+                                <input type="file" id="agency-logo" accept="image/png,image/svg+xml,image/jpeg">
+                                <button class="btn-mini" id="agency-logo-clear" type="button" hidden>Clear</button>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="hint">Saved on this device only. Turn on White-label to stamp the print sheet and SVG card with your studio instead of Gamut, so what you hand a client looks like it came from you.</p>
+                </div>
+
+                <div class="exports">
+                    <span class="exports-label mono">Export</span>
+                    <button class="btn-mini" data-export="css" type="button">CSS variables</button>
+                    <button class="btn-mini" data-export="tailwind" type="button">Tailwind v4</button>
+                    <button class="btn-mini" data-export="scss" type="button">SCSS</button>
+                    <button class="btn-mini" data-export="json" type="button">JSON</button>
+                    <button class="btn-mini" id="svg-card" type="button">SVG swatch card</button>
+                    <button class="btn-mini" id="print-sheet" type="button">Print brand sheet</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= FIXER ================= -->
+    <section class="section section-tint" id="fixer">
+        <div class="section-head">
+            <h2>The Fixer</h2>
+            <p>Paste the palette you already have. It gets diagnosed against the ten laws, then rebuilt with every color assigned a job, and every color you pasted gets a verdict: kept, adjusted, or retired, with the law that decided it.</p>
+        </div>
+
+        <div class="fixer">
+            <div class="fixer-input-row">
+                <input type="text" id="fix-input" class="mono" placeholder="#0055FF #FF3300 #FFEE00 #222222" spellcheck="false" aria-label="Paste 2 to 6 hex codes">
+                <button class="btn btn-primary" id="fix-run" type="button">Diagnose and fix</button>
+            </div>
+            <p class="hint">2 to 6 hex codes, any separator. Try pasting a palette that breaks the rules.</p>
+
+            <div class="fixer-image-row">
+                <label class="btn-mini fixer-image-btn" for="fix-image">Or extract from an image</label>
+                <input type="file" id="fix-image" accept="image/*" hidden>
+                <span class="hint fixer-image-hint">Upload a logo, moodboard, or photo. The dominant colors get pulled out, then diagnosed like any other palette. The image never leaves your browser.</span>
+            </div>
+
+            <div class="fixer-results" id="fixer-results" hidden>
+                <div class="diagnosis" id="diagnosis"></div>
+                <div class="before-after">
+                    <figure>
+                        <figcaption>Before</figcaption>
+                        <div class="strip" id="strip-before"></div>
+                    </figure>
+                    <figure>
+                        <figcaption>After, with jobs assigned</figcaption>
+                        <div class="strip" id="strip-after"></div>
+                    </figure>
+                </div>
+                <div class="mapping" id="mapping" aria-label="What happened to each color"></div>
+                <button class="btn btn-ghost" id="fix-adopt" type="button">Load into the Engine</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= TYPE ================= -->
+    <section class="section" id="type">
+        <div class="section-head">
+            <h2>Type that matches the palette</h2>
+            <p>Every mood the Engine produces maps to pairings the Bible prescribes: rounded impact for heat, editorial serifs for craft, mono-plus-grotesk for the future. Rendered live in your current palette.</p>
+        </div>
+
+        <div class="type-lab">
+            <div class="specimen" id="specimen">
+                <p class="specimen-display" id="specimen-display">Every color needs a job.</p>
+                <p class="specimen-body" id="specimen-body">The brands that pop do not use better colors. They use the same colors with clearer intent: one anchors, one leads, one accents, and every surface gets the right one.</p>
+            </div>
+            <div class="type-meta">
+                <div class="type-names">
+                    <span class="type-name" id="type-display-name"></span>
+                    <span class="type-name type-name-body" id="type-body-name"></span>
+                </div>
+                <p class="type-why" id="type-why"></p>
+                <button class="btn-mini" id="type-next" type="button">Next pairing</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SYSTEM ================= -->
+    <section class="section" id="system">
+        <div class="section-head">
+            <h2>The Design System</h2>
+            <p>Color was never the whole system. Every palette also ships a matched spacing rhythm, corner personality, and elevation family &mdash; generated from the same archetype signal as the colors, not bolted on after. Component states (hover, active, disabled, focus) come from the same contrast math as the palette itself.</p>
+        </div>
+
+        <div class="system-lab">
+            <div class="system-block">
+                <span class="exports-label mono">Spacing</span>
+                <div class="spacing-strip" id="spacing-strip"></div>
+            </div>
+            <div class="system-block">
+                <span class="exports-label mono">Radius</span>
+                <div class="radius-row" id="radius-row"></div>
+            </div>
+            <div class="system-block">
+                <span class="exports-label mono">Elevation</span>
+                <div class="elevation-row" id="elevation-row"></div>
+            </div>
+            <div class="system-block">
+                <span class="exports-label mono">Component states &mdash; Brand / Accent</span>
+                <div class="states-row" id="states-row"></div>
+            </div>
+        </div>
+
+        <div class="exports">
+            <span class="exports-label mono">Export</span>
+            <button class="btn-mini" data-export="tokens" type="button">Design system tokens (JSON)</button>
+            <p class="hint">CSS variables, Tailwind theme, and SCSS exports above already include these spacing, radius, and elevation tokens alongside color.</p>
+        </div>
+    </section>
+
+    <!-- ================= METHOD ================= -->
+    <section class="section section-tint" id="method">
+        <div class="section-head">
+            <h2>The method under the hood</h2>
+            <p>The Engine is The Brand Color Bible turned into software. Four roles, ten laws, nine psychological signals. Nothing it outputs breaks its own rules.</p>
+        </div>
+
+        <div class="method-band-wrap">
+            <div class="method-band">
+                <div class="mb mb-60"><span class="mb-pct">60</span><span class="mb-role">Dominant. The canvas, not the brand.</span></div>
+                <div class="mb mb-30"><span class="mb-pct">30</span><span class="mb-role">Brand. The color they remember.</span></div>
+                <div class="mb mb-10"><span class="mb-pct">10</span><span class="mb-role">Accent.</span></div>
+            </div>
+            <p class="method-caption">Equal-weight colors fight. Stacked-weight colors sing.</p>
+        </div>
+
+        <div class="laws">
+            <details>
+                <summary><span class="law-n mono">01</span>Pick a dark anchor before you pick a bright</summary>
+                <p>Bright plus bright is chaos. Bright plus dark is identity. Every loud brand that works has a black, navy, or charcoal grounding the noise. The Engine forges an Ink anchor into every palette.</p>
+            </details>
+            <details>
+                <summary><span class="law-n mono">02</span>Saturate the brand color, mute the accent</summary>
+                <p>If both colors run at full saturation, they fight. If both are muted, the brand looks tired. One leads at full power; the other supports at 60 to 80 percent. The Engine enforces the ratio numerically.</p>
+            </details>
+            <details>
+                <summary><span class="law-n mono">03</span>Test at 5% of the screen, not 50%</summary>
+                <p>Most combos look great as a giant swatch and terrible as a real interface. That is why every generated palette renders into a live landing-page mock at realistic proportions before you export it.</p>
+            </details>
+            <details>
+                <summary><span class="law-n mono">04</span>Design the dark mode at the same time as the light</summary>
+                <p>If your brand color only works on white, you have a website background, not a brand color. Every export ships both deployments, contrast-checked against both canvases.</p>
+            </details>
+            <details>
+                <summary><span class="law-n mono">05</span>One bold color is a brand. Three is a circus</summary>
+                <p>If you need a third loud color, the first two are not doing their job. The Fixer counts your brights and retires the extras into neutrals.</p>
+            </details>
+            <details>
+                <summary><span class="law-n mono">06</span>Use color for hierarchy, not decoration</summary>
+                <p>Color should tell the eye where to go. If you cannot name what each color is doing for the user, the palette is decoration. Every Engine swatch ships with its job written on it.</p>
+            </details>
+            <details>
+                <summary><span class="law-n mono">07</span>Borrow a palette from a category you are not in</summary>
+                <p>Beauty colors for a SaaS. Hospitality colors for fintech. Standing out is mostly refusing to look like your category. The Break category toggle does exactly this, deliberately.</p>
+            </details>
+            <details>
+                <summary><span class="law-n mono">08</span>Build the ramp, not the swatch</summary>
+                <p>A brand color is not one hex anymore; it is a family. Hover states, tinted surfaces, borders, pressed states, charts. Every swatch here opens into a ten-step tint-to-shade scale the day you pick it. If the color only works at one step, it is a poster, not a system.</p>
+            </details>
+            <details>
+                <summary><span class="law-n mono">09</span>Contrast is a floor, not a vibe</summary>
+                <p>Body text needs 4.5:1 against its background; large text and UI need 3:1 &mdash; in both deployments. The Engine enforces the floor numerically on every palette it ships, shows you the ratios, and simulates four types of color-blind vision before you commit.</p>
+            </details>
+            <details>
+                <summary><span class="law-n mono">10</span>Check the culture map before crossing borders</summary>
+                <p>Your palette ships worldwide by default; red is luck in Shanghai and urgency in Chicago, white is craft in Copenhagen and mourning in Seoul. You rarely change the color &mdash; you change the deployment: a 30% hero in one market may need to be a 10% accent in another.</p>
+            </details>
+        </div>
+    </section>
+
+    <!-- ================= PRICING ================= -->
+    <section class="section" id="pricing">
+        <div class="section-head">
+            <h2>Pricing</h2>
+            <p>For solo designers up to full agencies. Every tier exports real values; the difference is how much of the system you take with you.</p>
+        </div>
+
+        <div class="pricing">
+            <div class="price-card">
+                <h3>Free</h3>
+                <p class="price"><span class="price-num">$0</span></p>
+                <ul>
+                    <li>Unlimited palette generation</li>
+                    <li>The Fixer, 3 diagnoses a day</li>
+                    <li>CSS variable export</li>
+                    <li>Light and dark deployments</li>
+                    <li>Shade scales for every swatch</li>
+                </ul>
+                <a href="#engine" class="btn btn-ghost">Start free</a>
+            </div>
+            <div class="price-card price-card-featured">
+                <span class="price-flag">For working designers</span>
+                <h3>Studio</h3>
+                <p class="price"><span class="price-num">$12</span><span class="price-per">/month</span></p>
+                <ul>
+                    <li>Everything in Free</li>
+                    <li>Unlimited Fixer diagnoses</li>
+                    <li>Extract palettes from images</li>
+                    <li>Color-blindness preview, four types</li>
+                    <li>Saved palette library</li>
+                    <li>Tailwind, SCSS, JSON, and SVG card exports</li>
+                    <li>Typography pairings with live preview</li>
+                    <li>Print brand sheets with CMYK values</li>
+                    <li>White-label client documentation</li>
+                    <li>Brand color lock</li>
+                </ul>
+                <a href="#engine" class="btn btn-primary">Start Studio</a>
+            </div>
+            <div class="price-card">
+                <h3>Commercial</h3>
+                <p class="price"><span class="price-num">$49</span><span class="price-per">/month</span></p>
+                <ul>
+                    <li>Everything in Studio</li>
+                    <li>Licensed for unlimited client and resale projects</li>
+                    <li>Use across your whole team, no seat limit</li>
+                    <li>Priority support</li>
+                </ul>
+                <a href="mailto:hello@gamut.studio?subject=Commercial plan" class="btn btn-ghost">Talk to us</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= FAQ ================= -->
+    <section class="section section-tint" id="faq">
+        <div class="section-head">
+            <h2>Questions</h2>
+        </div>
+        <div class="faq">
+            <details>
+                <summary>Can I keep my existing brand color?</summary>
+                <p>Yes. Lock any hex in the Engine and it builds the Dominant, Accent, and Ink around it, contrast-checked in both deployments. Your color leads; the system forms around it.</p>
+            </details>
+            <details>
+                <summary>Do the exports work for print?</summary>
+                <p>Every swatch carries CMYK values using an uncoated-stock approximation, and Studio plans can print a full brand sheet. For press-critical work, treat them as a proofing starting point and confirm against a calibrated profile.</p>
+            </details>
+            <details>
+                <summary>What does the print-shift warning on a swatch mean?</summary>
+                <p>Process inks cannot reproduce every screen color; saturated greens, cyans, and violets dull the most. When a color sits outside typical CMYK range, the swatch flags it and offers a press-safer alternate with the same hue. It is a designer's rule of thumb, not an ICC conversion, so it warns early rather than promising precision.</p>
+            </details>
+            <details>
+                <summary>Who owns the palettes I generate?</summary>
+                <p>You do. Everything the Engine or the Fixer produces is yours to use in client and commercial work, on any plan including Free.</p>
+            </details>
+            <details>
+                <summary>What happens when I cancel?</summary>
+                <p>Everything you exported stays yours. Your account drops to Free at the end of the billing period; nothing you shipped ever depends on us.</p>
+            </details>
+        </div>
+    </section>
+
+    <footer>
+        <a href="#top" class="logo">Gamut<span class="logo-dot">.</span></a>
+        <p>Built on The Brand Color Bible by Designare. Color is the fastest signal a brand sends.</p>
+        <p class="mono footer-handle">@itsdesignare</p>
+    </footer>
+
+    <!-- Printable brand sheet: populated by JS, styled by @media print -->
+    <div id="print-sheet-area" aria-hidden="true"></div>
+
+    <div class="toast" id="toast" role="status"></div>
+
+    <!-- Color-vision simulation matrices (applied via CSS filter: url()) -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+        <defs>
+            <filter id="cv-protanopia"><feColorMatrix type="matrix" values="0.567 0.433 0 0 0  0.558 0.442 0 0 0  0 0.242 0.758 0 0  0 0 0 1 0"/></filter>
+            <filter id="cv-deuteranopia"><feColorMatrix type="matrix" values="0.625 0.375 0 0 0  0.7 0.3 0 0 0  0 0.3 0.7 0 0  0 0 0 1 0"/></filter>
+            <filter id="cv-tritanopia"><feColorMatrix type="matrix" values="0.95 0.05 0 0 0  0 0.433 0.567 0 0  0 0.475 0.525 0 0  0 0 0 1 0"/></filter>
+            <filter id="cv-achromatopsia"><feColorMatrix type="matrix" values="0.299 0.587 0.114 0 0  0.299 0.587 0.114 0 0  0.299 0.587 0.114 0 0  0 0 0 1 0"/></filter>
+        </defs>
+    </svg>
+
+    <script src="js/engine.js"></script>
+    <script src="js/mood.js"></script>
+    <script src="js/assistant.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
