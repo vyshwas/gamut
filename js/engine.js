@@ -1,5 +1,5 @@
 /* =========================================================
-   DESIGNARE ENGINE
+   GAMUT ENGINE
    Color math, palette generation, palette fixing, and
    typography pairing. Every rule here is lifted straight
    from The Brand Color Bible v2: 60-30-10 roles plus Ink,

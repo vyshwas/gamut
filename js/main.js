@@ -1,5 +1,5 @@
 /* =========================================================
-   DESIGNARE ENGINE - UI wiring
+   GAMUT ENGINE - UI wiring
    One source of truth: `state.palette`. The hero card, the
    workbench, the type lab, and the print sheet all render
    from it.
