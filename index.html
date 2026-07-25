@@ -9,7 +9,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800;900&family=Geist:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 
     <!-- No-flash theme stamp. Light (warm paper) is the default
@@ -30,9 +30,8 @@
 <body>
 
     <a href="#main-content" class="skip-link">Skip to main content</a>
-    <div class="grain-overlay" aria-hidden="true"></div>
 
-    <nav>
+    <nav class="site-nav">
         <a href="#top" class="logo wordmark" aria-label="Gamut, home"><span class="wm-text">Gamut</span><span class="logo-dot wm-dot" aria-hidden="true">.</span></a>
         <div class="nav-links" id="nav-links">
             <a href="#assistant">Assistant</a>
@@ -64,30 +63,33 @@
 
     <main id="main-content" tabindex="-1">
 
-    <!-- ================= HERO ================= -->
+    <!-- ================= HERO =================
+         The full-bleed color field. The bands are a live generated
+         palette at its own 60-30-10 proportions; the headline sits
+         inside the Dominant 60. role="img" carries the palette to
+         screen readers, since the band labels are visual. -->
     <header class="hero" id="top">
-        <canvas class="hero-mesh" id="hero-mesh" aria-hidden="true"></canvas>
-        <div class="hero-reg" aria-hidden="true">
-            <span class="reg-mark lime reg-tl"></span>
-            <span class="reg-mark reg-tr"></span>
-            <span class="reg-mark reg-bl"></span>
-            <span class="reg-mark reg-br"></span>
-        </div>
-        <div class="hero-text">
-            <h1 class="kinetic"><span class="w">Pick</span> <span class="w">palettes</span> <span class="w">like</span> <span class="w">a</span> <span class="w">strategist.</span></h1>
-            <p class="hero-sub">Generate, fix, and pair brand color systems built on the 60-30-10 rule, ten laws of color, and print-checked values.</p>
-            <div class="hero-ctas">
-                <a href="#engine" class="btn btn-primary">Generate a palette</a>
-                <a href="#fixer" class="btn btn-ghost">Fix an existing palette</a>
+        <div class="hero-field" id="hero-field" role="img" aria-label="Live palette preview"></div>
+        <div class="hero-content">
+            <h1 class="hero-enter">Pick palettes like a strategist.</h1>
+            <p class="hero-sub hero-enter">Generate, fix, and pair brand color systems built on the 60-30-10 rule, ten laws of color, and print-checked values.</p>
+            <div class="hero-ctas hero-enter">
+                <a href="#engine" class="btn btn-hero-primary">Generate a palette</a>
+                <a href="#fixer" class="btn btn-hero-ghost">Fix a palette</a>
             </div>
         </div>
-        <div class="hero-card" id="hero-card" aria-label="Live palette preview">
-            <span class="halftone" aria-hidden="true"></span>
-            <div class="hero-band" id="hero-band"></div>
-            <div class="hero-card-meta">
-                <span id="hero-card-name" class="mono"></span>
-                <button class="btn-mini" id="hero-regen" type="button">Regenerate</button>
+        <!-- Caption rail: cells align to the band widths above, so each
+             readout labels its band without printing text on the color. -->
+        <div class="hero-rail">
+            <div class="rail-cell rail-dom">
+                <span id="hero-dominant"></span>
+                <span class="rail-actions">
+                    <span id="hero-seed"></span>
+                    <button class="btn-mini" id="hero-regen" type="button">Regenerate</button>
+                </span>
             </div>
+            <div class="rail-cell rail-brand" id="hero-brand"></div>
+            <div class="rail-cell rail-accent" id="hero-accent"></div>
         </div>
     </header>
 
@@ -104,26 +106,32 @@
                 <button class="btn btn-primary" id="assistant-run" type="button">Interpret</button>
             </div>
 
-            <div class="assistant-settings">
-                <div class="field field-inline">
-                    <label for="assistant-provider">Interpreter</label>
-                    <select id="assistant-provider">
-                        <option value="ollama">Local (Ollama)</option>
-                        <option value="claude">Claude API (your key)</option>
-                        <option value="offline">Offline keyword match</option>
-                    </select>
+            <!-- Folded away by default (LAYOUT-BLUEPRINT 3.2). Exposed,
+                 these three fields made the section read as a settings
+                 panel rather than a prompt. -->
+            <details class="assistant-config">
+                <summary>Interpreter settings</summary>
+                <div class="assistant-settings">
+                    <div class="field field-inline">
+                        <label for="assistant-provider">Interpreter</label>
+                        <select id="assistant-provider">
+                            <option value="ollama">Local (Ollama)</option>
+                            <option value="claude">Claude API (your key)</option>
+                            <option value="offline">Offline keyword match</option>
+                        </select>
+                    </div>
+                    <div class="field field-inline" id="assistant-ollama-fields">
+                        <label for="assistant-ollama-model">Ollama model</label>
+                        <input type="text" id="assistant-ollama-model" class="mono" placeholder="llama3.2" spellcheck="false">
+                    </div>
+                    <div class="field field-inline" id="assistant-claude-fields" hidden>
+                        <label for="assistant-claude-key">Claude API key</label>
+                        <input type="password" id="assistant-claude-key" class="mono" placeholder="sk-ant-..." spellcheck="false">
+                    </div>
+                    <button class="btn-mini" id="assistant-settings-save" type="button">Save settings</button>
                 </div>
-                <div class="field field-inline" id="assistant-ollama-fields">
-                    <label for="assistant-ollama-model">Ollama model</label>
-                    <input type="text" id="assistant-ollama-model" class="mono" placeholder="llama3.2" spellcheck="false">
-                </div>
-                <div class="field field-inline" id="assistant-claude-fields" hidden>
-                    <label for="assistant-claude-key">Claude API key</label>
-                    <input type="password" id="assistant-claude-key" class="mono" placeholder="sk-ant-..." spellcheck="false">
-                </div>
-                <button class="btn-mini" id="assistant-settings-save" type="button">Save settings</button>
-            </div>
-            <p class="hint">Local runs entirely on this machine via <a href="https://ollama.com" target="_blank" rel="noopener">Ollama</a>, nothing leaves your browser. Claude API needs your own key, stored only in this browser&rsquo;s local storage. Offline mode does a plain keyword search with no network call at all.</p>
+                <p class="hint">Local runs entirely on this machine via <a href="https://ollama.com" target="_blank" rel="noopener">Ollama</a>, nothing leaves your browser. Claude API needs your own key, stored only in this browser&rsquo;s local storage. Offline mode does a plain keyword search with no network call at all.</p>
+            </details>
 
             <div class="assistant-result" id="assistant-result" hidden>
                 <p class="assistant-provider mono" id="assistant-provider-used"></p>
@@ -135,13 +143,13 @@
     </section>
 
     <!-- ================= ENGINE ================= -->
-    <section class="section" id="engine">
+    <section class="section section-bleed" id="engine">
         <div class="section-head">
             <h2>The Engine</h2>
-            <p>Every palette it produces has four colors with four jobs: a Dominant canvas, a Brand voice, a muted Accent, and a dark Ink anchor. Both deployments ship together, because a brand color that only works on white is a website background.</p>
+            <p>Every palette it produces has four colors with four jobs: a Dominant canvas, a Brand voice, a muted Accent, and a dark Ink anchor. Both deployments ship together, because a brand color that only works on white is a website background. The laws are a floor, not a formula: regenerate and the Engine explores real hue variety within your category, and the Accent will sometimes break from the expected pairing into a complementary or triadic one, taste choosing where, the laws still checking that it works.</p>
         </div>
 
-        <div class="workbench">
+        <div class="workbench bleed-right">
             <div class="controls">
                 <div class="field">
                     <label for="ctl-category">Category</label>
@@ -184,15 +192,8 @@
             </div>
 
             <div class="output">
-                <div class="engine-reg" aria-hidden="true">
-                    <span class="reg-mark reg-tl"></span>
-                    <span class="reg-mark reg-tr"></span>
-                    <span class="reg-mark reg-bl"></span>
-                    <span class="reg-mark reg-br"></span>
-                </div>
                 <div class="output-meta">
                     <span class="output-meta-seed">
-                        <span class="cmyk-ticks" aria-hidden="true" title="Process color bar"><i class="c-c"></i><i class="c-m"></i><i class="c-y"></i><i class="c-k"></i></span>
                         <span class="mono" id="seed-label"></span>
                     </span>
                     <div class="output-meta-actions">
@@ -211,6 +212,7 @@
                 </div>
                 <div class="ratio-band" id="ratio-band" aria-label="60-30-10 proportion band"></div>
 
+
                 <div class="vision-row" role="group" aria-label="Color vision simulation">
                     <span class="exports-label mono">Vision</span>
                     <button class="btn-mini vision-btn active" data-vision="none" type="button" aria-pressed="true">Typical</button>
@@ -220,10 +222,39 @@
                     <button class="btn-mini vision-btn" data-vision="achromatopsia" type="button" aria-pressed="false">Greyscale</button>
                 </div>
 
-                <div class="deployments">
-                    <figure class="deploy" id="deploy-light">
-                        <figcaption>Light deployment</figcaption>
-                        <div class="deploy-mock" data-mode="light">
+                <!-- The palette doing its actual job. Law 3 says test at
+                     5% of the screen, not 50%, and these are the surfaces
+                     a brand palette really lands on. Light and dark are
+                     both represented, so Law 4 still holds. Copy is
+                     placeholder for a fictional brand; nothing here is a
+                     real customer. -->
+                <div class="applied" id="applied" aria-label="The palette applied to real formats">
+                    <figure class="app-item app-post">
+                        <figcaption>Social post &middot; 1:1 &middot; light</figcaption>
+                        <div class="app-frame" id="app-post" data-mode="light">
+                            <span class="app-kicker">NEW SEASON</span>
+                            <p class="app-head">Made to be remembered.</p>
+                            <div class="app-foot">
+                                <span class="app-mark">Marlowe&nbsp;Goods</span>
+                                <span class="app-tag">@marlowegoods</span>
+                            </div>
+                            <span class="app-rule" aria-hidden="true"></span>
+                        </div>
+                    </figure>
+
+                    <figure class="app-item app-story">
+                        <figcaption>Story &middot; 9:16 &middot; dark</figcaption>
+                        <div class="app-frame" id="app-story" data-mode="dark">
+                            <span class="app-kicker">DROP 04</span>
+                            <p class="app-head">Every color<br>needs a job.</p>
+                            <span class="app-cta">Shop the drop</span>
+                            <span class="app-mark app-mark-btm">Marlowe&nbsp;Goods</span>
+                        </div>
+                    </figure>
+
+                    <figure class="app-item app-web">
+                        <figcaption>Web hero &middot; light</figcaption>
+                        <div class="app-frame deploy-mock" id="deploy-light" data-mode="light">
                             <div class="mock-nav"><span class="mock-brand">Marlowe&nbsp;Goods</span><span class="mock-menu">Shop&nbsp;&nbsp;Story&nbsp;&nbsp;Contact</span></div>
                             <div class="mock-hero">
                                 <p class="mock-h">Made to be remembered.</p>
@@ -232,9 +263,10 @@
                             </div>
                         </div>
                     </figure>
-                    <figure class="deploy" id="deploy-dark">
-                        <figcaption>Dark deployment</figcaption>
-                        <div class="deploy-mock" data-mode="dark">
+
+                    <figure class="app-item app-web">
+                        <figcaption>Web hero &middot; dark</figcaption>
+                        <div class="app-frame deploy-mock" id="deploy-dark" data-mode="dark">
                             <div class="mock-nav"><span class="mock-brand">Marlowe&nbsp;Goods</span><span class="mock-menu">Shop&nbsp;&nbsp;Story&nbsp;&nbsp;Contact</span></div>
                             <div class="mock-hero">
                                 <p class="mock-h">Made to be remembered.</p>
@@ -295,7 +327,7 @@
     </section>
 
     <!-- ================= FIXER ================= -->
-    <section class="section section-tint" id="fixer">
+    <section class="section section-bleed section-tint" id="fixer">
         <div class="section-head">
             <h2>The Fixer</h2>
             <p>Paste the palette you already have. It gets diagnosed against the ten laws, then rebuilt with every color assigned a job, and every color you pasted gets a verdict: kept, adjusted, or retired, with the law that decided it.</p>
@@ -314,21 +346,27 @@
                 <span class="hint fixer-image-hint">Upload a logo, moodboard, or photo. The dominant colors get pulled out, then diagnosed like any other palette. The image never leaves your browser.</span>
             </div>
 
-            <div class="fixer-results" id="fixer-results" hidden>
-                <div class="diagnosis" id="diagnosis"></div>
-                <div class="before-after">
-                    <figure>
-                        <figcaption>Before</figcaption>
-                        <div class="strip" id="strip-before"></div>
-                    </figure>
-                    <figure>
-                        <figcaption>After, with jobs assigned</figcaption>
-                        <div class="strip" id="strip-after"></div>
-                    </figure>
-                </div>
-                <div class="mapping" id="mapping" aria-label="What happened to each color"></div>
-                <button class="btn btn-ghost" id="fix-adopt" type="button">Load into the Engine</button>
-            </div>
+        </div>
+
+        <!-- The comparison bleeds full width; the verdict copy stays on
+             the shared measure below it. -->
+        <div class="fixer-compare bleed-full" id="fixer-compare" hidden>
+            <figure class="compare-band">
+                <figcaption>Before</figcaption>
+                <div class="strip" id="strip-before"></div>
+                <div class="strip-captions" id="strip-before-caps"></div>
+            </figure>
+            <figure class="compare-band">
+                <figcaption>After, with jobs assigned</figcaption>
+                <div class="strip" id="strip-after"></div>
+                <div class="strip-captions" id="strip-after-caps"></div>
+            </figure>
+        </div>
+
+        <div class="fixer-results" id="fixer-results" hidden>
+            <div class="diagnosis" id="diagnosis"></div>
+            <div class="mapping" id="mapping" aria-label="What happened to each color"></div>
+            <button class="btn btn-ghost" id="fix-adopt" type="button">Load into the Engine</button>
         </div>
     </section>
 
@@ -339,20 +377,8 @@
             <p>Every mood the Engine produces maps to pairings the Bible prescribes: rounded impact for heat, editorial serifs for craft, mono-plus-grotesk for the future. Rendered live in your current palette.</p>
         </div>
 
-        <div class="type-lab">
-            <div class="specimen" id="specimen">
-                <p class="specimen-display" id="specimen-display">Every color needs a job.</p>
-                <p class="specimen-body" id="specimen-body">The brands that pop do not use better colors. They use the same colors with clearer intent: one anchors, one leads, one accents, and every surface gets the right one.</p>
-            </div>
-            <div class="type-meta">
-                <div class="type-names">
-                    <span class="type-name" id="type-display-name"></span>
-                    <span class="type-name type-name-body" id="type-body-name"></span>
-                </div>
-                <p class="type-why" id="type-why"></p>
-                <button class="btn-mini" id="type-next" type="button">Next pairing</button>
-            </div>
-        </div>
+        <div class="type-stack" id="type-rail" role="group" aria-label="Type pairings for this palette"></div>
+        <p class="type-rail-hint" id="type-rail-hint"></p>
     </section>
 
     <!-- ================= SYSTEM ================= -->
@@ -389,19 +415,29 @@
     </section>
 
     <!-- ================= METHOD ================= -->
-    <section class="section section-tint" id="method">
+    <section class="section section-bleed section-tint" id="method">
         <div class="section-head">
             <h2>The method under the hood</h2>
             <p>The Engine is The Brand Color Bible turned into software. Four roles, ten laws, nine psychological signals. Nothing it outputs breaks its own rules.</p>
         </div>
 
-        <div class="method-band-wrap">
+        <!-- The rule arrives at the scale it describes, before the laws. -->
+        <div class="method-band-wrap bleed-full">
             <div class="method-band">
                 <div class="mb mb-60"><span class="mb-pct">60</span><span class="mb-role">Dominant. The canvas, not the brand.</span></div>
                 <div class="mb mb-30"><span class="mb-pct">30</span><span class="mb-role">Brand. The color they remember.</span></div>
                 <div class="mb mb-10"><span class="mb-pct">10</span><span class="mb-role">Accent.</span></div>
             </div>
             <p class="method-caption">Equal-weight colors fight. Stacked-weight colors sing.</p>
+        </div>
+
+        <!-- The laws applied to whatever the Engine last produced. Lives
+             here rather than in the Engine: the Engine is a workbench and
+             was getting crowded, and this is the section that explains
+             the reasoning anyway. -->
+        <div class="reading" id="reading">
+            <h3 class="reading-title">The laws, applied to your current palette</h3>
+            <ul class="reading-list" id="reading-list"></ul>
         </div>
 
         <div class="laws">
@@ -411,7 +447,7 @@
             </details>
             <details>
                 <summary><span class="law-n mono">02</span>Saturate the brand color, mute the accent</summary>
-                <p>If both colors run at full saturation, they fight. If both are muted, the brand looks tired. One leads at full power; the other supports at 60 to 80 percent. The Engine enforces the ratio numerically.</p>
+                <p>If both colors run at full saturation, they fight. If both are muted, the brand looks tired. One leads at full power; the other supports at 60 to 80 percent. The Engine enforces the ratio numerically &mdash; but which hue the accent takes is a separate, looser decision: usually the category's own curated pairing, sometimes a complementary, split-complementary, or triadic hue rolled from the brand color itself. The law fixes the relationship, not the hue.</p>
             </details>
             <details>
                 <summary><span class="law-n mono">03</span>Test at 5% of the screen, not 50%</summary>
@@ -455,21 +491,10 @@
             <p>For solo designers up to full agencies. Every tier exports real values; the difference is how much of the system you take with you.</p>
         </div>
 
+        <!-- Featured tier leads in the DOM as well as in the layout, so
+             reading order and visual weight agree. -->
         <div class="pricing">
-            <div class="price-card">
-                <h3>Free</h3>
-                <p class="price"><span class="price-num">$0</span></p>
-                <ul>
-                    <li>Unlimited palette generation</li>
-                    <li>The Fixer, 3 diagnoses a day</li>
-                    <li>CSS variable export</li>
-                    <li>Light and dark deployments</li>
-                    <li>Shade scales for every swatch</li>
-                </ul>
-                <a href="#engine" class="btn btn-ghost">Start free</a>
-            </div>
             <div class="price-card price-card-featured">
-                <span class="price-flag">For working designers</span>
                 <h3>Studio</h3>
                 <p class="price"><span class="price-num">$12</span><span class="price-per">/month</span></p>
                 <ul>
@@ -487,6 +512,18 @@
                 <a href="#engine" class="btn btn-primary">Start Studio</a>
             </div>
             <div class="price-card">
+                <h3>Free</h3>
+                <p class="price"><span class="price-num">$0</span></p>
+                <ul>
+                    <li>Unlimited palette generation</li>
+                    <li>The Fixer, 3 diagnoses a day</li>
+                    <li>CSS variable export</li>
+                    <li>Light and dark deployments</li>
+                    <li>Shade scales for every swatch</li>
+                </ul>
+                <a href="#engine" class="btn btn-ghost">Start free</a>
+            </div>
+            <div class="price-card">
                 <h3>Commercial</h3>
                 <p class="price"><span class="price-num">$49</span><span class="price-per">/month</span></p>
                 <ul>
@@ -501,7 +538,7 @@
     </section>
 
     <!-- ================= FAQ ================= -->
-    <section class="section section-tint" id="faq">
+    <section class="section section-bleed section-tint" id="faq">
         <div class="section-head">
             <h2>Questions</h2>
         </div>
@@ -531,10 +568,17 @@
 
     </main>
 
-    <footer>
-        <a href="#top" class="logo wordmark" aria-label="Gamut, back to top"><span class="wm-text">Gamut</span><span class="logo-dot wm-dot" aria-hidden="true">.</span></a>
-        <p>Built on The Brand Color Bible. Color is the fastest signal a brand sends.</p>
-        <p class="mono footer-handle">@itsgamut</p>
+    <!-- Inverted close. Deliberately does NOT use the live-palette
+         wordmark classes: that mark is inked for legibility on the page
+         canvas and would disappear against this surface. -->
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <a href="#top" class="footer-mark" aria-label="Gamut, back to top">Gamut.</a>
+            <div class="footer-meta">
+                <p>Built on The Brand Color Bible. Color is the fastest signal a brand sends.</p>
+                <p class="mono footer-handle">@itsgamut</p>
+            </div>
+        </div>
     </footer>
 
     <!-- Printable brand sheet: populated by JS, styled by @media print -->

@@ -130,9 +130,9 @@ function resolveMood(keywords) {
     return {
         label: "Custom mood",
         signal: `Mood-driven brief: ${keywords.join(", ")}.`,
-        brandHue: hueRangeSafe(h, 10),
-        brandSat: [clamp(s - 8, 8, 100), clamp(s + 8, 8, 100)],
-        brandLight: [clamp(l - 6, 6, 94), clamp(l + 6, 6, 94)],
+        brandHue: hueRangeSafe(h, 22),
+        brandSat: [clamp(s - 14, 8, 100), clamp(s + 14, 8, 100)],
+        brandLight: [clamp(l - 10, 6, 94), clamp(l + 10, 6, 94)],
         accentHue,
         dominant,
         mood: typeTag

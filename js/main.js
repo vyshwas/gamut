@@ -74,187 +74,24 @@ function oklchToRgb({ L, C, H }) {
     return { r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255) };
 }
 
-/* Shortest-path interpolation in OKLCH between two hexes. t in [0,1]. */
-function lerpOklch(a, b, t) {
-    let dH = b.H - a.H;
-    if (dH > Math.PI) dH -= 2 * Math.PI;
-    if (dH < -Math.PI) dH += 2 * Math.PI;
-    return {
-        L: a.L + (b.L - a.L) * t,
-        C: a.C + (b.C - a.C) * t,
-        H: a.H + dH * t
-    };
-}
-
 /* =========================================================
-   Hero generative mesh
-   A low-res canvas of soft OKLCH-interpolated blobs drawn from the
-   CURRENT palette, blurred in CSS into a slow-drifting gradient
-   mesh. Colors ease toward each new palette so the marketing hero
-   and the product's own generator are visibly one live system.
-   ========================================================= */
-const HeroMesh = (() => {
-    let canvas, ctx, blobs = [], raf = null, last = 0, w = 0, h = 0;
-    let theme = "light", lastPalette = null;
-    const DPR_SCALE = 0.34;           /* render small, CSS-blur upscales */
-    const FRAME_MS = 1000 / 30;       /* cap at ~30fps */
-
-    /* The mesh is drawn twice over, one deployment each way:
-
-       DARK  - additive ("lighter"). Blobs are LIGHT emitters over
-               charcoal; overlaps blow out toward white, which is
-               exactly the ambient glow the dark hero wants.
-
-       LIGHT - subtractive. Additive drawing on paper is what makes
-               generative meshes read as dirty smudges: the blobs go
-               pale, overlaps grey out, and CSS `multiply` then bites
-               the wrong parts (white multiplies to nothing, so only
-               the dim EDGES survive - an inverted, muddy mesh).
-               On paper the blobs are INK instead: normal alpha
-               compositing, lightness clamped into a mid band so no
-               blob is paler than the paper or as dark as body text,
-               then multiplied in at low opacity. Reads as four
-               process inks bled into the sheet. */
-    const LIGHT_L = { min: 0.44, max: 0.70 };
-
-    function forTheme(c) {
-        if (theme === "dark") return c;
-        return {
-            L: Math.max(LIGHT_L.min, Math.min(LIGHT_L.max, c.L)),
-            C: c.C * 0.92,
-            H: c.H
-        };
-    }
-
-    /* Palette -> five OKLCH glow colors: brand, accent, brand-accent
-       midpoint, a lifted brand, and a deep ink tint for contrast. */
-    function paletteColors(p) {
-        const brand = hexToOklch(p.swatches[1].hex);
-        const accent = hexToOklch(p.swatches[2].hex);
-        const ink = hexToOklch(p.swatches[3].hex);
-        const mid = lerpOklch(brand, accent, 0.5);
-        const lifted = { L: Math.min(0.9, brand.L + 0.12), C: brand.C, H: brand.H };
-        return [brand, accent, mid, lifted, { L: ink.L + 0.1, C: ink.C, H: ink.H }]
-            .map(forTheme);
-    }
-
-    function size() {
-        if (!canvas) return;
-        const rect = canvas.getBoundingClientRect();
-        w = Math.max(1, Math.round(rect.width * DPR_SCALE));
-        h = Math.max(1, Math.round(rect.height * DPR_SCALE));
-        canvas.width = w;
-        canvas.height = h;
-    }
-
-    function draw(time) {
-        const t = time / 1000;
-        const dark = theme === "dark";
-        /* Ink density on paper is much lower: the wash only has to
-           tint the sheet, and CSS multiply compounds whatever lands. */
-        const alpha = dark ? 0.55 : 0.30;
-        ctx.clearRect(0, 0, w, h);
-        ctx.globalCompositeOperation = dark ? "lighter" : "source-over";
-        blobs.forEach(b => {
-            /* ease current color toward target for a smooth resync */
-            b.cur = lerpOklch(b.cur, b.target, 0.04);
-            const { r, g, bl } = (() => {
-                const c = oklchToRgb(b.cur); return { r: c.r, g: c.g, bl: c.b };
-            })();
-            const cx = (b.bx + Math.sin(t * b.sp + b.ph) * b.amp) * w;
-            const cy = (b.by + Math.cos(t * b.sp * 0.8 + b.ph) * b.amp) * h;
-            const rad = b.rad * Math.min(w, h);
-            const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, rad);
-            grad.addColorStop(0, `rgba(${r},${g},${bl},${alpha})`);
-            grad.addColorStop(1, `rgba(${r},${g},${bl},0)`);
-            ctx.fillStyle = grad;
-            ctx.beginPath();
-            ctx.arc(cx, cy, rad, 0, Math.PI * 2);
-            ctx.fill();
-        });
-        ctx.globalCompositeOperation = "source-over";
-    }
-
-    function loop(time) {
-        if (time - last >= FRAME_MS) { draw(time); last = time; }
-        raf = requestAnimationFrame(loop);
-    }
-
-    function init() {
-        canvas = $("hero-mesh");
-        if (!canvas) return;
-        theme = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
-        ctx = canvas.getContext("2d");
-        const layout = [
-            { bx: 0.72, by: 0.30, rad: 0.55, amp: 0.05, sp: 0.10, ph: 0.0 },
-            { bx: 0.88, by: 0.68, rad: 0.42, amp: 0.06, sp: 0.13, ph: 1.7 },
-            { bx: 0.55, by: 0.80, rad: 0.40, amp: 0.05, sp: 0.09, ph: 3.1 },
-            { bx: 0.95, by: 0.15, rad: 0.32, amp: 0.04, sp: 0.15, ph: 4.4 },
-            { bx: 0.62, by: 0.48, rad: 0.30, amp: 0.05, sp: 0.11, ph: 5.6 }
-        ];
-        blobs = layout.map(l => Object.assign({}, l, { cur: { L: 0.5, C: 0.1, H: 0 }, target: { L: 0.5, C: 0.1, H: 0 } }));
-        size();
-        window.addEventListener("resize", () => { size(); if (prefersReduced()) draw(performance.now()); });
-    }
-
-    function retarget(snap) {
-        const colors = paletteColors(lastPalette);
-        blobs.forEach((b, i) => { b.target = colors[i % colors.length]; });
-        if (snap || prefersReduced()) {
-            blobs.forEach(b => { b.cur = b.target; });
-            draw(performance.now());
-            return;
-        }
-        if (raf === null) { last = 0; raf = requestAnimationFrame(loop); }
-    }
-
-    function setPalette(p) {
-        if (!canvas || !p) return;
-        lastPalette = p;
-        retarget(false);
-    }
-
-    /* A theme flip changes BOTH the color clamp and the compositing
-       mode, so the standing frame is drawn with the wrong maths until
-       the next tick. Snap the colors and repaint immediately - the
-       CSS crossfade covers the surfaces underneath, so an instant
-       mesh repaint lands inside that fade rather than trailing it. */
-    function setTheme(next) {
-        theme = next === "dark" ? "dark" : "light";
-        if (!canvas || !lastPalette) return;
-        retarget(true);
-    }
-
-    return { init, setPalette, setTheme };
-})();
-
-/* =========================================================
-   Living wordmark
-   The "Gamut." mark is filled by a gradient between two live color
-   slots that step through REAL engine output (a ramp sampled from
-   generatePalette across every archetype, plus whatever the user
-   just generated). The logo is, literally, a running swatch of the
-   product. CSS @property makes the color transition interpolate.
+   Wordmark
+   Solid-fill, not gradient (DESIGN.md: The Product Is the Color
+   Rule — the site's chrome carries at most one color event, and
+   that's the hero's live swatch strip, not the nav logo). The mark
+   still reflects the CURRENT palette's Brand hue, updated only when
+   the user actually regenerates - no ambient auto-cycling, no
+   hover gimmick. Before a first generation it's plain ink.
    ========================================================= */
 const Wordmark = (() => {
-    let texts = [], dots = [], ramp = [], idx = 0, timer = null;
-    let theme = "light", pair = null;
-
-    /* The paper canvas the light-mode mark has to survive. */
+    let texts = [], dots = [], theme = "light", current = null;
     const PAPER = "#F9F8F6";
-    /* Two stops so the gradient still reads as a gradient: the first
-       is near-Ink (a charcoal that carries the sampled hue), the
-       second is a deep-but-visible version of it. Both far above the
-       3:1 floor for the mark. */
-    const LIGHT_MIN = { c1: 9, c2: 4.5 };
+    const LIGHT_MIN = 9;
 
     /* Engine output is tuned for a charcoal canvas - a lime, a cyan,
-       a warm yellow all vanish on paper (1.0-1.3:1). Rather than
-       swapping in some other color (which would put a hue in the
-       logo that the brand does not own), darken the sampled hue in
-       OKLCH until it clears `min`:1 on paper. Lightness moves; the
-       hue and its relative chroma survive. This is the product's own
-       Law 09 move - darken in OKLCH, not HSL, or it turns to mud. */
+       a warm yellow all vanish on paper (1.0-1.3:1). Darken the
+       sampled hue in OKLCH until it clears `min`:1 on paper; hue and
+       relative chroma survive. This product's own Law 09 move. */
     function inkify(hex, min) {
         const src = hexToOklch(hex);
         let out = hex;
@@ -265,56 +102,28 @@ const Wordmark = (() => {
         return out;
     }
 
-    function buildRamp() {
-        const out = ["#D4FF00"]; /* the locked brand lime leads */
-        Object.keys(E.ARCHETYPES).forEach((cat, i) => {
-            const p = E.generatePalette({ category: cat, seed: 3001 + i * 911 });
-            out.push(p.swatches[1].hex, p.swatches[2].hex);
-        });
-        return out;
+    function apply(hex) {
+        current = hex;
+        const shown = theme === "dark" ? hex : inkify(hex, LIGHT_MIN);
+        texts.forEach(e => e.style.setProperty("--wm-c1", shown));
+        dots.forEach(e => e.style.setProperty("--wm-c1", shown));
     }
 
-    function apply(c1, c2) {
-        pair = [c1, c2];
-        if (theme !== "dark") {
-            c1 = inkify(c1, LIGHT_MIN.c1);
-            c2 = inkify(c2, LIGHT_MIN.c2);
-        }
-        texts.forEach(e => { e.style.setProperty("--wm-c1", c1); e.style.setProperty("--wm-c2", c2); });
-        dots.forEach(e => { e.style.setProperty("--wm-c2", c2); });
-    }
-
-    function step() {
-        apply(ramp[idx % ramp.length], ramp[(idx + 1) % ramp.length]);
-        idx++;
-    }
-
-    /* Re-run the current pair through the new theme's rules; the
-       @property transitions carry it across as a color animation. */
     function setTheme(next) {
         theme = next === "dark" ? "dark" : "light";
-        if (pair) apply(pair[0], pair[1]);
+        if (current) apply(current);
     }
 
     function start() {
         texts = [...document.querySelectorAll(".wm-text")];
         dots = [...document.querySelectorAll(".wm-dot")];
         theme = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
-        ramp = buildRamp();
-        if (prefersReduced()) { apply(ramp[0], ramp[1]); return; }
-        step();
-        timer = setInterval(step, 2200);
-        document.querySelectorAll(".wordmark").forEach(wm =>
-            wm.addEventListener("mouseenter", step)
-        );
     }
 
-    /* Fold the palette the user just generated into the ramp so the
-       mark reflects live work, not only the seeded sample set. */
+    /* Called once per regenerate from renderPalette. */
     function injectLive(p) {
-        if (!p || !ramp.length) return;
-        ramp.splice(1, 0, p.swatches[1].hex, p.swatches[2].hex);
-        if (ramp.length > 40) ramp.length = 40;
+        if (!p) return;
+        apply(p.swatches[1].hex);
     }
 
     return { start, injectLive, setTheme };
@@ -359,9 +168,8 @@ const Theme = (() => {
         }
 
         syncButton();
-        /* The two live-color visuals were tuned for charcoal; both
-           re-derive their colors for the surface they now sit on. */
-        HeroMesh.setTheme(theme);
+        /* The wordmark's ink derivation is theme-dependent; re-run it
+           for the surface it now sits on. */
         Wordmark.setTheme(theme);
     }
 
@@ -434,15 +242,23 @@ function pulseCopied(el) {
 
 /* ---------- Shared renderers ---------- */
 
+/* Both of these used to pick between two fixed candidates - one
+   translucent pair, one solid pair - which fails AA on mid-lightness
+   saturated hues no matter which candidate wins. They now delegate to
+   Engine.readableOn(), which derives a foreground per swatch and is
+   verified to clear 4.5:1 on all 2400 generated swatches.
+
+   Where the old versions already passed, readableOn returns the same
+   near-black or near-white, so this changes only the cases that were
+   failing. The translucency is gone on purpose: opacity was what put
+   these labels under the floor in the first place. */
 function labelColorFor(hex) {
-    return E.contrastRatio(hex, "#111111") >= E.contrastRatio(hex, "#F5F5F0")
-        ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.75)";
+    return E.readableOn(hex);
 }
 
-/* Solid text color for UI sitting ON a given background. */
+/* Text color for UI sitting ON a given background. */
 function textOn(hex) {
-    return E.contrastRatio(hex, "#161616") >= E.contrastRatio(hex, "#F5F5F0")
-        ? "#161616" : "#F5F5F0";
+    return E.readableOn(hex);
 }
 
 function renderBand(el, swatches, withLabels) {
@@ -465,9 +281,137 @@ function renderBand(el, swatches, withLabels) {
     });
 }
 
-/* Guards against overlapping peel timers when Generate is spammed:
-   only the newest scheduled rebuild is allowed to run. */
-let swatchToken = 0;
+/* The hero's full-bleed 60-30-10 field (LAYOUT-BLUEPRINT 3.1).
+
+   Unlike renderBand, this one drives the surrounding composition too:
+   the hero's text, buttons, and (on mobile) its background all read
+   --hero-dom / --hero-ink, which are stamped here. Ink is used as the
+   hero's foreground because generatePalette already guarantees it
+   clears 7:1 against this exact Dominant, so no palette can produce an
+   illegible hero.
+
+   Ink gets no band of its own: 60-30-10 sums to 100 without it, and
+   here Ink is doing its real job - it is the text.
+
+   Nothing is printed on the color. Hex readouts go to the caption rail
+   below the field, whose cells match the band widths; small mono text
+   over an arbitrary generated hue cannot clear 4.5:1 in every case. */
+const HERO_SHARES = { Dominant: 60, Brand: 30, Accent: 10 };
+const HERO_RAIL_CELLS = { Dominant: "hero-dominant", Brand: "hero-brand", Accent: "hero-accent" };
+
+function renderHeroField(palette) {
+    const field = $("hero-field");
+    if (!field) return;
+
+    const byRole = r => palette.swatches.find(s => s.role === r);
+    const dominant = byRole("Dominant");
+    const ink = byRole("Ink");
+    if (!dominant || !ink) return;
+
+    const hero = field.closest(".hero");
+    hero.style.setProperty("--hero-dom", dominant.hex);
+    hero.style.setProperty("--hero-ink", ink.hex);
+
+    field.innerHTML = "";
+    const described = [];
+    Object.keys(HERO_SHARES).forEach(role => {
+        const s = byRole(role);
+        if (!s) return;
+        const share = HERO_SHARES[role];
+        described.push(`${role} ${s.hex} at ${share} percent`);
+
+        const seg = document.createElement("div");
+        seg.className = "band-seg";
+        seg.style.flex = `0 0 ${share}%`;
+        seg.style.background = s.hex;
+        field.appendChild(seg);
+
+        const cell = $(HERO_RAIL_CELLS[role]);
+        if (cell) cell.innerHTML = `${role.toUpperCase()} ${share} <b>${esc(s.hex)}</b>`;
+    });
+
+    field.setAttribute("aria-label", "Live palette preview: " + described.join(", "));
+    $("hero-seed").textContent = palette.seed ? "seed " + palette.seed : "from the Fixer";
+}
+
+/* A color strip plus a caption row whose cells carry the same flex
+   values, so every readout sits directly under the block it names.
+   Captions live on the canvas rather than on the color for the same
+   reason the hero's do: small mono text over an arbitrary generated
+   hue cannot be guaranteed to clear 4.5:1. */
+function renderCompareStrip(stripEl, capsEl, items) {
+    stripEl.innerHTML = "";
+    capsEl.innerHTML = "";
+    items.forEach(item => {
+        const seg = document.createElement("div");
+        seg.className = "band-seg";
+        seg.style.flex = item.flex;
+        seg.style.background = item.hex;
+        stripEl.appendChild(seg);
+
+        const cap = document.createElement("div");
+        cap.className = "strip-cap";
+        cap.style.flex = item.flex;
+        cap.textContent = item.label;
+        capsEl.appendChild(cap);
+    });
+}
+
+/* ---------- Palette reading ----------
+   The same question the old harmony chart answered - why these colours,
+   and why this accent - but in language a designer can act on without
+   first learning to read a polar plot. Every number here is computed
+   from the palette actually on screen, never asserted.
+
+   Deliberately three items. This is a reading, not a report; a longer
+   list would be skimmed and stop being read at all. */
+
+function harmonySentence(harmony, delta) {
+    switch (harmony) {
+        case "complementary":
+            return `<b>Your accent sits directly opposite the brand colour.</b> Opposites give the strongest possible contrast, which is why the accent catches the eye immediately. Use it for one thing per screen and it will always be the thing people notice first.`;
+        case "split-complementary-a":
+        case "split-complementary-b":
+            return `<b>Your accent sits just to one side of the brand's opposite.</b> That gives you nearly the pop of a true opposite, but it is easier to live with across a whole interface - less of a head-on clash.`;
+        case "triadic-a":
+        case "triadic-b":
+            return `<b>Your accent sits a third of the way around the colour wheel from your brand.</b> Far enough apart to read as a genuinely different colour, close enough that they do not fight. A safe choice when the accent has to appear often.`;
+        default:
+            return `<b>Your accent is the pairing this category is known for.</b> It is the combination the Bible prescribes for this kind of brand, so it will read as familiar and appropriate rather than surprising - useful when you want to look like you belong.`;
+    }
+}
+
+function renderReading(palette) {
+    const list = $("reading-list");
+    if (!list) return;
+
+    const byRole = r => palette.swatches.find(s => s.role === r);
+    const brand = byRole("Brand"), accent = byRole("Accent"), ink = byRole("Ink");
+    if (!brand || !accent || !ink) return;
+
+    const dHue = (() => {
+        const d = Math.abs(brand.hsl.h - accent.hsl.h) % 360;
+        return Math.round(d > 180 ? 360 - d : d);
+    })();
+    const satPct = brand.hsl.s > 0 ? Math.round((accent.hsl.s / brand.hsl.s) * 100) : 100;
+    const inkContrast = palette.contrasts.find(c => c.pair === "Ink on Dominant");
+    const ratio = inkContrast ? inkContrast.ratio : E.contrastRatio(ink.hex, byRole("Dominant").hex);
+    const grade = E.contrastGrade(ratio);
+
+    const items = [
+        harmonySentence(palette.accentHarmony, dHue),
+
+        /* Threshold at 95, not 100: at 96-100% there is no meaningful
+           gap to describe, so claiming one would be nonsense copy. */
+        satPct < 95
+            ? `<b>The accent runs at ${satPct}% of the brand's intensity.</b> That gap is on purpose. Two colours at full strength compete, and the eye cannot tell which one matters - so one leads and the other supports.`
+            : `<b>The accent is running at nearly the same intensity as the brand (${satPct}%).</b> Worth watching: colours at similar strength compete for attention, so give the accent noticeably less space, or regenerate for a more muted one.`,
+
+        `<b>Ink clears ${ratio.toFixed(1)}:1 against your canvas (${grade}).</b> That is the number that decides whether body text is comfortable to read. Anything at 4.5:1 or above is safe for paragraphs at normal size.`
+    ];
+
+    list.innerHTML = items.map(t => `<li>${t}</li>`).join("");
+}
 
 function buildSwatches(palette, row) {
     row.innerHTML = "";
@@ -475,12 +419,11 @@ function buildSwatches(palette, row) {
         const d = document.createElement("div");
         d.className = "swatch";
         const c = s.cmyk;
-        const tab = s.pct === "Text" ? "TX" : s.pct;
         const shift = s.print && s.print.risk !== "none"
             ? `<p class="swatch-print" title="Outside typical CMYK range. Heuristic estimate, not an ICC conversion.">print shift ${s.print.risk} &middot; safe <button class="safe-hex mono" data-hex="${s.print.safeHex}" type="button" aria-label="Copy press-safer alternate ${s.print.safeHex}">${s.print.safeHex}</button></p>`
             : "";
         d.innerHTML = `
-            <div class="swatch-chip" style="background:${s.hex};--tab-color:${labelColorFor(s.hex)}" data-hex="${s.hex}" data-tab="${tab}" role="button" tabindex="0" aria-label="Copy ${s.hex}">
+            <div class="swatch-chip" style="background:${s.hex}" data-hex="${s.hex}" role="button" tabindex="0" aria-label="Copy ${s.hex}">
                 <span class="copy-hint" style="color:${labelColorFor(s.hex)}">copy</span>
             </div>
             <div class="swatch-info">
@@ -500,30 +443,46 @@ function buildSwatches(palette, row) {
 }
 
 /* Signature "peel" transition: the outgoing chips tear away like
-   paper color chips off a fan deck (torn top edge + lift/rotate off
-   a bottom hinge), then the new palette settles in. Falls back to an
-   instant swap under reduced motion or on first paint. */
+   the swatches rebuild fresh (the one authored fade+rise, css/
+   style.css `swatch-in`) so a Generate/Regenerate click reads as a
+   change without a second, competing motion device. */
 function renderSwatches(palette) {
-    const row = $("swatch-row");
-    const token = ++swatchToken;
-    const existing = [...row.children];
+    buildSwatches(palette, $("swatch-row"));
+}
 
-    if (prefersReduced() || existing.length === 0) {
-        buildSwatches(palette, row);
-        return;
-    }
+/* Social formats, coloured from the same deployment the web mocks use.
+   Every foreground is derived from the surface it sits on, so no
+   generated palette can produce an unreadable mock. The accent appears
+   exactly once per frame - it is the 10%, and showing it any larger
+   here would contradict the band directly above. */
+function renderSocial(frameEl, dep, pair) {
+    if (!frameEl) return;
+    frameEl.style.background = dep.bg;
 
-    existing.forEach((el, i) => {
-        el.classList.add("peeling");
-        /* inline animation beats the stylesheet's settle rule */
-        el.style.animation = "chip-peel-out 0.34s var(--snap) forwards";
-        el.style.animationDelay = (i * 0.04) + "s";
+    const head = frameEl.querySelector(".app-head");
+    head.style.color = dep.ink;
+    if (pair) head.style.fontFamily = `'${pair.display}', sans-serif`;
+
+    const kicker = frameEl.querySelector(".app-kicker");
+    if (kicker) kicker.style.color = dep.accent;
+
+    frameEl.querySelectorAll(".app-mark").forEach(el => {
+        el.style.color = dep.brand;
+        if (pair) el.style.fontFamily = `'${pair.display}', sans-serif`;
     });
 
-    setTimeout(() => {
-        if (token !== swatchToken) return; /* a newer generate superseded us */
-        buildSwatches(palette, row);
-    }, 360);
+    const tag = frameEl.querySelector(".app-tag");
+    if (tag) tag.style.color = dep.ink;
+
+    const cta = frameEl.querySelector(".app-cta");
+    if (cta) {
+        cta.style.background = dep.brand;
+        cta.style.color = textOn(dep.brand);
+        if (pair) cta.style.fontFamily = `'${pair.display}', sans-serif`;
+    }
+
+    const rule = frameEl.querySelector(".app-rule");
+    if (rule) rule.style.background = dep.ink + "33";
 }
 
 function renderDeployment(mockEl, dep) {
@@ -734,20 +693,25 @@ function onAgencyChange() {
 function renderPalette(palette) {
     state.palette = palette;
 
-    renderBand($("hero-band"), palette.swatches, true);
-    $("hero-card-name").textContent =
-        palette.swatches.map(s => s.name).join(" / ");
+    renderHeroField(palette);
 
     $("seed-label").textContent = palette.seed ? "seed " + palette.seed : "from the Fixer";
 
+    renderReading(palette);
     renderSwatches(palette);
     renderBand($("ratio-band"), palette.swatches, false);
-    renderDeployment(document.querySelector('#deploy-light .deploy-mock'), palette.deployments.light);
-    renderDeployment(document.querySelector('#deploy-dark .deploy-mock'), palette.deployments.dark);
+    /* The ids sit on the frames themselves now, not on wrappers. */
+    const appliedPair = currentPair();
+    renderSocial($("app-post"), palette.deployments.light, appliedPair);
+    renderSocial($("app-story"), palette.deployments.dark, appliedPair);
+    renderDeployment($("deploy-light"), palette.deployments.light);
+    renderDeployment($("deploy-dark"), palette.deployments.dark);
     renderChecks(palette);
 
-    const signal = $("engine-signal");
-    signal.textContent = palette.borrowed
+    /* The accent's harmony used to be appended here as jargon. It now
+       has a plain-language sentence in the reading panel instead, so
+       this line goes back to carrying only the category signal. */
+    $("engine-signal").textContent = palette.borrowed
         ? `Borrowed recipe: ${palette.borrowed} (Law 7). ${palette.signal}`
         : palette.signal || "";
 
@@ -756,10 +720,9 @@ function renderPalette(palette) {
     renderSystem(palette);
     syncUrl();
 
-    /* Resync the brand-signature layer so the marketing chrome and the
-       live product share one color system: the hero mesh drifts toward
-       this palette, and the wordmark folds it into its ramp. */
-    HeroMesh.setPalette(palette);
+    /* The wordmark is the one piece of chrome that reflects the
+       current palette (DESIGN.md: The Product Is the Color Rule
+       reserves everywhere else for the actual generated output). */
     Wordmark.injectLive(palette);
 
     $("shades-panel").hidden = true;
@@ -780,6 +743,8 @@ function renderSystem(palette) {
         const bar = document.createElement("div");
         bar.className = "spacing-bar";
         bar.style.width = Math.max(2, s.px) + "px";
+        /* Brand, not the site accent: this is generated output. */
+        bar.style.background = palette.swatches[1].hex;
         bar.title = `${s.name}: ${s.px}px`;
         const label = document.createElement("span");
         label.textContent = s.name;
@@ -803,18 +768,23 @@ function renderSystem(palette) {
         radiusEl.appendChild(chip);
     });
 
-    const elevation = E.elevationScale(palette.swatches[3].hex, domIsDark);
+    /* Each card sits on its own step's surface. On a dark Dominant that
+       progressive lift is the only thing that makes elevation visible at
+       all - a near-black shadow on a near-black ground reads as nothing,
+       which is exactly what the panel used to show. */
+    const elevation = E.elevationScale(palette.swatches[3].hex, domIsDark, palette.swatches[0].hex);
     const elevationEl = $("elevation-row");
     elevationEl.innerHTML = "";
     elevation.filter(e => e.name !== "0").forEach(e => {
+        const surface = e.surface || palette.swatches[0].hex;
         const card = document.createElement("div");
         card.className = "elevation-card";
         card.style.boxShadow = e.css;
-        card.style.background = palette.swatches[0].hex;
+        card.style.background = surface;
         card.title = `elevation-${e.name}`;
         const label = document.createElement("span");
         label.textContent = e.name;
-        label.style.color = textOn(palette.swatches[0].hex);
+        label.style.color = textOn(surface);
         card.appendChild(label);
         elevationEl.appendChild(card);
     });
@@ -913,29 +883,59 @@ function currentPair() {
     return pairs[state.typeIndex % pairs.length];
 }
 
+/* The horizontal specimen rail (LAYOUT-BLUEPRINT 3.5). Renders every
+   pairing the palette's mood prescribes, so they can be compared side
+   by side instead of cycled one at a time. state.typeIndex still marks
+   which one is selected, and currentPair() still reads it, so exports,
+   the SVG card, and the print sheet keep working unchanged. */
+const SPECIMEN_DISPLAY = "Every color needs a job.";
+const SPECIMEN_BODY = "The brands that pop do not use better colors. They use the same colors with clearer intent: one anchors, one leads, one accents, and every surface gets the right one.";
+
 function renderTypeLab() {
     const p = state.palette;
     if (!p) return;
-    const pair = currentPair();
-    loadPairFonts(pair);
 
-    const spec = $("specimen");
+    const pairs = E.getTypePairs(p.mood || "fresh");
     const dep = p.deployments.light;
-    spec.style.background = dep.bg;
+    const selectedIndex = state.typeIndex % pairs.length;
+    const stack = $("type-rail");
+    stack.innerHTML = "";
 
-    const disp = $("specimen-display");
-    disp.style.fontFamily = `'${pair.display}', sans-serif`;
-    disp.style.fontWeight = pair.displayWeight;
-    disp.style.color = dep.ink;
+    pairs.forEach((pair, i) => {
+        loadPairFonts(pair);
+        const selected = i === selectedIndex;
 
-    const body = $("specimen-body");
-    body.style.fontFamily = `'${pair.body}', sans-serif`;
-    body.style.color = dep.ink;
-    body.style.opacity = "0.75";
+        const card = document.createElement("article");
+        card.className = "specimen-card" + (selected ? " is-selected" : "");
+        card.innerHTML = `
+            <div class="specimen">
+                <p class="specimen-display">${esc(SPECIMEN_DISPLAY)}</p>
+                <p class="specimen-body">${esc(SPECIMEN_BODY)}</p>
+            </div>
+            <div class="specimen-meta">
+                <span class="type-name">${esc(pair.display)}</span>
+                <span class="type-name type-name-body">+ ${esc(pair.body)}${pair.mono ? " + " + esc(pair.mono) : ""}</span>
+                <p class="specimen-note">${esc(pair.why)}</p>
+                <button class="btn-mini specimen-select" type="button" data-pair="${i}" aria-pressed="${selected}">${selected ? "In use" : "Use this pairing"}</button>
+            </div>`;
 
-    $("type-display-name").textContent = pair.display;
-    $("type-body-name").textContent = "+ " + pair.body + (pair.mono ? " + " + pair.mono : "");
-    $("type-why").textContent = pair.why;
+        const spec = card.querySelector(".specimen");
+        spec.style.background = dep.bg;
+        spec.style.color = dep.ink;
+
+        const disp = card.querySelector(".specimen-display");
+        disp.style.fontFamily = `'${pair.display}', sans-serif`;
+        disp.style.fontWeight = pair.displayWeight;
+
+        const body = card.querySelector(".specimen-body");
+        body.style.fontFamily = `'${pair.body}', sans-serif`;
+
+        stack.appendChild(card);
+    });
+
+    $("type-rail-hint").textContent = pairs.length > 1
+        ? `${pairs.length} pairings prescribed for this palette's mood. The one in use drives the exports, the SVG card, and the print sheet.`
+        : "One pairing prescribed for this palette's mood.";
 }
 
 /* ---------- Fixer ---------- */
@@ -952,6 +952,7 @@ function runFixer() {
 
     const result = E.fixPalette(hexes);
     $("fixer-results").hidden = false;
+    $("fixer-compare").hidden = false;
 
     const diag = $("diagnosis");
     diag.innerHTML = "";
@@ -980,30 +981,24 @@ function runFixer() {
         });
     }
 
-    const before = $("strip-before");
-    before.innerHTML = "";
-    result.original.forEach(hex => {
-        const seg = document.createElement("div");
-        seg.className = "band-seg";
-        seg.style.flex = "1";
-        seg.style.background = hex;
-        seg.dataset.label = hex;
-        seg.style.setProperty("--label-color", labelColorFor(hex));
-        before.appendChild(seg);
-    });
+    /* Before: N equal blocks, the palette as pasted. After: the same
+       colors reproportioned to 60-30-10 plus Ink. Read together, the
+       change in block widths is the argument the section is making. */
+    renderCompareStrip(
+        $("strip-before"), $("strip-before-caps"),
+        result.original.map(hex => ({ flex: "1", hex, label: hex }))
+    );
 
-    const after = $("strip-after");
-    after.innerHTML = "";
     const shares = { Dominant: 60, Brand: 30, Accent: 10, Ink: 8 };
-    result.swatches.forEach(s => {
-        const seg = document.createElement("div");
-        seg.className = "band-seg";
-        seg.style.flex = `0 0 ${shares[s.role] / 1.08}%`;
-        seg.style.background = s.hex;
-        seg.dataset.label = shares[s.role] <= 12 ? s.role : `${s.role} ${s.hex}`;
-        seg.style.setProperty("--label-color", labelColorFor(s.hex));
-        after.appendChild(seg);
-    });
+    renderCompareStrip(
+        $("strip-after"), $("strip-after-caps"),
+        result.swatches.map(s => ({
+            /* 60+30+10+8 = 108, normalised back to 100. */
+            flex: `0 0 ${shares[s.role] / 1.08}%`,
+            hex: s.hex,
+            label: `${s.role} ${s.hex}`
+        }))
+    );
 
     /* Provenance: every input color's fate, spelled out. */
     const map = $("mapping");
@@ -1157,6 +1152,9 @@ function renderAssistantResult(r) {
         const c = document.createElement("span");
         c.className = "assistant-chip assistant-chip-hex mono";
         c.style.setProperty("--chip-color", r.lockedBrand);
+        /* The chip's fill is a user-supplied hex, so its label has to be
+           derived from that hex rather than assumed dark. */
+        c.style.color = E.readableOn(r.lockedBrand);
         c.textContent = r.lockedBrand;
         chips.appendChild(c);
     }
@@ -1207,16 +1205,15 @@ function generateFromAssistant() {
 
 document.addEventListener("DOMContentLoaded", () => {
 
-    /* Brand-signature layer: the generative hero mesh and the living
-       wordmark. Both draw from real Engine output; init before the
-       first generate() so that palette resyncs them immediately. */
-    HeroMesh.init();
+    /* Signature layer: the wordmark. Draws from real Engine output;
+       init before the first generate() so that palette resyncs it
+       immediately. */
     Wordmark.start();
-    /* After both, so the first apply() can retune them immediately. */
+    /* After, so the first apply() can retune it immediately. */
     Theme.init();
 
-    /* Nav */
-    const nav = document.querySelector("nav");
+    /* Nav. Scoped selector: the footer has a <nav> too. */
+    const nav = document.querySelector(".site-nav");
     const navToggle = $("nav-toggle");
     const closeNav = () => {
         nav.classList.remove("open");
@@ -1280,6 +1277,7 @@ document.addEventListener("DOMContentLoaded", () => {
         $("ctl-brand").value = "";
         generate(false);
     });
+
     $("copy-link").addEventListener("click", () => {
         if (state.palette && (!state.palette.seed || state.palette.custom)) {
             toast("This palette has no link yet; export instead");
@@ -1311,7 +1309,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /* Color-vision simulation: an feColorMatrix filter over the
        palette visuals, never over the site chrome. */
-    const visionTargets = () => [$("swatch-row"), $("ratio-band"), document.querySelector(".deployments")];
+    const visionTargets = () =>
+        [$("swatch-row"), $("ratio-band"), $("applied")].filter(Boolean);
     document.querySelectorAll(".vision-btn").forEach(btn => {
         btn.addEventListener("click", () => {
             document.querySelectorAll(".vision-btn").forEach(b => {
@@ -1406,10 +1405,22 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     $("fix-adopt").addEventListener("click", adoptFixed);
 
-    /* Type lab */
-    $("type-next").addEventListener("click", () => {
-        state.typeIndex++;
+    /* Type rail: delegated, because the cards are rebuilt on every
+       palette change. Selecting a pairing re-renders the rail and the
+       print sheet, which both read state.typeIndex. */
+    $("type-rail").addEventListener("click", e => {
+        const btn = e.target.closest(".specimen-select");
+        if (!btn) return;
+        state.typeIndex = Number(btn.dataset.pair);
         renderTypeLab();
+        if (state.palette) {
+            renderPrintSheet(state.palette);
+            /* The social frames set type in the chosen display face, so
+               they have to follow the selection too. */
+            const pair = currentPair();
+            renderSocial($("app-post"), state.palette.deployments.light, pair);
+            renderSocial($("app-story"), state.palette.deployments.dark, pair);
+        }
     });
 
     /* Scroll reveals */

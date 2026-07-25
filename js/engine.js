@@ -147,6 +147,39 @@ function ensureContrastVivid(fgHex, bgHex, target) {
     return hslToHex(fg);
 }
 
+/* A foreground guaranteed to clear `target` against an arbitrary
+   generated color. Picks whichever end of the scale is already better,
+   then drives it further in THAT direction.
+
+   Note it cannot delegate to ensureContrast: that helper chooses its
+   direction from the background's luminance, so handing it a light
+   foreground on a mid-lightness background darkens the text toward the
+   background and stalls (measured: 120 of 2400 swatches failed that
+   way). The direction has to be fixed by the choice already made.
+
+   4.5 is always reachable: the hardest possible background sits near
+   luminance 0.18, where pure black still yields ~4.6 and pure white
+   ~4.57. Do not raise the target to 7 without re-deriving that. */
+function readableOn(bgHex, target = 4.5) {
+    const DARK = "#161616", LIGHT = "#F5F5F0";
+    /* Direction comes from the ACHIEVABLE extremes, not from the two
+       starting swatches. On a mid-lightness background those two can sit
+       0.003 apart while pure black is 0.27 ahead of pure white, so
+       comparing the starts picks the losing direction and then walks
+       into a wall (measured: 9 of 2400 swatches). */
+    const useDark = contrastRatio(bgHex, "#000000") >= contrastRatio(bgHex, "#FFFFFF");
+    const start = useDark ? DARK : LIGHT;
+    if (contrastRatio(start, bgHex) >= target) return start;
+
+    const { h, s } = hexToHsl(start);
+    const step = useDark ? -2 : 2;
+    for (let l = useDark ? 12 : 92; l >= 0 && l <= 100; l += step) {
+        const cand = hslToHex({ h, s, l });
+        if (contrastRatio(cand, bgHex) >= target) return cand;
+    }
+    return useDark ? "#000000" : "#FFFFFF";
+}
+
 /* ---------- 3. Seeded randomness ---------- */
 
 function mulberry32(seed) {
@@ -160,6 +193,17 @@ function mulberry32(seed) {
 }
 
 function randIn(rng, min, max) { return min + rng() * (max - min); }
+
+/* Hue ranges wrap at 0/360 (e.g. a red band spanning 350deg-30deg).
+   `lo > hi` is the signal that a range crosses the seam; walk forward
+   from lo, through 360, to hi rather than treating it as an inverted
+   (and wrong) plain range. */
+function randHueIn(rng, lo, hi) {
+    if (lo <= hi) return lo + rng() * (hi - lo);
+    const span = (360 - lo) + hi;
+    const v = lo + rng() * span;
+    return v >= 360 ? v - 360 : v;
+}
 
 /* ---------- 4. Swatch naming ---------- */
 
@@ -242,70 +286,128 @@ function quantizeColors(data, count = 5) {
 
 /* ---------- 5. Archetypes (from the Bible's psychology + combos) ---------- */
 
+/* Ranges are deliberately wide, not a single "safe" hex per category.
+   The old bands (roughly 10-24deg of hue) meant regenerating the same
+   category mostly reproduced the same color - a fintech brand was
+   always the same navy. Width here is the raw material for the taste
+   layer below: enough room that two "fintech" rolls can land on a
+   cobalt and a near-indigo and both still read as fintech. */
 const ARCHETYPES = {
     fnb: {
         label: "Food and drink / retail",
         signal: "Urgency, appetite, movement. Red raises the pulse; yellow welcomes.",
-        brandHue: [2, 18], brandSat: [78, 92], brandLight: [42, 50],
-        accentHue: [40, 48], dominant: "sunshine", mood: "heat"
+        brandHue: [352, 40], brandSat: [64, 97], brandLight: [34, 56],
+        accentHue: [32, 58], dominant: "sunshine", mood: "heat"
     },
     wellness: {
         label: "Wellness / premium D2C",
         signal: "Trust, growth, craft. Forest green anchors; cream keeps it human.",
-        brandHue: [136, 158], brandSat: [42, 60], brandLight: [22, 30],
-        accentHue: [38, 46], dominant: "cream", mood: "mv-humanist"
+        brandHue: [118, 176], brandSat: [30, 68], brandLight: [15, 38],
+        accentHue: [28, 56], dominant: "cream", mood: "mv-humanist"
     },
     saas: {
         label: "SaaS / dev tools",
         signal: "Freshness and modern energy without the default tech blue.",
-        brandHue: [68, 92], brandSat: [70, 92], brandLight: [38, 46],
-        accentHue: [18, 30], dominant: "cool-light", mood: "fresh"
+        brandHue: [52, 108], brandSat: [56, 97], brandLight: [30, 54],
+        accentHue: [6, 42], dominant: "cool-light", mood: "fresh"
     },
     creator: {
         label: "Creator / streetwear",
         signal: "Boldness and irreverence. Demands to be noticed, never asks.",
-        brandHue: [322, 336], brandSat: [88, 100], brandLight: [48, 55],
-        accentHue: [45, 52], dominant: "dark", mood: "bold"
+        brandHue: [300, 352], brandSat: [76, 100], brandLight: [38, 62],
+        accentHue: [32, 62], dominant: "dark", mood: "bold"
     },
     fintech: {
         label: "Fintech / B2B services",
         signal: "Authority you trust with money, warmth that keeps it human.",
-        brandHue: [214, 226], brandSat: [62, 80], brandLight: [15, 22],
-        accentHue: [8, 16], dominant: "cool-light", mood: "trust"
+        brandHue: [196, 248], brandSat: [48, 90], brandLight: [10, 30],
+        accentHue: [0, 30], dominant: "cool-light", mood: "trust"
     },
     aitech: {
         label: "AI / premium tech",
         signal: "Premium, focused, from the future. One electric accent, used like a weapon.",
-        brandHue: [64, 76], brandSat: [90, 100], brandLight: [50, 58],
-        accentHue: [64, 76], dominant: "dark", mood: "future"
+        brandHue: [48, 92], brandSat: [78, 100], brandLight: [40, 66],
+        accentHue: [48, 92], accentHarmonyLocked: true, dominant: "dark", mood: "future"
     },
     beauty: {
         label: "Beauty / luxury",
         signal: "Purple stands out because nobody else dares to use it.",
-        brandHue: [266, 286], brandSat: [48, 68], brandLight: [30, 42],
-        accentHue: [340, 350], dominant: "warm-light", mood: "mv-editorial"
+        brandHue: [244, 308], brandSat: [36, 78], brandLight: [22, 50],
+        accentHue: [322, 358], dominant: "warm-light", mood: "mv-editorial"
     },
     hospitality: {
         label: "Hospitality / dining",
         signal: "Established green, candlelight amber. A room, not a website.",
-        brandHue: [148, 164], brandSat: [30, 45], brandLight: [14, 20],
-        accentHue: [38, 44], dominant: "dark-green", mood: "mv-moody"
+        brandHue: [128, 182], brandSat: [22, 54], brandLight: [10, 28],
+        accentHue: [26, 56], dominant: "dark-green", mood: "mv-moody"
     },
     climate: {
         label: "Climate / healthtech",
         signal: "Calm futurism. Deep teal fuses blue's trust with green's growth - the escape route from default tech blue.",
-        brandHue: [180, 190], brandSat: [62, 78], brandLight: [19, 26],
-        accentHue: [18, 26], dominant: "cloud", mood: "mv-technical"
+        brandHue: [162, 208], brandSat: [48, 88], brandLight: [12, 34],
+        accentHue: [6, 38], dominant: "cloud", mood: "mv-technical"
     },
     heritage: {
         label: "Heritage / quiet luxury",
         signal: "Old money, new brand. Oxblood is red matured past urgency into permanence; warm sand keeps it human.",
-        brandHue: [346, 356], brandSat: [50, 64], brandLight: [20, 28],
-        accentHue: [32, 40], dominant: "sand", mood: "craft"
+        brandHue: [330, 360], brandSat: [38, 72], brandLight: [12, 36],
+        accentHue: [20, 54], dominant: "sand", mood: "craft"
     }
 };
 
 const ARCHETYPE_KEYS = Object.keys(ARCHETYPES);
+
+/* ---------- 5b. Taste layer: harmony-based accent exploration ----------
+   Law 2 is a numeric contract on the RELATIONSHIP between Brand and
+   Accent (the accent sits at 70-85% of the brand's saturation) - it
+   says nothing about which hue the accent should be. Previously that
+   hue came from one fixed band per archetype, so every fintech palette
+   landed on the same navy-plus-coral pairing regardless of seed. This
+   layer treats the archetype's own curated band as one legitimate
+   choice among several tasteful, color-theory-grounded alternatives
+   computed FROM the rolled brand hue (complementary, split-complementary,
+   triadic) and lets the seed pick between them. The law-based contrast
+   and saturation-ratio passes later in generatePalette are completely
+   unaffected - this only decides where the accent starts. */
+const ACCENT_HARMONIES = [
+    { name: "archetype", offset: null, weight: 0.42 },
+    { name: "complementary", offset: 180, weight: 0.14 },
+    { name: "split-complementary-a", offset: 150, weight: 0.11 },
+    { name: "split-complementary-b", offset: 210, weight: 0.11 },
+    { name: "triadic-a", offset: 120, weight: 0.11 },
+    { name: "triadic-b", offset: 240, weight: 0.11 }
+];
+
+const HARMONY_LABELS = {
+    archetype: "the category's own curated pairing",
+    complementary: "a complementary accent, opposite the brand on the wheel",
+    "split-complementary-a": "a split-complementary accent",
+    "split-complementary-b": "a split-complementary accent",
+    "triadic-a": "a triadic accent",
+    "triadic-b": "a triadic accent"
+};
+
+function pickAccentHarmony(rng, A, brandHue) {
+    /* aitech's whole point is a brand and accent in the same electric
+       hue family (Law 2 still separates them by saturation/lightness);
+       harmony exploration would fight that, so it always uses the
+       archetype's own band, just from the now-widened range. */
+    if (A.accentHarmonyLocked) {
+        return { name: "archetype", hue: randHueIn(rng, A.accentHue[0], A.accentHue[1]) };
+    }
+    let roll = rng(), acc = 0, chosen = ACCENT_HARMONIES[0];
+    for (const h of ACCENT_HARMONIES) {
+        acc += h.weight;
+        if (roll <= acc) { chosen = h; break; }
+    }
+    if (chosen.offset === null) {
+        return { name: chosen.name, hue: randHueIn(rng, A.accentHue[0], A.accentHue[1]) };
+    }
+    const jitter = randIn(rng, -10, 10);
+    let hue = brandHue + chosen.offset + jitter;
+    hue = ((hue % 360) + 360) % 360;
+    return { name: chosen.name, hue };
+}
 
 /* ---------- 6. Palette generation ---------- */
 
@@ -344,7 +446,7 @@ function generatePalette({ category = "saas", seed = Date.now(), borrow = false,
         brandHsl = hexToHsl(lockedBrand);
     } else {
         brandHsl = {
-            h: Math.round(randIn(rng, A.brandHue[0], A.brandHue[1])) % 360,
+            h: Math.round(randHueIn(rng, A.brandHue[0], A.brandHue[1])) % 360,
             s: Math.round(randIn(rng, A.brandSat[0], A.brandSat[1])),
             l: Math.round(randIn(rng, A.brandLight[0], A.brandLight[1]))
         };
@@ -359,36 +461,43 @@ function generatePalette({ category = "saas", seed = Date.now(), borrow = false,
     if (dominantKind === "dark") {
         dominant = hslToHex({ h: brandHsl.h, s: Math.min(14, Math.round(brandHsl.s * 0.15)), l: Math.round(randIn(rng, 8, 12)) });
     } else if (dominantKind === "dark-green") {
-        dominant = hslToHex({ h: brandHsl.h, s: Math.round(randIn(rng, 18, 26)), l: Math.round(randIn(rng, 10, 14)) });
+        dominant = hslToHex({ h: brandHsl.h, s: Math.round(randIn(rng, 16, 30)), l: Math.round(randIn(rng, 9, 15)) });
     } else if (dominantKind === "cream") {
-        dominant = hslToHex({ h: Math.round(randIn(rng, 38, 44)), s: Math.round(randIn(rng, 42, 58)), l: Math.round(randIn(rng, 88, 92)) });
+        dominant = hslToHex({ h: Math.round(randIn(rng, 28, 54)), s: Math.round(randIn(rng, 34, 65)), l: Math.round(randIn(rng, 87, 93)) });
     } else if (dominantKind === "sunshine") {
         /* Combo 01: the warm base IS bold. Yellow ink prints well,
            so a saturated yellow canvas is safe for print too. */
-        dominant = hslToHex({ h: Math.round(randIn(rng, 42, 48)), s: Math.round(randIn(rng, 88, 100)), l: Math.round(randIn(rng, 55, 62)) });
+        dominant = hslToHex({ h: Math.round(randIn(rng, 36, 54)), s: Math.round(randIn(rng, 84, 100)), l: Math.round(randIn(rng, 52, 64)) });
     } else if (dominantKind === "cloud") {
         /* Combo 07: warmer than #FFF, calmer than grey. */
-        dominant = hslToHex({ h: Math.round(randIn(rng, 45, 55)), s: Math.round(randIn(rng, 12, 22)), l: Math.round(randIn(rng, 92, 95)) });
+        dominant = hslToHex({ h: Math.round(randIn(rng, 32, 68)), s: Math.round(randIn(rng, 10, 24)), l: Math.round(randIn(rng, 91, 95)) });
     } else if (dominantKind === "sand") {
         /* Combo 08: warm sand canvas - never pure white. */
-        dominant = hslToHex({ h: Math.round(randIn(rng, 38, 44)), s: Math.round(randIn(rng, 30, 45)), l: Math.round(randIn(rng, 84, 89)) });
+        dominant = hslToHex({ h: Math.round(randIn(rng, 28, 54)), s: Math.round(randIn(rng, 22, 52)), l: Math.round(randIn(rng, 83, 90)) });
     } else if (dominantKind === "warm-light") {
-        dominant = hslToHex({ h: Math.round(randIn(rng, 36, 48)), s: Math.round(randIn(rng, 25, 45)), l: Math.round(randIn(rng, 90, 95)) });
+        dominant = hslToHex({ h: Math.round(randIn(rng, 24, 60)), s: Math.round(randIn(rng, 18, 52)), l: Math.round(randIn(rng, 89, 95)) });
     } else {
-        dominant = hslToHex({ h: (brandHsl.h + Math.round(randIn(rng, -12, 12)) + 360) % 360, s: Math.round(randIn(rng, 6, 14)), l: Math.round(randIn(rng, 93, 96)) });
+        dominant = hslToHex({ h: (brandHsl.h + Math.round(randIn(rng, -18, 18)) + 360) % 360, s: Math.round(randIn(rng, 5, 16)), l: Math.round(randIn(rng, 92, 97)) });
     }
 
     const domIsDark = hexToHsl(dominant).l < 40;
 
     /* Accent: distinct hue, saturation at 70-85% of the brand's (Law 2).
-       Floor at 50: HSL saturation is lightness-blind, and below ~50 the
-       amber hues most archetypes use for accents collapse into khaki.
-       Lightness is pre-fit to the canvas so the contrast pass barely
-       has to move it. */
+       The floor used to be a flat 50 - safe when every archetype's
+       brandSat had a fairly high minimum, but the widened taste ranges
+       above now let brandSat run as low as ~15-22 for some archetypes,
+       and a flat floor of 50 would then push the accent PAST the
+       brand's own saturation, inverting Law 2 instead of honoring it.
+       The floor now scales with the brand's saturation, so it can
+       soften a too-thin accent without ever contradicting the ratio
+       that was just computed. Lightness is pre-fit to the canvas so
+       the contrast pass barely has to move it. */
     const accentSat = Math.round(brandHsl.s * randIn(rng, 0.7, 0.85));
+    const accentSatFloor = Math.min(50, Math.round(brandHsl.s * 0.6));
+    const accentHarmony = pickAccentHarmony(rng, A, brandHsl.h);
     let accentHsl = {
-        h: Math.round(randIn(rng, A.accentHue[0], A.accentHue[1])) % 360,
-        s: Math.min(88, Math.max(50, accentSat)),
+        h: Math.round(accentHarmony.hue) % 360,
+        s: Math.min(88, Math.max(accentSatFloor, accentSat)),
         l: domIsDark ? Math.round(randIn(rng, 56, 66)) : Math.round(randIn(rng, 42, 52))
     };
 
@@ -427,6 +536,7 @@ function generatePalette({ category = "saas", seed = Date.now(), borrow = false,
         seed, category, recipeKey, borrowed: (borrow && !customArchetype) ? ARCHETYPES[recipeKey].label : null,
         custom: !!customArchetype, customLabel: customArchetype ? customArchetype.label : null,
         signal: A.signal, mood: A.mood, swatches,
+        accentHarmony: accentHarmony.name,
         deployments: {
             light: { bg: lightDominant, ink: lightInk, brand: lightBrand, accent: lightAccent },
             dark: { bg: darkDominant, ink: darkInk, brand: darkBrand, accent: darkAccent }
@@ -791,23 +901,39 @@ function radiusScale(recipeKey) {
    pure black - a shadow under a warm-ink brand should read warm, not
    like a different, generic product bolted on top. Alpha and offset
    climb together; blur grows faster than offset so higher elevations
-   feel airier, not just darker. */
-function elevationScale(inkHex, domIsDark) {
+   feel airier, not just darker.
+
+   On a DARK canvas a near-black shadow conveys nothing: there is no
+   lighter ground for it to fall on, so every step looks identical. Dark
+   deployments therefore also carry a `surface` per step - the Dominant
+   progressively lifted toward the light - which is how mature systems
+   actually express dark-mode elevation. The shadow still ships (it does
+   real work at the edges of large surfaces), but the surface lift is
+   what the eye reads. On a light canvas `surface` stays the Dominant
+   unchanged and the shadow does the work, as before. */
+function elevationScale(inkHex, domIsDark, dominantHex) {
     const { h } = hexToHsl(inkHex);
     const base = domIsDark ? { s: 20, l: 4 } : { s: 25, l: 8 };
+    const dom = dominantHex ? hexToHsl(dominantHex) : null;
     const steps = [
-        { name: "0", y: 0, blur: 0, alpha: 0 },
-        { name: "1", y: 1, blur: 3, alpha: 0.08 },
-        { name: "2", y: 2, blur: 6, alpha: 0.10 },
-        { name: "3", y: 6, blur: 16, alpha: 0.14 },
-        { name: "4", y: 12, blur: 32, alpha: 0.18 }
+        { name: "0", y: 0, blur: 0, alpha: 0, lift: 0 },
+        { name: "1", y: 1, blur: 3, alpha: 0.08, lift: 4 },
+        { name: "2", y: 2, blur: 6, alpha: 0.10, lift: 7 },
+        { name: "3", y: 6, blur: 16, alpha: 0.14, lift: 11 },
+        { name: "4", y: 12, blur: 32, alpha: 0.18, lift: 16 }
     ];
     return steps.map(s => {
         const rgb = hslToRgb({ h, s: base.s, l: base.l });
+        /* Only dark canvases lift; a light canvas has nowhere to go
+           without washing the surface out. */
+        const surface = dom
+            ? hslToHex({ h: dom.h, s: dom.s, l: domIsDark ? Math.min(96, dom.l + s.lift) : dom.l })
+            : null;
         return {
             name: s.name,
             css: s.alpha === 0 ? "none" : `0 ${s.y}px ${s.blur}px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${s.alpha})`,
             shadowColor: rgbToHex(rgb),
+            surface,
             y: s.y, blur: s.blur, alpha: s.alpha
         };
     });
@@ -845,7 +971,7 @@ function systemTokens(p) {
     return {
         spacing: spacingScale(recipeKey),
         radius: radiusScale(recipeKey),
-        elevation: elevationScale(p.swatches[3].hex, domIsDark),
+        elevation: elevationScale(p.swatches[3].hex, domIsDark, p.swatches[0].hex),
         states: {
             brand: stateVariants(p.swatches[1].hex, p.swatches[0].hex),
             accent: stateVariants(p.swatches[2].hex, p.swatches[0].hex)
@@ -859,6 +985,12 @@ function exportCss(p) {
     const spacingVars = sys.spacing.map(s => `  --space-${s.name}: ${s.px}px;`).join("\n");
     const radiusVars = sys.radius.map(r => `  --radius-${r.name}: ${r.px === 999 ? "9999px" : r.px + "px"};`).join("\n");
     const elevationVars = sys.elevation.filter(e => e.name !== "0").map(e => `  --elevation-${e.name}: ${e.css};`).join("\n");
+    /* Dark canvases need the surface lift as well as the shadow, or
+       every elevation step looks identical. Emitted only when it
+       actually differs from the Dominant. */
+    const surfaceVars = sys.elevation
+        .filter(e => e.surface && e.surface !== p.swatches[0].hex)
+        .map(e => `  --elevation-${e.name}-surface: ${e.surface};`).join("\n");
     return `:root {
   /* ${brandLine(p)} */
   --color-dominant: ${p.swatches[0].hex};
@@ -877,7 +1009,7 @@ ${spacingVars}
 ${radiusVars}
 
   /* Elevation */
-${elevationVars}
+${elevationVars}${surfaceVars ? "\n\n  /* Elevation surfaces (dark canvas: lift, not shadow) */\n" + surfaceVars : ""}
 }
 
 @media (prefers-color-scheme: dark) {
@@ -967,6 +1099,12 @@ function exportTokensJson(p, pair) {
         spacing: Object.fromEntries(sys.spacing.map(s => [s.name, `${s.px}px`])),
         radius: Object.fromEntries(sys.radius.map(r => [r.name, r.px === 999 ? "9999px" : `${r.px}px`])),
         elevation: Object.fromEntries(sys.elevation.map(e => [e.name, e.css])),
+        /* Added alongside `elevation` rather than folded into it: a
+           consumer already reading gamut.tokens.v1 expects
+           elevation[name] to be a shadow string, so changing that shape
+           would break it. On a light canvas every value here equals the
+           Dominant and the key can be ignored. */
+        elevationSurface: Object.fromEntries(sys.elevation.map(e => [e.name, e.surface || p.swatches[0].hex])),
         typography: pair ? { display: pair.display, body: pair.body, mono: pair.mono || null } : null
     }, null, 2);
 }
@@ -1020,12 +1158,12 @@ function moodFromColor(hex) {
 
 window.Engine = {
     hexToRgb, rgbToHex, hexToHsl, hslToHex, rgbToCmyk, gamutRisk,
-    contrastRatio, contrastGrade, ensureContrast, ensureContrastVivid,
+    contrastRatio, contrastGrade, ensureContrast, ensureContrastVivid, readableOn,
     shadeScale, quantizeColors,
     ARCHETYPES, generatePalette,
     parseHexList, diagnosePalette, fixPalette,
     getTypePairs, googleFontsUrl, moodFromColor,
     spacingScale, radiusScale, elevationScale, stateVariants,
     exportCss, exportTailwind, exportScss, exportJson, exportTokensJson, exportSvgCard,
-    nameColor, TYPE_PAIRS_MOOD
+    nameColor, TYPE_PAIRS_MOOD, HARMONY_LABELS
 };
