@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gamut - Brand palettes built like decisions</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.anthropic.com http://localhost:11434 https://fonts.googleapis.com https://fonts.gstatic.com; frame-src https://api.razorpay.com https://checkout.razorpay.com">
     <meta name="description" content="Generate, fix, and pair brand color systems built on the 60-30-10 rule, the ten laws of color, and print-ready values. For designers, agencies, and brand teams.">
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23D4FF00'/%3E%3Ctext x='16' y='23' font-family='Arial Black,sans-serif' font-size='20' font-weight='900' text-anchor='middle' fill='%23141414'%3EG%3C/text%3E%3C/svg%3E">
 
@@ -321,7 +322,9 @@
                     <button class="btn-mini" data-export="json" type="button">JSON</button>
                     <button class="btn-mini" id="svg-card" type="button">SVG swatch card</button>
                     <button class="btn-mini" id="print-sheet" type="button">Print brand sheet</button>
+                    <button class="btn-mini" id="ai-package" type="button">AI import package</button>
                 </div>
+                <p class="hint">The AI import package is a ZIP you can attach to Claude Code, Codex, Cursor, Gemini CLI, Windsurf, or any AI assistant that can create or edit Figma files — it contains the full token set, brand documentation, and a ready-to-use import prompt. Generated offline, no AI involved.</p>
             </div>
         </div>
     </section>
@@ -602,6 +605,7 @@
     <script src="js/engine.js"></script>
     <script src="js/mood.js"></script>
     <script src="js/assistant.js"></script>
+    <script src="js/aipack.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>

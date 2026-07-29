@@ -30,6 +30,16 @@ const $ = id => document.getElementById(id);
 const prefersReduced = () =>
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+/* Smooth scrolling is motion; the preference asks us not to. */
+const scrollBehavior = () => (prefersReduced() ? "auto" : "smooth");
+
+/* history.replaceState throws SecurityError on file:// in Chromium
+   (null-origin documents may not change their query string). URL
+   sync is a convenience, never worth killing the render over. */
+function safeReplaceUrl(url) {
+    try { history.replaceState(null, "", url); } catch { /* file:// */ }
+}
+
 /* =========================================================
    OKLCH utilities (brand signature layer)
    Read-only consumers of Engine's hex output. The Engine's own
@@ -218,14 +228,37 @@ function toast(msg, undo) {
     }, undo ? 4500 : 1800);
 }
 
+/* Hidden-textarea + execCommand path for contexts without the async
+   clipboard API (plain-HTTP LAN hosts, older embeds). Without it,
+   navigator.clipboard is undefined there and every copy button throws
+   instead of copying or even saying it failed. */
+function fallbackCopy(text) {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand("copy"); } catch { ok = false; }
+    ta.remove();
+    return ok;
+}
+
 function copyText(text, label, el) {
-    navigator.clipboard.writeText(text).then(
-        () => {
-            toast(label + " copied");
-            if (el) pulseCopied(el);
-        },
-        () => toast("Copy failed")
-    );
+    const done = ok => {
+        toast(ok ? label + " copied" : "Copy failed");
+        if (ok && el) pulseCopied(el);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(
+            () => done(true),
+            () => done(fallbackCopy(text))
+        );
+    } else {
+        done(fallbackCopy(text));
+    }
 }
 
 /* Momentary confirmation ring on the exact control that was clicked,
@@ -331,7 +364,8 @@ function renderHeroField(palette) {
     });
 
     field.setAttribute("aria-label", "Live palette preview: " + described.join(", "));
-    $("hero-seed").textContent = palette.seed ? "seed " + palette.seed : "from the Fixer";
+    /* != null: seed 0 is a real seed, only null means "from the Fixer". */
+    $("hero-seed").textContent = palette.seed != null ? "seed " + palette.seed : "from the Fixer";
 }
 
 /* A color strip plus a caption row whose cells carry the same flex
@@ -368,6 +402,11 @@ function renderCompareStrip(stripEl, capsEl, items) {
 
 function harmonySentence(harmony, delta) {
     switch (harmony) {
+        /* Fixer palettes have no accentHarmony: their accent came from
+           the user's own pasted colors. The default "the category is
+           known for this pairing" sentence would be a false claim. */
+        case "fixer":
+            return `<b>Your accent was carried over from the palette you pasted.</b> The Fixer assigned it the supporting role and checked the saturation relationship numerically, rather than choosing a new hue for you.`;
         case "complementary":
             return `<b>Your accent sits directly opposite the brand colour.</b> Opposites give the strongest possible contrast, which is why the accent catches the eye immediately. Use it for one thing per screen and it will always be the thing people notice first.`;
         case "split-complementary-a":
@@ -399,7 +438,7 @@ function renderReading(palette) {
     const grade = E.contrastGrade(ratio);
 
     const items = [
-        harmonySentence(palette.accentHarmony, dHue),
+        harmonySentence(palette.accentHarmony || "fixer", dHue),
 
         /* Threshold at 95, not 100: at 96-100% there is no meaningful
            gap to describe, so claiming one would be nonsense copy. */
@@ -572,8 +611,9 @@ function restorePalette(entry) {
     $("ctl-borrow").checked = entry.settings.borrow;
     $("ctl-brand").value = entry.settings.lock;
     $("ctl-brand-clear").hidden = !entry.settings.lock;
-    if (entry.palette.seed) state.seed = entry.palette.seed;
-    else history.replaceState(null, "", location.pathname + location.hash);
+    /* != null, not truthiness: 0 is a real seed. */
+    if (entry.palette.seed != null) state.seed = entry.palette.seed;
+    else safeReplaceUrl(location.pathname + location.hash);
     state.typeIndex = 0;
     renderPalette(entry.palette);
 }
@@ -597,8 +637,26 @@ function renderHistory() {
     $("history-block").hidden = state.history.length < 2;
 }
 
+/* A saved entry has to be renderable end-to-end (mini strip AND a
+   later full restore), or one corrupt/legacy row in localStorage
+   throws inside DOMContentLoaded and takes the whole boot down with
+   it - dead buttons, no palette. Shape-check each entry, not just
+   the JSON parse. */
+function isValidSavedEntry(e) {
+    return !!(e && e.palette
+        && Array.isArray(e.palette.swatches)
+        && e.palette.swatches.length === 4
+        && e.palette.swatches.every(s => s && typeof s.hex === "string" && E.hexToRgb(s.hex))
+        && e.palette.deployments && e.palette.deployments.light && e.palette.deployments.dark
+        && Array.isArray(e.palette.contrasts)
+        && e.settings && typeof e.settings.cat === "string");
+}
+
 function loadSavedList() {
-    try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || []; }
+    try {
+        const raw = JSON.parse(localStorage.getItem(SAVE_KEY));
+        return Array.isArray(raw) ? raw.filter(isValidSavedEntry) : [];
+    }
     catch { return []; }
 }
 
@@ -667,7 +725,20 @@ function renderSaved() {
 
 function loadAgency() {
     const defaults = { name: "", client: "", whiteLabel: false, logo: null };
-    try { return Object.assign(defaults, JSON.parse(localStorage.getItem(AGENCY_KEY)) || {}); }
+    /* Field-level validation, not just parse: these values land in
+       input .value, in printed output, and (the logo) in an <img src>.
+       A tampered or legacy shape must degrade to defaults, and only a
+       data:image/ URL is ever allowed back into src. */
+    try {
+        const raw = JSON.parse(localStorage.getItem(AGENCY_KEY));
+        if (!raw || typeof raw !== "object") return defaults;
+        return {
+            name: typeof raw.name === "string" ? raw.name : "",
+            client: typeof raw.client === "string" ? raw.client : "",
+            whiteLabel: raw.whiteLabel === true,
+            logo: typeof raw.logo === "string" && raw.logo.startsWith("data:image/") ? raw.logo : null
+        };
+    }
     catch { return defaults; }
 }
 
@@ -695,7 +766,7 @@ function renderPalette(palette) {
 
     renderHeroField(palette);
 
-    $("seed-label").textContent = palette.seed ? "seed " + palette.seed : "from the Fixer";
+    $("seed-label").textContent = palette.seed != null ? "seed " + palette.seed : "from the Fixer";
 
     renderReading(palette);
     renderSwatches(palette);
@@ -837,26 +908,31 @@ function syncUrl() {
     const p = state.palette;
     /* Mood-driven palettes carry a seed but no category the URL's
        restore path understands - skip rather than write a link that
-       silently rebuilds the wrong palette. */
-    if (!p || !p.seed || p.custom) return;
+       silently rebuilds the wrong palette. seed check is != null:
+       0 is a legitimate, reproducible seed. */
+    if (!p || p.seed == null || p.custom) return;
     const q = new URLSearchParams();
     q.set("cat", $("ctl-category").value);
     q.set("seed", p.seed);
     if ($("ctl-borrow").checked) q.set("borrow", "1");
     const { locked } = readLockedInput();
     if (locked) q.set("lock", locked.slice(1));
-    history.replaceState(null, "", "?" + q.toString() + location.hash);
+    safeReplaceUrl("?" + q.toString() + location.hash);
 }
 
 function restoreFromUrl() {
     const q = new URLSearchParams(location.search);
     if (!q.has("seed")) return false;
+    /* Validate the seed BEFORE touching any control: a bad seed
+       (?seed=abc) used to bail out here after already mutating
+       category/borrow/lock, so the fallback fresh generate ran from
+       half-restored settings. */
+    const seed = parseInt(q.get("seed"), 10);
+    if (!Number.isFinite(seed)) return false;
     const cat = q.get("cat");
     if (cat && ARCHETYPE_OPTIONS.includes(cat)) $("ctl-category").value = cat;
     $("ctl-borrow").checked = q.get("borrow") === "1";
     if (q.get("lock") && E.hexToRgb("#" + q.get("lock"))) $("ctl-brand").value = "#" + q.get("lock").toUpperCase();
-    const seed = parseInt(q.get("seed"), 10);
-    if (!Number.isFinite(seed)) return false;
     state.seed = seed;
     generate(false);
     return true;
@@ -948,7 +1024,12 @@ function runFixer() {
         return;
     }
     $("fix-input").setAttribute("aria-invalid", "false");
-    if (hexes.length > 6) hexes.length = 6;
+    /* Say so instead of truncating silently - the mapping below would
+       otherwise list fewer colors than were pasted with no explanation. */
+    if (hexes.length > 6) {
+        hexes.length = 6;
+        toast("Using the first 6 distinct colors");
+    }
 
     const result = E.fixPalette(hexes);
     $("fixer-results").hidden = false;
@@ -1006,12 +1087,12 @@ function runFixer() {
     result.mapping.forEach(m => {
         const row = document.createElement("div");
         row.className = "map-row";
-        row.innerHTML = `<span class="map-chip" style="background:${m.from}"></span><span class="map-hex mono">${m.from}</span><span class="map-note">${m.note}</span>`;
+        row.innerHTML = `<span class="map-chip" style="background:${esc(m.from)}"></span><span class="map-hex mono">${esc(m.from)}</span><span class="map-note">${esc(m.note)}</span>`;
         map.appendChild(row);
     });
 
     state.fixed = result;
-    $("fixer-results").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    $("fixer-results").scrollIntoView({ behavior: scrollBehavior(), block: "nearest" });
 }
 
 function adoptFixed() {
@@ -1019,7 +1100,10 @@ function adoptFixed() {
     const f = state.fixed;
     const palette = {
         seed: null,
-        category: $("ctl-category").value,
+        /* null, not the control panel's current value: this palette
+           came from pasted colors, and stamping an unrelated category
+           into it put a false provenance line in the token export. */
+        category: null,
         mood: E.moodFromColor(f.swatches[1].hex),
         signal: "Rebuilt by the Fixer. Every color now has a job.",
         borrowed: null,
@@ -1028,9 +1112,9 @@ function adoptFixed() {
         contrasts: f.contrasts
     };
     /* The old ?seed= no longer describes what's on screen. */
-    history.replaceState(null, "", location.pathname + location.hash);
+    safeReplaceUrl(location.pathname + location.hash);
     renderPalette(palette);
-    $("engine").scrollIntoView({ behavior: "smooth" });
+    $("engine").scrollIntoView({ behavior: scrollBehavior() });
     toast("Fixed palette loaded");
 }
 
@@ -1080,7 +1164,7 @@ function renderPrintSheet(palette) {
         ? `Prepared for ${esc(agency.client.trim())}`
         : "Gamut. Deployed per the 60-30-10 rule.";
     const dateLine = `<p class="ps-date">${new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}</p>`;
-    const logo = branded && agency.logo ? `<img class="ps-logo" src="${agency.logo}" alt="">` : "";
+    const logo = branded && agency.logo ? `<img class="ps-logo" src="${esc(agency.logo)}" alt="">` : "";
 
     area.innerHTML = `
         <div class="ps-header">
@@ -1108,6 +1192,24 @@ function downloadSvgCard() {
     a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 5000);
     toast("SVG card downloaded");
+}
+
+/* Same tokens the exports above already carry, packaged for an AI
+   agent instead of a human: tokens.json, brand docs, and a prompt
+   generated from that exact data, zipped with no server round trip. */
+function downloadAiPackage() {
+    if (!state.palette) return;
+    const zip = AiPack.buildZip(state.palette, currentPair());
+    const blob = new Blob([zip], { type: "application/zip" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    /* != null, not truthiness: seed 0 is a real seed. */
+    a.download = `gamut-ai-package-${state.palette.seed != null ? state.palette.seed : "fixer"}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    toast("AI Import Package ready.");
 }
 
 /* ---------- Studio Assistant ---------- */
@@ -1162,9 +1264,12 @@ function renderAssistantResult(r) {
 }
 
 async function runAssistant() {
+    const btn = $("assistant-run");
+    /* Enter in the textarea bypasses the disabled button; without
+       this, rapid submits race and the slowest response wins. */
+    if (btn.disabled) return;
     const text = $("assistant-input").value.trim();
     if (!text) { toast("Type a brief first"); return; }
-    const btn = $("assistant-run");
     btn.disabled = true;
     btn.textContent = "Thinking…";
     try {
@@ -1186,18 +1291,31 @@ async function runAssistant() {
 function generateFromAssistant() {
     const r = state.assistantResult;
     if (!r) return;
-    state.seed = Math.floor(Math.random() * 1e9);
-    let palette;
     if (r.archetype) {
-        palette = E.generatePalette({ category: r.archetype, seed: state.seed, borrow: r.borrow, lockedBrand: r.lockedBrand });
+        /* Reflect the interpreted settings into the real controls,
+           then run the normal generate path. Without this, syncUrl()
+           and the history entry read the PREVIOUS control state - a
+           shared link rebuilt a different palette than the one on
+           screen, and a later control tweak regenerated from the
+           wrong category. */
+        $("ctl-category").value = r.archetype;
+        $("ctl-borrow").checked = r.borrow === true;
+        $("ctl-brand").value = r.lockedBrand || "";
+        generate(true);
     } else {
         const customArchetype = window.Mood.resolveMood(r.keywords);
         if (!customArchetype) { toast("Could not resolve a palette from this brief"); return; }
-        palette = E.generatePalette({ category: "custom", seed: state.seed, lockedBrand: r.lockedBrand, customArchetype });
+        /* Mood palettes bypass the category control, but the lock is
+           still a control-owned setting - keep it in step for the
+           same reason. */
+        $("ctl-brand").value = r.lockedBrand || "";
+        $("ctl-brand-clear").hidden = !r.lockedBrand;
+        state.seed = Math.floor(Math.random() * 1e9);
+        const palette = E.generatePalette({ category: "custom", seed: state.seed, lockedBrand: r.lockedBrand, customArchetype });
+        state.typeIndex = 0;
+        renderPalette(palette);
     }
-    state.typeIndex = 0;
-    renderPalette(palette);
-    $("engine").scrollIntoView({ behavior: "smooth" });
+    $("engine").scrollIntoView({ behavior: scrollBehavior() });
     toast("Palette generated from your brief");
 }
 
@@ -1252,6 +1370,9 @@ document.addEventListener("DOMContentLoaded", () => {
     syncAssistantSettings();
     $("assistant-run").addEventListener("click", runAssistant);
     $("assistant-input").addEventListener("keydown", e => {
+        /* Enter during IME composition is confirming characters,
+           not submitting. */
+        if (e.isComposing) return;
         if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); runAssistant(); }
     });
     $("assistant-provider").addEventListener("change", () => toggleAssistantFields($("assistant-provider").value));
@@ -1279,7 +1400,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     $("copy-link").addEventListener("click", () => {
-        if (state.palette && (!state.palette.seed || state.palette.custom)) {
+        if (state.palette && (state.palette.seed == null || state.palette.custom)) {
             toast("This palette has no link yet; export instead");
             return;
         }
@@ -1364,18 +1485,27 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!file) return;
         const img = new Image();
         img.onload = () => {
-            const c = document.createElement("canvas");
-            const scale = Math.min(1, 96 / Math.max(img.width, img.height));
-            c.width = Math.max(1, Math.round(img.width * scale));
-            c.height = Math.max(1, Math.round(img.height * scale));
-            const ctx = c.getContext("2d", { willReadFrequently: true });
-            ctx.drawImage(img, 0, 0, c.width, c.height);
-            const data = ctx.getImageData(0, 0, c.width, c.height).data;
-            URL.revokeObjectURL(img.src);
-            const hexes = E.quantizeColors(data, 5);
-            if (hexes.length < 2) { toast("Could not read enough distinct colors"); return; }
-            $("fix-input").value = hexes.join(" ");
-            runFixer();
+            /* try/catch because onload does not mean drawable: an SVG
+               with no intrinsic size reports width 0 and drawImage /
+               getImageData can throw. An uncaught throw here left no
+               toast and leaked the object URL. */
+            try {
+                const c = document.createElement("canvas");
+                const scale = Math.min(1, 96 / Math.max(1, img.width, img.height));
+                c.width = Math.max(1, Math.round(img.width * scale));
+                c.height = Math.max(1, Math.round(img.height * scale));
+                const ctx = c.getContext("2d", { willReadFrequently: true });
+                ctx.drawImage(img, 0, 0, c.width, c.height);
+                const data = ctx.getImageData(0, 0, c.width, c.height).data;
+                const hexes = E.quantizeColors(data, 5);
+                if (hexes.length < 2) { toast("Could not read enough distinct colors"); return; }
+                $("fix-input").value = hexes.join(" ");
+                runFixer();
+            } catch {
+                toast("Could not read that image");
+            } finally {
+                URL.revokeObjectURL(img.src);
+            }
         };
         img.onerror = () => { URL.revokeObjectURL(img.src); toast("Could not read that image"); };
         img.src = URL.createObjectURL(file);
@@ -1397,10 +1527,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     $("print-sheet").addEventListener("click", () => window.print());
     $("svg-card").addEventListener("click", downloadSvgCard);
+    $("ai-package").addEventListener("click", downloadAiPackage);
 
     /* Fixer */
     $("fix-run").addEventListener("click", runFixer);
     $("fix-input").addEventListener("keydown", e => {
+        if (e.isComposing) return;
         if (e.key === "Enter") runFixer();
     });
     $("fix-adopt").addEventListener("click", adoptFixed);
