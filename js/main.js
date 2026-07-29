@@ -213,6 +213,12 @@ let toastUndoHandler = null;
    action just taken; the toast grows an "Undo" affordance and stays
    up longer so a destructive click (e.g. deleting a saved palette)
    is always recoverable without a blocking confirm() dialog. */
+function lockedToast() {
+    toast("This is a Studio feature");
+    const p = $("pricing");
+    if (p) p.scrollIntoView({ behavior: scrollBehavior(), block: "nearest" });
+}
+
 function toast(msg, undo) {
     const t = $("toast");
     $("toast-msg").textContent = msg;
@@ -755,6 +761,7 @@ function syncAgencyFields() {
 }
 
 function onAgencyChange() {
+    if (!window.License.Gate.has("agency")) { lockedToast(); return; }
     persistAgency();
     if (state.palette) renderPrintSheet(state.palette);
 }
@@ -1017,6 +1024,22 @@ function renderTypeLab() {
 /* ---------- Fixer ---------- */
 
 function runFixer() {
+    if (!window.License.Gate.has("fixer-unlimited")) {
+        const today = new Date().toISOString().split('T')[0];
+        let countObj = { date: today, n: 0 };
+        try {
+            const stored = localStorage.getItem("gamut.fixer.count");
+            if (stored) countObj = JSON.parse(stored);
+        } catch(e) {}
+        if (countObj.date !== today) countObj = { date: today, n: 0 };
+        if (countObj.n >= 3) {
+            lockedToast();
+            return;
+        }
+        countObj.n++;
+        localStorage.setItem("gamut.fixer.count", JSON.stringify(countObj));
+    }
+
     const hexes = E.parseHexList($("fix-input").value);
     if (hexes.length < 2) {
         toast("Paste at least 2 hex codes");
@@ -1181,6 +1204,7 @@ function renderPrintSheet(palette) {
 }
 
 function downloadSvgCard() {
+    if (!window.License.Gate.has("export-svg")) { lockedToast(); return; }
     if (!state.palette) return;
     const svg = E.exportSvgCard(state.palette, currentPair(), state.agency);
     const blob = new Blob([svg], { type: "image/svg+xml" });
@@ -1198,6 +1222,7 @@ function downloadSvgCard() {
    agent instead of a human: tokens.json, brand docs, and a prompt
    generated from that exact data, zipped with no server round trip. */
 function downloadAiPackage() {
+    if (!window.License.Gate.has("ai-package")) { lockedToast(); return; }
     if (!state.palette) return;
     const zip = AiPack.buildZip(state.palette, currentPair());
     const blob = new Blob([zip], { type: "application/zip" });
@@ -1393,8 +1418,12 @@ document.addEventListener("DOMContentLoaded", () => {
     $("hero-regen").addEventListener("click", () => generate(true));
     $("ctl-category").addEventListener("change", () => generate(false));
     $("ctl-borrow").addEventListener("change", () => generate(false));
-    $("ctl-brand").addEventListener("change", () => generate(false));
+    $("ctl-brand").addEventListener("change", (e) => {
+        if (!window.License.Gate.has("lock-brand")) { lockedToast(); e.target.value = ""; return; }
+        generate(false);
+    });
     $("ctl-brand-clear").addEventListener("click", () => {
+        if (!window.License.Gate.has("lock-brand")) { lockedToast(); return; }
         $("ctl-brand").value = "";
         generate(false);
     });
@@ -1434,6 +1463,7 @@ document.addEventListener("DOMContentLoaded", () => {
         [$("swatch-row"), $("ratio-band"), $("applied")].filter(Boolean);
     document.querySelectorAll(".vision-btn").forEach(btn => {
         btn.addEventListener("click", () => {
+            if (!window.License.Gate.has("vision")) { lockedToast(); return; }
             document.querySelectorAll(".vision-btn").forEach(b => {
                 b.classList.remove("active");
                 b.setAttribute("aria-pressed", "false");
@@ -1448,7 +1478,10 @@ document.addEventListener("DOMContentLoaded", () => {
     /* Save / load palettes (localStorage, this device only) */
     state.saved = loadSavedList();
     renderSaved();
-    $("save-palette").addEventListener("click", toggleSave);
+    $("save-palette").addEventListener("click", () => {
+        if (!window.License.Gate.has("save-palette")) { lockedToast(); return; }
+        toggleSave();
+    });
 
     /* Agency branding for white-label client documentation */
     state.agency = loadAgency();
@@ -1480,6 +1513,7 @@ document.addEventListener("DOMContentLoaded", () => {
     /* Image extraction: downsample onto a canvas, quantize, hand
        the result to the Fixer. Everything stays client-side. */
     $("fix-image").addEventListener("change", e => {
+        if (!window.License.Gate.has("fix-image")) { lockedToast(); e.target.value = ""; return; }
         const file = e.target.files[0];
         e.target.value = "";
         if (!file) return;
@@ -1521,11 +1555,18 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll("[data-export]").forEach(btn => {
         btn.addEventListener("click", () => {
             if (!state.palette) return;
+            if (btn.dataset.export !== "css" && !window.License.Gate.has("export-" + btn.dataset.export)) {
+                lockedToast();
+                return;
+            }
             const [label, text] = EXPORTERS[btn.dataset.export](state.palette);
             copyText(text, label, btn);
         });
     });
-    $("print-sheet").addEventListener("click", () => window.print());
+    $("print-sheet").addEventListener("click", () => {
+        if (!window.License.Gate.has("print-sheet")) { lockedToast(); return; }
+        window.print();
+    });
     $("svg-card").addEventListener("click", downloadSvgCard);
     $("ai-package").addEventListener("click", downloadAiPackage);
 

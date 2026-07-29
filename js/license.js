@@ -156,10 +156,25 @@ const License = (function() {
         if (window.updateLicenseUI) window.updateLicenseUI();
     }
 
+    const Gate = {
+        has: function(feature) {
+            const t = tier();
+            if (t === "commercial" || t === "studio") return true;
+            
+            const studioFeatures = [
+                "fix-image", "vision", "save-palette",
+                "export-tailwind", "export-scss", "export-json", "export-tokens", "export-svg",
+                "print-sheet", "ai-package", "agency", "lock-brand"
+            ];
+            
+            return !studioFeatures.includes(feature);
+        }
+    };
+
     // Run init non-blocking
     init();
 
-    return { redeem, tier, getDetails, logout, init };
+    return { redeem, tier, getDetails, logout, init, Gate };
 })();
 
 window.License = License;

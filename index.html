@@ -168,7 +168,7 @@
                     </select>
                 </div>
                 <div class="field">
-                    <label for="ctl-brand">Lock a brand color <span class="optional">optional</span></label>
+                    <label for="ctl-brand">Lock a brand color <span class="optional">optional</span> <span class="studio-tag mono">Studio</span></label>
                     <div class="lock-row">
                         <input type="text" id="ctl-brand" class="mono" placeholder="#1F3FFF" maxlength="7" spellcheck="false">
                         <button class="btn-mini" id="ctl-brand-clear" type="button" hidden>Clear</button>
@@ -198,7 +198,7 @@
                         <span class="mono" id="seed-label"></span>
                     </span>
                     <div class="output-meta-actions">
-                        <button class="btn-mini" id="save-palette" type="button">Save palette</button>
+                        <button class="btn-mini" id="save-palette" type="button">Save palette <span class="studio-tag mono">Studio</span></button>
                         <button class="btn-mini" id="copy-link" type="button">Copy link to this palette</button>
                     </div>
                 </div>
@@ -215,7 +215,7 @@
 
 
                 <div class="vision-row" role="group" aria-label="Color vision simulation">
-                    <span class="exports-label mono">Vision</span>
+                    <span class="exports-label mono">Vision <span class="studio-tag mono">Studio</span></span>
                     <button class="btn-mini vision-btn active" data-vision="none" type="button" aria-pressed="true">Typical</button>
                     <button class="btn-mini vision-btn" data-vision="protanopia" type="button" aria-pressed="false">Protanopia</button>
                     <button class="btn-mini vision-btn" data-vision="deuteranopia" type="button" aria-pressed="false">Deuteranopia</button>
@@ -291,7 +291,7 @@
                         <label class="toggle toggle-mini">
                             <input type="checkbox" id="agency-whitelabel">
                             <span class="toggle-track" aria-hidden="true"></span>
-                            White-label
+                            White-label <span class="studio-tag mono">Studio</span>
                         </label>
                     </div>
                     <div class="agency-fields">
@@ -317,12 +317,12 @@
                 <div class="exports">
                     <span class="exports-label mono">Export</span>
                     <button class="btn-mini" data-export="css" type="button">CSS variables</button>
-                    <button class="btn-mini" data-export="tailwind" type="button">Tailwind v4</button>
-                    <button class="btn-mini" data-export="scss" type="button">SCSS</button>
-                    <button class="btn-mini" data-export="json" type="button">JSON</button>
+                    <button class="btn-mini" data-export="tailwind" type="button">Tailwind v4 <span class="studio-tag mono">Studio</span></button>
+                    <button class="btn-mini" data-export="scss" type="button">SCSS <span class="studio-tag mono">Studio</span></button>
+                    <button class="btn-mini" data-export="json" type="button">JSON <span class="studio-tag mono">Studio</span></button>
                     <button class="btn-mini" id="svg-card" type="button">SVG swatch card</button>
-                    <button class="btn-mini" id="print-sheet" type="button">Print brand sheet</button>
-                    <button class="btn-mini" id="ai-package" type="button">AI import package</button>
+                    <button class="btn-mini" id="print-sheet" type="button">Print brand sheet <span class="studio-tag mono">Studio</span></button>
+                    <button class="btn-mini" id="ai-package" type="button">AI import package <span class="studio-tag mono">Studio</span></button>
                 </div>
                 <p class="hint">The AI import package is a ZIP you can attach to Claude Code, Codex, Cursor, Gemini CLI, Windsurf, or any AI assistant that can create or edit Figma files — it contains the full token set, brand documentation, and a ready-to-use import prompt. Generated offline, no AI involved.</p>
             </div>
@@ -344,7 +344,7 @@
             <p class="hint">2 to 6 hex codes, any separator. Try pasting a palette that breaks the rules.</p>
 
             <div class="fixer-image-row">
-                <label class="btn-mini fixer-image-btn" for="fix-image">Or extract from an image</label>
+                <label class="btn-mini fixer-image-btn" for="fix-image">Or extract from an image <span class="studio-tag mono">Studio</span></label>
                 <input type="file" id="fix-image" accept="image/*" hidden>
                 <span class="hint fixer-image-hint">Upload a logo, moodboard, or photo. The dominant colors get pulled out, then diagnosed like any other palette. The image never leaves your browser.</span>
             </div>
@@ -412,7 +412,7 @@
 
         <div class="exports">
             <span class="exports-label mono">Export</span>
-            <button class="btn-mini" data-export="tokens" type="button">Design system tokens (JSON)</button>
+            <button class="btn-mini" data-export="tokens" type="button">Design system tokens (JSON) <span class="studio-tag mono">Studio</span></button>
             <p class="hint">CSS variables, Tailwind theme, and SCSS exports above already include these spacing, radius, and elevation tokens alongside color.</p>
         </div>
     </section>

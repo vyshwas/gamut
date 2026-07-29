@@ -2002,3 +2002,5 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
 @media (prefers-reduced-motion: reduce) {
     .hero-enter { opacity: 1; transform: none; animation: none; }
 }
+. s t u d i o - t a g   {   f o n t - s i z e :   0 . 7 5 e m ;   t e x t - t r a n s f o r m :   u p p e r c a s e ;   c o l o r :   v a r ( - - m u t e d ) ;   m a r g i n - l e f t :   0 . 5 e m ;   v e r t i c a l - a l i g n :   b a s e l i n e ;   }  
+ 
