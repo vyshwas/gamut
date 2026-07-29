@@ -1,0 +1,165 @@
+"use strict";
+
+const PUBLIC_JWK = {
+  "key_ops": [
+    "verify"
+  ],
+  "ext": true,
+  "kty": "EC",
+  "x": "a-DKuWGB4UU6LcChKbbarNlBtMoNLxOD-UXJkpHobGU",
+  "y": "zWa3ekvjHptN4kcvdtLe_pck3N3Cw92WRA35lGboINo",
+  "crv": "P-256"
+};
+
+const License = (function() {
+    const STORAGE_KEY = "gamut.license";
+    let currentLicense = null;
+
+    function b64url2buf(str) {
+        const base64 = str.replace(/-/g, '+').replace(/_/g, '/');
+        const pad = base64.length % 4;
+        const padded = pad ? base64 + '='.repeat(4 - pad) : base64;
+        const bin = atob(padded);
+        const buf = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+        return buf;
+    }
+
+    async function verifySignature(payloadB64, sigB64) {
+        try {
+            const key = await crypto.subtle.importKey(
+                'jwk',
+                PUBLIC_JWK,
+                { name: 'ECDSA', namedCurve: 'P-256' },
+                false,
+                ['verify']
+            );
+            
+            const payloadBuf = new TextEncoder().encode(atob(payloadB64.replace(/-/g, '+').replace(/_/g, '/')));
+            const sigBuf = b64url2buf(sigB64);
+            
+            return await crypto.subtle.verify(
+                { name: 'ECDSA', hash: 'SHA-256' },
+                key,
+                sigBuf,
+                payloadBuf
+            );
+        } catch (e) {
+            return false;
+        }
+    }
+
+    async function checkRevoked(id) {
+        try {
+            const res = await fetch('licenses/revoked.json', { cache: 'no-store' });
+            if (!res.ok) return false;
+            const data = await res.json();
+            return data.revoked && data.revoked.includes(id);
+        } catch (e) {
+            return false; // offline grace
+        }
+    }
+
+    async function parseAndVerify(codeStr) {
+        if (!codeStr || !codeStr.startsWith('GAMUT-')) {
+            return { ok: false, reason: "Malformed license code." };
+        }
+        
+        const parts = codeStr.substring(6).split('.');
+        if (parts.length !== 2) {
+            return { ok: false, reason: "Malformed license code." };
+        }
+        
+        const [payloadB64, sigB64] = parts;
+        
+        let payload;
+        try {
+            const jsonStr = atob(payloadB64.replace(/-/g, '+').replace(/_/g, '/'));
+            payload = JSON.parse(jsonStr);
+        } catch (e) {
+            return { ok: false, reason: "Malformed license code." };
+        }
+        
+        const isValid = await verifySignature(payloadB64, sigB64);
+        if (!isValid) {
+            return { ok: false, reason: "Invalid signature." };
+        }
+        
+        if (payload.exp && Date.now() > payload.exp) {
+            return { ok: false, reason: "License expired." };
+        }
+        
+        return { ok: true, payload };
+    }
+
+    async function redeem(codeString) {
+        const result = await parseAndVerify(codeString);
+        if (!result.ok) return result;
+        
+        const isRevoked = await checkRevoked(result.payload.id);
+        if (isRevoked) {
+            return { ok: false, reason: "License has been revoked." };
+        }
+        
+        const { id, tier } = result.payload;
+        currentLicense = { code: codeString, tier, id };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(currentLicense));
+        
+        return { ok: true, tier };
+    }
+
+    async function init() {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            try {
+                const parsed = JSON.parse(stored);
+                const result = await parseAndVerify(parsed.code);
+                if (!result.ok) {
+                    localStorage.removeItem(STORAGE_KEY);
+                    currentLicense = null;
+                    return;
+                }
+                currentLicense = parsed;
+                
+                checkRevoked(parsed.id).then(isRevoked => {
+                    if (isRevoked) {
+                        localStorage.removeItem(STORAGE_KEY);
+                        currentLicense = null;
+                        if (window.toast) toast("Your license was deactivated.");
+                        if (window.updateLicenseUI) window.updateLicenseUI();
+                    }
+                });
+            } catch (e) {
+                localStorage.removeItem(STORAGE_KEY);
+            }
+        }
+    }
+
+    function tier() {
+        if (!currentLicense) return "free";
+        return currentLicense.tier;
+    }
+
+    function getDetails() {
+        if (!currentLicense) return null;
+        try {
+            const payloadB64 = currentLicense.code.substring(6).split('.')[0];
+            return JSON.parse(atob(payloadB64.replace(/-/g, '+').replace(/_/g, '/')));
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function logout() {
+        localStorage.removeItem(STORAGE_KEY);
+        currentLicense = null;
+        if (window.updateLicenseUI) window.updateLicenseUI();
+    }
+
+    // Run init non-blocking
+    init();
+
+    return { redeem, tier, getDetails, logout, init };
+})();
+
+window.License = License;

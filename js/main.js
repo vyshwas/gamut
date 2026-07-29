@@ -1572,6 +1572,55 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    /* License UI */
+    window.updateLicenseUI = function() {
+        if (!window.License) return;
+        const tier = License.tier();
+        const details = License.getDetails();
+        
+        const statusEl = $("license-status");
+        if (statusEl) {
+            if (tier === "free") {
+                statusEl.textContent = "Current plan: Free";
+                statusEl.style.color = "var(--muted)";
+            } else {
+                let text = `Current plan: ${tier.charAt(0).toUpperCase() + tier.slice(1)}`;
+                if (details && details.exp) {
+                    const d = new Date(details.exp);
+                    text += ` (expires ${d.toISOString().split('T')[0]})`;
+                } else if (details) {
+                    text += ` (lifetime)`;
+                }
+                statusEl.textContent = text;
+                statusEl.style.color = "var(--ink)";
+            }
+        }
+    };
+
+    const redeemBtn = $("license-redeem");
+    if (redeemBtn) {
+        redeemBtn.addEventListener("click", async () => {
+            const code = $("license-code").value.trim();
+            if (!code) return;
+            redeemBtn.disabled = true;
+            redeemBtn.textContent = "Verifying...";
+            
+            const result = await License.redeem(code);
+            redeemBtn.disabled = false;
+            redeemBtn.textContent = "Activate";
+            
+            if (result.ok) {
+                $("license-code").value = "";
+                toast(`License activated: ${result.tier} plan`);
+                updateLicenseUI();
+            } else {
+                toast(`Activation failed: ${result.reason}`);
+            }
+        });
+    }
+    
+    if (window.License) updateLicenseUI();
+
     /* First palette: restore a shared link if present, else fresh. */
     if (!restoreFromUrl()) generate(true);
 });
