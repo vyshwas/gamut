@@ -626,9 +626,14 @@ function diagnosePalette(hexes) {
     return issues;
 }
 
-function fixPalette(hexes) {
+function fixPalette(hexes, options = { strategy: 'balanced' }) {
     const issues = diagnosePalette(hexes);
     const items = hexes.map(hex => ({ hex, hsl: hexToHsl(hex), note: null }));
+    
+    const strat = options.strategy;
+    const inkThresh = strat === 'preserve' ? 20 : strat === 'maximize' ? 40 : 30;
+    const muteThresh = strat === 'preserve' ? 25 : strat === 'maximize' ? 50 : 35;
+    const shoutSatThresh = strat === 'preserve' ? 55 : strat === 'maximize' ? 35 : 45;
 
     /* Assign roles: lightest becomes Dominant, darkest becomes Ink,
        most saturated of the rest becomes Brand, next becomes Accent.
@@ -643,7 +648,7 @@ function fixPalette(hexes) {
        candidate rejoins the pool and competes for Brand/Accent
        instead of being dropped. */
     let ink;
-    if (inkSource.hsl.l > 30) {
+    if (inkSource.hsl.l > inkThresh) {
         middle.push(inkSource);
         const seedHue = middle.length
             ? [...middle].sort((a, b) => b.hsl.s - a.hsl.s)[0].hsl.h
@@ -656,7 +661,14 @@ function fixPalette(hexes) {
     middle.sort((a, b) => b.hsl.s - a.hsl.s);
     let brand = middle[0] || null;
     let accent = middle[1] || null;
-    const retired = middle.slice(2);
+    let retired = middle.slice(2);
+    
+    if (strat === 'maximize') {
+        if (accent && Math.abs(accent.hsl.h - brand.hsl.h) < 20) {
+            retired.push(accent);
+            accent = null;
+        }
+    }
 
     /* No brand candidate: promote the dominant's hue at full power. */
     let brandSynth = false;
@@ -668,7 +680,7 @@ function fixPalette(hexes) {
 
     /* All muted fix: give the brand its voice back. */
     const brandOrig = brand.hex;
-    if (brand.hsl.s < 35) {
+    if (brand.hsl.s < muteThresh) {
         brand = { hsl: { ...brand.hsl, s: 80 }, hex: hslToHex({ ...brand.hsl, s: 80 }), src: brand };
     }
 
@@ -677,7 +689,7 @@ function fixPalette(hexes) {
     let accentSynth = false;
     const accentOrig = accent ? accent.hex : null;
     if (accent) {
-        const target = Math.max(45, Math.round(brand.hsl.s * 0.7));
+        const target = Math.max(45, Math.round(brand.hsl.s * (strat === 'preserve' ? 0.9 : strat === 'maximize' ? 0.5 : 0.7)));
         if (accent.hsl.s > target) {
             accent = { hsl: { ...accent.hsl, s: target }, hex: hslToHex({ ...accent.hsl, s: target }), src: accent };
         }
@@ -690,7 +702,7 @@ function fixPalette(hexes) {
 
     /* Dominant must be a canvas, not a shout. */
     const dominantOrig = dominant.hex;
-    if (dominant.hsl.s > 45 && dominant.hsl.l < 88 && dominant.hsl.l > 40) {
+    if (dominant.hsl.s > shoutSatThresh && dominant.hsl.l < 88 && dominant.hsl.l > 40) {
         const hsl = { h: dominant.hsl.h, s: 18, l: 94 };
         dominant = { hsl, hex: hslToHex(hsl), src: dominant };
     }
@@ -702,25 +714,48 @@ function fixPalette(hexes) {
 
     /* Provenance: one line per input color. */
     const fate = new Map();
+    const fateAction = new Map();
+    const fateReason = new Map();
+    
     fate.set(dominantOrig, dominant.hex === dominantOrig
         ? "Kept as Dominant, the canvas."
         : `Softened into the Dominant canvas ${dominant.hex}.`);
-    if (!ink.forged) fate.set(inkSource.hex, "Kept as Ink, the dark anchor.");
+    fateAction.set(dominantOrig, dominant.hex === dominantOrig ? "kept" : "adjusted");
+    fateReason.set(dominantOrig, dominant.hex === dominantOrig ? "" : "shout canvas");
+        
+    if (!ink.forged) {
+        fate.set(inkSource.hex, "Kept as Ink, the dark anchor.");
+        fateAction.set(inkSource.hex, inkHex === inkSource.hex ? "kept" : "adjusted");
+        fateReason.set(inkSource.hex, inkHex === inkSource.hex ? "" : "contrast");
+    }
     if (!brandSynth) {
         fate.set(brandOrig, brandHex === brandOrig
             ? "Kept as Brand, the lead voice."
             : `Adjusted to ${brandHex} as Brand.`);
+        fateAction.set(brandOrig, brandHex === brandOrig ? "kept" : "adjusted");
+        fateReason.set(brandOrig, brandHex === brandOrig ? "" : "contrast / mute");
     }
     if (!accentSynth && accentOrig) {
         fate.set(accentOrig, accentHex === accentOrig
             ? "Kept as Accent."
             : `Muted to ${accentHex} as Accent (Law 2).`);
+        fateAction.set(accentOrig, accentHex === accentOrig ? "kept" : "adjusted");
+        fateReason.set(accentOrig, accentHex === accentOrig ? "" : "Law 2");
     }
-    retired.forEach(r => fate.set(r.hex, "Retired to keep two voices (Law 5)."));
+    retired.forEach(r => {
+        fate.set(r.hex, "Retired to keep two voices (Law 5).");
+        fateAction.set(r.hex, "retired");
+        fateReason.set(r.hex, "Law 5");
+    });
 
-    const mapping = hexes.map(hex => ({ from: hex, note: fate.get(hex) || "Retired to keep two voices (Law 5)." }));
-    if (ink.forged) mapping.push({ from: inkHex, note: "Forged: the dark anchor your palette was missing (Law 1)." });
-    if (accentSynth) mapping.push({ from: accentHex, note: "Synthesized: a supporting accent at 70% of the Brand's power." });
+    const mapping = hexes.map(hex => ({ 
+        from: hex, 
+        note: fate.get(hex) || "Retired to keep two voices (Law 5).",
+        action: fateAction.get(hex) || "retired",
+        reason: fateReason.get(hex) || "Law 5"
+    }));
+    if (ink.forged) mapping.push({ from: inkHex, note: "Forged: the dark anchor your palette was missing (Law 1).", action: "forged", reason: "Law 1" });
+    if (accentSynth) mapping.push({ from: accentHex, note: "Synthesized: a supporting accent at 70% of the Brand's power.", action: "forged", reason: "synth" });
 
     const build = (hex, role, pct, job) => {
         const rgb = hexToRgb(hex);
@@ -734,6 +769,16 @@ function fixPalette(hexes) {
         build(inkHex, "Ink", "Text", "The anchor. Text and small UI, grounding the noise.")
     ];
     if (swatches[2].name === swatches[1].name) swatches[2].name = "Soft " + swatches[2].name;
+
+    // Wire up mapping to swatches
+    mapping.forEach(m => {
+        if (m.action !== "retired" && m.action !== "forged") {
+            if (m.from === dominantOrig) m.swatch = swatches[0];
+            else if (m.from === brandOrig) m.swatch = swatches[1];
+            else if (m.from === accentOrig) m.swatch = swatches[2];
+            else if (!ink.forged && m.from === inkSource.hex) m.swatch = swatches[3];
+        }
+    });
 
     const domIsDark = hexToHsl(dominant.hex).l < 40;
     const darkDominant = domIsDark ? dominant.hex : hslToHex({ h: brand.hsl.h, s: 12, l: 9 });

@@ -64,6 +64,19 @@ Rules:
 Return ONLY the JSON object, nothing else.`;
     }
 
+    /* A hung provider (Ollama mid-model-load, a dropped connection)
+       otherwise pins the UI on "Thinking…" indefinitely - fetch has no
+       default timeout. Abort after `ms` so the offline fallback takes
+       over instead. */
+    const PROVIDER_TIMEOUT_MS = 20000;
+    function fetchWithTimeout(url, opts, ms) {
+        if (typeof AbortController === "undefined") return fetch(url, opts);
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), ms);
+        return fetch(url, Object.assign({}, opts, { signal: ctrl.signal }))
+            .finally(() => clearTimeout(t));
+    }
+
     function extractJson(text) {
         if (!text) return null;
         const start = text.indexOf("{");
@@ -97,11 +110,16 @@ Return ONLY the JSON object, nothing else.`;
     /* ---------- Offline fallback: no network, always works ---------- */
     function offlineInterpret(text) {
         const lower = text.toLowerCase();
-        const keywords = LEXICON_WORDS.filter(w => lower.includes(w)).slice(0, 4);
+        /* Whole-word matching, not substring: "raw" must not fire on
+           "drawing", "dark" not on "darkroom". Lexicon words and
+           archetype keys are plain lowercase letters, so no regex
+           escaping is needed. */
+        const hasWord = w => new RegExp("\\b" + w + "\\b").test(lower);
+        const keywords = LEXICON_WORDS.filter(hasWord).slice(0, 4);
         let archetype = null;
         for (const [key, a] of ARCHETYPE_ENTRIES) {
             const label = a.label.split(" / ")[0].toLowerCase();
-            if (lower.includes(key) || lower.includes(label)) { archetype = key; break; }
+            if (hasWord(key) || lower.includes(label)) { archetype = key; break; }
         }
         const hexMatch = text.match(/#[0-9a-fA-F]{6}\b/);
         /* Browsers send Origin: null for file:// pages, and Ollama's
@@ -123,7 +141,7 @@ Return ONLY the JSON object, nothing else.`;
 
     /* ---------- Local: Ollama ---------- */
     async function ollamaInterpret(text, settings) {
-        const res = await fetch(settings.ollamaUrl.replace(/\/$/, "") + "/api/chat", {
+        const res = await fetchWithTimeout(settings.ollamaUrl.replace(/\/$/, "") + "/api/chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -135,7 +153,7 @@ Return ONLY the JSON object, nothing else.`;
                     { role: "user", content: text }
                 ]
             })
-        });
+        }, PROVIDER_TIMEOUT_MS);
         if (!res.ok) throw new Error("Ollama HTTP " + res.status);
         const data = await res.json();
         return validate(extractJson(data && data.message && data.message.content));
@@ -143,7 +161,7 @@ Return ONLY the JSON object, nothing else.`;
 
     /* ---------- Optional cloud: Claude, user's own key ---------- */
     async function claudeInterpret(text, settings) {
-        const res = await fetch("https://api.anthropic.com/v1/messages", {
+        const res = await fetchWithTimeout("https://api.anthropic.com/v1/messages", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -157,7 +175,7 @@ Return ONLY the JSON object, nothing else.`;
                 system: systemPrompt(),
                 messages: [{ role: "user", content: text }]
             })
-        });
+        }, PROVIDER_TIMEOUT_MS);
         if (!res.ok) throw new Error("Claude HTTP " + res.status);
         const data = await res.json();
         const raw = data && data.content && data.content[0] && data.content[0].text;

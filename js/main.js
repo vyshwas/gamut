@@ -1023,6 +1023,18 @@ function renderTypeLab() {
 
 /* ---------- Fixer ---------- */
 
+function updateStepper(step) {
+    const s = $("fixer-stepper");
+    if (!s) return;
+    s.style.display = "block";
+    ["import", "review", "build", "export"].forEach(id => {
+        const el = $("step-" + id);
+        if (el) el.style.color = "var(--muted)";
+    });
+    const curr = $("step-" + step);
+    if (curr) curr.style.color = "var(--ink)";
+}
+
 function runFixer() {
     if (!window.License.Gate.has("fixer-unlimited")) {
         const today = new Date().toISOString().split('T')[0];
@@ -1054,7 +1066,9 @@ function runFixer() {
         toast("Using the first 6 distinct colors");
     }
 
-    const result = E.fixPalette(hexes);
+    const strategy = document.querySelector('input[name="fix-strategy"]:checked')?.value || 'balanced';
+    const originalHexes = [...hexes];
+    const result = E.fixPalette(hexes, { strategy });
     $("fixer-results").hidden = false;
     $("fixer-compare").hidden = false;
 
@@ -1115,10 +1129,53 @@ function runFixer() {
     });
 
     state.fixed = result;
+    
+    updateStepper("review");
+    
+    // Summary Chips
+    const summary = [];
+    if (result.mapping.some(m => m.action === "adjusted" && (m.reason.includes("contrast") || m.reason.includes("Law 2")))) {
+        summary.push("✓ Contrast & legibility raised to floor");
+    }
+    const retired = result.mapping.filter(m => m.action === "retired").length;
+    if (retired > 0) {
+        summary.push(`✓ ${originalHexes.length} colors &rarr; ${result.swatches.length} roles`);
+    }
+    
+    if ($("fixer-summary")) {
+        $("fixer-summary").innerHTML = summary.map(s => `<span class="btn-mini" style="pointer-events: none; border-color: var(--line);">${s}</span>`).join("");
+    }
+    
+    // Magnitude notice
+    let totalHueDelta = 0, totalSatDelta = 0, count = 0;
+    result.mapping.forEach((m, i) => {
+        if (m.action !== "retired" && originalHexes[i] && m.swatch) {
+            const h1 = E.hexToHsl(originalHexes[i]);
+            const h2 = E.hexToHsl(m.swatch.hex);
+            totalHueDelta += Math.abs(h1[0] - h2[0]);
+            totalSatDelta += Math.abs(h1[1] - h2[1]);
+            count++;
+        }
+    });
+    const avgHueDelta = count ? totalHueDelta / count : 0;
+    const avgSatDelta = count ? totalSatDelta / count : 0;
+    
+    if ($("fixer-magnitude")) {
+        if (avgHueDelta > 15 || avgSatDelta > 15) {
+            $("fixer-magnitude").textContent = "This optimization noticeably changes the visual character of your brand to meet the laws.";
+        } else {
+            $("fixer-magnitude").textContent = "";
+        }
+    }
+
     $("fixer-results").scrollIntoView({ behavior: scrollBehavior(), block: "nearest" });
 }
 
 function adoptFixed() {
+    updateStepper("build");
+    const sf = $("system-from-fixer");
+    if (sf) sf.style.display = "block";
+    $("system").scrollIntoView({ behavior: scrollBehavior(), block: "start" });
     if (!state.fixed) return;
     const f = state.fixed;
     const palette = {
@@ -1664,4 +1721,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /* First palette: restore a shared link if present, else fresh. */
     if (!restoreFromUrl()) generate(true);
+});
+
+window.addEventListener("scroll", () => {
+    if ($("fixer-stepper") && $("fixer-stepper").style.display !== "none") {
+        const sys = $("system");
+        if (sys && sys.getBoundingClientRect().top < window.innerHeight / 2) {
+            updateStepper("export");
+        }
+    }
 });

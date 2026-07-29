@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gamut - Brand palettes built like decisions</title>
+    <title>Gamut - Generate production-ready design systems</title>
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.anthropic.com http://localhost:11434 https://fonts.googleapis.com https://fonts.gstatic.com; frame-src https://api.razorpay.com https://checkout.razorpay.com">
-    <meta name="description" content="Generate, fix, and pair brand color systems built on the 60-30-10 rule, the ten laws of color, and print-ready values. For designers, agencies, and brand teams.">
+    <meta name="description" content="Generate production-ready design systems from a brief, category, hexes, or image. Complete with typography, tokens, and exports.">
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23D4FF00'/%3E%3Ctext x='16' y='23' font-family='Arial Black,sans-serif' font-size='20' font-weight='900' text-anchor='middle' fill='%23141414'%3EG%3C/text%3E%3C/svg%3E">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -72,11 +72,11 @@
     <header class="hero" id="top">
         <div class="hero-field" id="hero-field" role="img" aria-label="Live palette preview"></div>
         <div class="hero-content">
-            <h1 class="hero-enter">Pick palettes like a strategist.</h1>
-            <p class="hero-sub hero-enter">Generate, fix, and pair brand color systems built on the 60-30-10 rule, ten laws of color, and print-checked values.</p>
+            <h1 class="hero-enter">Generate production-ready design systems.</h1>
+            <p class="hero-sub hero-enter">From a written brief, category, pasted hexes, or an image &mdash; complete system out: color, typography, spacing, radius, elevation, states, tokens &mdash; exported for CSS/Tailwind/SCSS, Figma-ready via the AI import package.</p>
             <div class="hero-ctas hero-enter">
-                <a href="#engine" class="btn btn-hero-primary">Generate a palette</a>
-                <a href="#fixer" class="btn btn-hero-ghost">Fix a palette</a>
+                <a href="#engine" class="btn btn-hero-primary">Generate a system</a>
+                <a href="#fixer" class="btn btn-hero-ghost">Fix an existing palette</a>
             </div>
         </div>
         <!-- Caption rail: cells align to the band widths above, so each
@@ -314,7 +314,7 @@
                     <p class="hint">Saved on this device only. Turn on White-label to stamp the print sheet and SVG card with your studio instead of Gamut, so what you hand a client looks like it came from you.</p>
                 </div>
 
-                <div class="exports">
+                <div class="exports" id="exports-row">
                     <span class="exports-label mono">Export</span>
                     <button class="btn-mini" data-export="css" type="button">CSS variables</button>
                     <button class="btn-mini" data-export="tailwind" type="button">Tailwind v4 <span class="studio-tag mono">Studio</span></button>
@@ -336,7 +336,19 @@
             <p>Paste the palette you already have. It gets diagnosed against the ten laws, then rebuilt with every color assigned a job, and every color you pasted gets a verdict: kept, adjusted, or retired, with the law that decided it.</p>
         </div>
 
+        <div class="fixer-stepper mono" id="fixer-stepper" style="margin-bottom: 2rem; font-size: 0.85rem; color: var(--muted); border-bottom: 1px solid var(--line); padding-bottom: 1rem; display: none;">
+            <span id="step-import" style="color: var(--ink);">Import</span> &rarr;
+            <span id="step-review">Review</span> &rarr;
+            <span id="step-build">Build Design System</span> &rarr;
+            <span id="step-export">Export</span>
+        </div>
+
         <div class="fixer">
+            <div class="fixer-strategy field-inline" style="margin-bottom: 1rem;">
+                <label style="margin-right: 1rem;"><input type="radio" name="fix-strategy" value="preserve"> Preserve brand personality</label>
+                <label style="margin-right: 1rem;"><input type="radio" name="fix-strategy" value="balanced" checked> Balanced</label>
+                <label><input type="radio" name="fix-strategy" value="maximize"> Maximize system quality</label>
+            </div>
             <div class="fixer-input-row">
                 <input type="text" id="fix-input" class="mono" placeholder="#0055FF #FF3300 #FFEE00 #222222" spellcheck="false" aria-label="Paste 2 to 6 hex codes">
                 <button class="btn btn-primary" id="fix-run" type="button">Diagnose and fix</button>
@@ -351,25 +363,31 @@
 
         </div>
 
-        <!-- The comparison bleeds full width; the verdict copy stays on
-             the shared measure below it. -->
-        <div class="fixer-compare bleed-full" id="fixer-compare" hidden>
-            <figure class="compare-band">
-                <figcaption>Before</figcaption>
-                <div class="strip" id="strip-before"></div>
-                <div class="strip-captions" id="strip-before-caps"></div>
-            </figure>
-            <figure class="compare-band">
-                <figcaption>After, with jobs assigned</figcaption>
-                <div class="strip" id="strip-after"></div>
-                <div class="strip-captions" id="strip-after-caps"></div>
-            </figure>
-        </div>
-
         <div class="fixer-results" id="fixer-results" hidden>
+            <h3 style="margin-top: 3rem; margin-bottom: 1.5rem;">Your palette, optimized &mdash; brand preserved where possible.</h3>
+            
+            <div id="fixer-summary" style="margin-bottom: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;"></div>
+            <div id="fixer-magnitude" class="hint" style="margin-bottom: 2rem;"></div>
+
+            <div class="fixer-compare bleed-full" id="fixer-compare" style="margin-bottom: 2rem;">
+                <figure class="compare-band">
+                    <figcaption>Before</figcaption>
+                    <div class="strip" id="strip-before"></div>
+                    <div class="strip-captions" id="strip-before-caps"></div>
+                </figure>
+                <figure class="compare-band">
+                    <figcaption>After, with jobs assigned</figcaption>
+                    <div class="strip" id="strip-after"></div>
+                    <div class="strip-captions" id="strip-after-caps"></div>
+                </figure>
+            </div>
+
+            <div style="margin-bottom: 3rem;">
+                <button class="btn btn-primary" id="fix-adopt" type="button">Build the design system &rarr;</button>
+            </div>
+
             <div class="diagnosis" id="diagnosis"></div>
             <div class="mapping" id="mapping" aria-label="What happened to each color"></div>
-            <button class="btn btn-ghost" id="fix-adopt" type="button">Load into the Engine</button>
         </div>
     </section>
 
@@ -389,6 +407,11 @@
         <div class="section-head">
             <h2>The Design System</h2>
             <p>Color was never the whole system. Every palette also ships a matched spacing rhythm, corner personality, and elevation family &mdash; generated from the same archetype signal as the colors, not bolted on after. Component states (hover, active, disabled, focus) come from the same contrast math as the palette itself.</p>
+        </div>
+
+        <div id="system-from-fixer" style="display: none; padding: 1.5rem; background: var(--surface-2); border-left: 2px solid var(--line); margin-bottom: 3rem;">
+            <p style="margin: 0 0 1rem 0; color: var(--ink);">Your optimized palette is now loaded into the system. Check the token scales below, or head straight to export.</p>
+            <a href="#exports-row" class="btn btn-primary btn-mini" style="text-decoration: none;">Export</a>
         </div>
 
         <div class="system-lab">
