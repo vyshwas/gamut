@@ -1,14 +1,14 @@
 "use strict";
 
 const PUBLIC_JWK = {
+  "kty": "EC",
+  "x": "r5mGHhs1EFUNeRTjcCmLkjZjM8QxS9OJwBZNYuAfzxg",
+  "y": "w_VCcANoTfNU1HW5kZ2zzDFZ6DJeD10cLCRl-7igi38",
+  "crv": "P-256",
   "key_ops": [
     "verify"
   ],
-  "ext": true,
-  "kty": "EC",
-  "x": "a-DKuWGB4UU6LcChKbbarNlBtMoNLxOD-UXJkpHobGU",
-  "y": "zWa3ekvjHptN4kcvdtLe_pck3N3Cw92WRA35lGboINo",
-  "crv": "P-256"
+  "ext": true
 };
 
 const License = (function() {

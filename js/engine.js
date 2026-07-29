@@ -120,7 +120,7 @@ function contrastGrade(ratio) {
 function ensureContrast(fgHex, bgHex, target) {
     let fg = hexToHsl(fgHex);
     const bgLum = relativeLuminance(hexToRgb(bgHex));
-    const darken = bgLum > 0.35;
+    const darken = bgLum > 0.18;
     for (let i = 0; i < 40; i++) {
         if (contrastRatio(hslToHex(fg), bgHex) >= target) break;
         fg.l += darken ? -2 : 2;
