@@ -962,7 +962,8 @@ function loadPairFonts(pair) {
 function currentPair() {
     const p = state.palette;
     if (!p) return null;
-    const pairs = E.getTypePairs(p.mood || "fresh");
+    const pairs = E.getTypePairs(p.mood || "fresh").slice();
+    if (state.customTypePair) pairs.unshift(state.customTypePair);
     return pairs[state.typeIndex % pairs.length];
 }
 
@@ -978,7 +979,10 @@ function renderTypeLab() {
     const p = state.palette;
     if (!p) return;
 
-    const pairs = E.getTypePairs(p.mood || "fresh");
+    const pairs = E.getTypePairs(p.mood || "fresh").slice();
+    if (state.customTypePair) {
+        pairs.unshift(state.customTypePair);
+    }
     const dep = p.deployments.light;
     const selectedIndex = state.typeIndex % pairs.length;
     const stack = $("type-rail");
@@ -1019,6 +1023,95 @@ function renderTypeLab() {
     $("type-rail-hint").textContent = pairs.length > 1
         ? `${pairs.length} pairings prescribed for this palette's mood. The one in use drives the exports, the SVG card, and the print sheet.`
         : "One pairing prescribed for this palette's mood.";
+}
+
+/* ---------- Extractor ---------- */
+
+function runExtractor(inventoryString) {
+    let inventory;
+    try {
+        inventory = JSON.parse(inventoryString);
+    } catch (e) {
+        toast("Invalid JSON format");
+        $("extract-input").setAttribute("aria-invalid", "true");
+        return;
+    }
+    
+    if (!inventory || inventory.schema !== "gamut.inventory.v1" || !inventory.observed) {
+        toast("Not a valid Gamut inventory JSON");
+        $("extract-input").setAttribute("aria-invalid", "true");
+        return;
+    }
+
+    $("extract-input").setAttribute("aria-invalid", "false");
+    
+    try {
+        const result = window.Extractor.extractSystem(inventory);
+        state.extracted = result;
+        
+        $("extract-results").hidden = false;
+        
+        // Render drift report
+        const drift = $("extract-drift");
+        drift.innerHTML = `
+            <div style="background: var(--surface-2); padding: 1rem; border-radius: 4px;">
+                <p class="mono" style="margin-bottom:0.5rem; color:var(--muted)">Colors</p>
+                <p>Observed: <b>${result.drift.colors.observedCount}</b></p>
+                <p>Proposed: <b>${result.drift.colors.proposedCount}</b></p>
+                <p class="hint">Merged ${result.drift.colors.merges.length} values</p>
+            </div>
+            <div style="background: var(--surface-2); padding: 1rem; border-radius: 4px;">
+                <p class="mono" style="margin-bottom:0.5rem; color:var(--muted)">Spacing steps</p>
+                <p>Observed: <b>${result.drift.spacing.observedCount}</b></p>
+                <p>Proposed: <b>${result.drift.spacing.proposedCount}</b></p>
+                <p class="hint">Snapped to 4px grid</p>
+            </div>
+            <div style="background: var(--surface-2); padding: 1rem; border-radius: 4px;">
+                <p class="mono" style="margin-bottom:0.5rem; color:var(--muted)">Radius steps</p>
+                <p>Observed: <b>${result.drift.radii.observedCount}</b></p>
+                <p>Proposed: <b>${result.drift.radii.proposedCount}</b></p>
+                <p class="hint">Snapped to structural curves</p>
+            </div>
+        `;
+        
+        // Render mapping
+        const map = $("extract-mapping");
+        map.innerHTML = "";
+        result.mapping.colors.forEach(m => {
+            const row = document.createElement("div");
+            row.className = "map-row";
+            const hexNode = m.into ? `<span class="map-chip" style="background:${esc(m.into)}"></span><span class="map-hex mono">${esc(m.into)}</span>` : `<span class="map-hex mono">None</span>`;
+            row.innerHTML = `<span class="map-chip" style="background:${esc(m.observed)}"></span><span class="map-hex mono">${esc(m.observed)}</span> &rarr; ${hexNode} <span class="map-note"><b>${esc(m.fate)}</b> &middot; ${esc(m.reason)} (${esc(m.law)})</span>`;
+            map.appendChild(row);
+        });
+        
+        $("extract-results").scrollIntoView({ behavior: scrollBehavior(), block: "nearest" });
+    } catch (e) {
+        toast("Extraction failed: " + e.message);
+    }
+}
+
+function adoptExtracted() {
+    if (!state.extracted) return;
+    
+    // Wire Studio Assistant suggestion if possible
+    const brand = state.extracted.proposed.palette.swatches.find(s => s.role === "Brand");
+    if (brand) {
+        const archetype = E.moodFromColor(brand.hex);
+        state.assistantResult = {
+            providerUsed: "Extraction",
+            explanation: "Archetype inferred from extracted brand color.",
+            keywords: [],
+            archetype,
+            lockedBrand: brand.hex
+        };
+        renderAssistantResult(state.assistantResult);
+    }
+    
+    renderPalette(state.extracted.proposed.palette);
+    
+    $("engine").scrollIntoView({ behavior: scrollBehavior() });
+    toast("Extracted system loaded");
 }
 
 /* ---------- Fixer ---------- */
@@ -1627,6 +1720,30 @@ document.addEventListener("DOMContentLoaded", () => {
     $("svg-card").addEventListener("click", downloadSvgCard);
     $("ai-package").addEventListener("click", downloadAiPackage);
 
+    /* Extractor */
+    const extRun = $("extract-run");
+    if (extRun) {
+        extRun.addEventListener("click", () => runExtractor($("extract-input").value));
+    }
+    const extFile = $("extract-file");
+    if (extFile) {
+        extFile.addEventListener("change", e => {
+            const file = e.target.files[0];
+            e.target.value = "";
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                $("extract-input").value = reader.result;
+                runExtractor(reader.result);
+            };
+            reader.readAsText(file);
+        });
+    }
+    const extAdopt = $("extract-adopt");
+    if (extAdopt) {
+        extAdopt.addEventListener("click", adoptExtracted);
+    }
+
     /* Fixer */
     $("fix-run").addEventListener("click", runFixer);
     $("fix-input").addEventListener("keydown", e => {
@@ -1645,12 +1762,45 @@ document.addEventListener("DOMContentLoaded", () => {
         renderTypeLab();
         if (state.palette) {
             renderPrintSheet(state.palette);
-            /* The social frames set type in the chosen display face, so
-               they have to follow the selection too. */
             const pair = currentPair();
-            renderSocial($("app-post"), state.palette.deployments.light, pair);
-            renderSocial($("app-story"), state.palette.deployments.dark, pair);
+            if ($("app-post")) renderSocial($("app-post"), state.palette.deployments.light, pair);
+            if ($("app-story")) renderSocial($("app-story"), state.palette.deployments.dark, pair);
         }
+    });
+
+    $("custom-type-apply").addEventListener("click", () => {
+        if (!window.License.Gate.has("custom-type")) {
+            lockedToast();
+            return;
+        }
+        const disp = $("custom-type-display").value.trim();
+        const weight = $("custom-type-display-weight").value.trim() || "700";
+        const body = $("custom-type-body").value.trim();
+        const err = $("custom-type-error");
+        
+        if (!disp || !body) {
+            err.textContent = "Both display and body fonts are required.";
+            err.style.display = "block";
+            return;
+        }
+        err.style.display = "none";
+        
+        state.customTypePair = {
+            display: disp,
+            body: body,
+            displayWeight: Number(weight),
+            bodyWeight: 400,
+            why: "Custom typography applied by you."
+        };
+        state.typeIndex = 0;
+        renderTypeLab();
+        if (state.palette) {
+            renderPrintSheet(state.palette);
+            const pair = currentPair();
+            if ($("app-post")) renderSocial($("app-post"), state.palette.deployments.light, pair);
+            if ($("app-story")) renderSocial($("app-story"), state.palette.deployments.dark, pair);
+        }
+        toast("Custom pairing applied");
     });
 
     /* Scroll reveals */

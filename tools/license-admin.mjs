@@ -159,11 +159,142 @@ const args = parseArgs({
     options: {
         tier: { type: 'string' },
         expires: { type: 'string' },
-        note: { type: 'string' }
+        note: { type: 'string' },
+        remote: { type: 'boolean' }
     }
 });
 
+const isRemote = args.values.remote;
+
+import { execSync } from 'node:child_process';
+const WORKER_DIR = path.join(__dirname, '../worker');
+
+function remoteKvPut(key, value) {
+    console.log(`Writing ${key} to remote KV...`);
+    execSync(`wrangler kv key put --binding LICENSES "${key}" '${value}' --remote`, { cwd: WORKER_DIR, stdio: 'inherit' });
+}
+
+function remoteKvList() {
+    console.log(`Fetching remote KV keys...`);
+    const output = execSync(`wrangler kv key list --binding LICENSES --remote`, { cwd: WORKER_DIR, encoding: 'utf-8' });
+    const keys = JSON.parse(output);
+    const results = [];
+    for (const k of keys) {
+        const val = execSync(`wrangler kv key get --binding LICENSES "${k.name}" --remote`, { cwd: WORKER_DIR, encoding: 'utf-8' });
+        results.push({ key: k.name, data: JSON.parse(val) });
+    }
+    return results;
+}
+
 const command = args.positionals[0];
+
+// Redefining issue to support remote
+const originalIssue = issue;
+issue = async function(args) {
+    if (!args.values.tier || !args.values.expires || !args.values.note) {
+        console.error("Missing required arguments for issue: --tier, --expires, --note");
+        process.exit(1);
+    }
+    
+    const tier = args.values.tier;
+    let exp = null;
+    if (args.values.expires !== 'never') {
+        const d = new Date(args.values.expires);
+        if (isNaN(d.getTime())) {
+            console.error("Invalid expires format. Use YYYY-MM-DD or 'never'");
+            process.exit(1);
+        }
+        exp = d.getTime();
+    }
+    
+    const privateKey = await loadPrivateKey();
+    const id = generateId();
+    const payload = { id, tier, exp };
+    
+    const payloadStr = JSON.stringify(payload);
+    const payloadB64 = buf2b64url(Buffer.from(payloadStr));
+    
+    const signature = await subtle.sign(
+        { name: 'ECDSA', hash: 'SHA-256' },
+        privateKey,
+        Buffer.from(payloadStr)
+    );
+    
+    const sigB64 = buf2b64url(signature);
+    const code = `GAMUT-${payloadB64}.${sigB64}`;
+    
+    const record = {
+        id,
+        tier,
+        status: "active",
+        exp,
+        source: "manual",
+        note: args.values.note,
+        issuedAt: Date.now(),
+        code
+    };
+
+    if (isRemote) {
+        remoteKvPut(`license:${id}`, JSON.stringify(record));
+        console.log(`License ${id} issued remotely.`);
+    } else {
+        let issued = [];
+        if (fs.existsSync(ISSUED_PATH)) {
+            issued = JSON.parse(fs.readFileSync(ISSUED_PATH, 'utf-8'));
+        }
+        issued.push(record);
+        fs.writeFileSync(ISSUED_PATH, JSON.stringify(issued, null, 2));
+    }
+    
+    console.log("License issued successfully:");
+    console.log(code);
+};
+
+const originalRevoke = revoke;
+revoke = function(id) {
+    if (!id) {
+        console.error("Missing license ID to revoke.");
+        process.exit(1);
+    }
+    if (isRemote) {
+        try {
+            const val = execSync(`wrangler kv key get --binding LICENSES "license:${id}" --remote`, { cwd: WORKER_DIR, encoding: 'utf-8' });
+            if (!val || val.trim() === '') {
+                console.error(`License ${id} not found in remote KV.`);
+                return;
+            }
+            const record = JSON.parse(val);
+            record.status = 'revoked';
+            remoteKvPut(`license:${id}`, JSON.stringify(record));
+            console.log(`License ${id} instantly revoked remotely.`);
+        } catch (e) {
+            console.error("Failed to revoke remotely.", e.message);
+        }
+    } else {
+        originalRevoke(id);
+    }
+};
+
+const originalList = list;
+list = function() {
+    if (isRemote) {
+        const records = remoteKvList();
+        console.log(`Found ${records.length} remote licenses.\n`);
+        records.forEach(r => {
+            const item = r.data;
+            const isRevoked = item.status === 'revoked';
+            const expStr = item.exp ? new Date(item.exp).toISOString().split('T')[0] : 'never';
+            const dateStr = new Date(item.issuedAt).toISOString().split('T')[0];
+            console.log(`ID: ${item.id} | Tier: ${item.tier.padEnd(10)} | Exp: ${expStr.padEnd(10)} | Revoked: ${isRevoked ? 'YES' : 'NO '} | Date: ${dateStr}`);
+            console.log(`Source: ${item.source || 'manual'} | Ref: ${item.rzp_ref || 'none'}`);
+            console.log(`Note: ${item.note || ''}`);
+            console.log(`Code: ${item.code || '(hidden)'}`);
+            console.log('---');
+        });
+    } else {
+        originalList();
+    }
+};
 
 switch (command) {
     case 'keygen':

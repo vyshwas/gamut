@@ -813,27 +813,33 @@ function fixPalette(hexes, options = { strategy: 'balanced' }) {
 const TYPE_PAIRS = {
     heat: [
         { display: "Anton", body: "Work Sans", displayWeight: 400, bodyWeight: 400, why: "Condensed impact over a friendly workhorse. Heat sells, legibility closes." },
-        { display: "Archivo Black", body: "Inter Tight", displayWeight: 400, bodyWeight: 400, why: "Oversized headlines with zero apology, body copy that stays out of the way." }
+        { display: "Archivo Black", body: "Inter Tight", displayWeight: 400, bodyWeight: 400, why: "Oversized headlines with zero apology, body copy that stays out of the way." },
+        { display: "Oswald", body: "Roboto", displayWeight: 700, bodyWeight: 400, why: "Condensed and powerful with a clean, universal body." }
     ],
     craft: [
         { display: "Playfair Display", body: "Source Sans 3", displayWeight: 600, bodyWeight: 400, why: "An editorial serif that has been around longer than the brand has. Warmth with posture." },
-        { display: "Cormorant Garamond", body: "Manrope", displayWeight: 600, bodyWeight: 400, why: "High-contrast serif elegance over a quiet modern body. Generous whitespace required." }
+        { display: "Cormorant Garamond", body: "Manrope", displayWeight: 600, bodyWeight: 400, why: "High-contrast serif elegance over a quiet modern body. Generous whitespace required." },
+        { display: "Merriweather", body: "Open Sans", displayWeight: 700, bodyWeight: 400, why: "Highly legible serif for bold statements, matched with an approachable sans." }
     ],
     fresh: [
         { display: "Space Grotesk", body: "Inter Tight", displayWeight: 700, bodyWeight: 400, why: "Geometric personality in the headline, invisible efficiency in the body." },
-        { display: "Sora", body: "Manrope", displayWeight: 700, bodyWeight: 400, why: "Rounded-geometric confidence. Young but not childish, exactly as prescribed." }
+        { display: "Sora", body: "Manrope", displayWeight: 700, bodyWeight: 400, why: "Rounded-geometric confidence. Young but not childish, exactly as prescribed." },
+        { display: "Outfit", body: "Inter", displayWeight: 700, bodyWeight: 400, why: "Clean, contemporary geometry for a modern, airy feel." }
     ],
     bold: [
         { display: "Archivo Black", body: "Space Grotesk", displayWeight: 400, bodyWeight: 400, why: "Heavy display that demands attention, a grotesk body that keeps the energy." },
-        { display: "Anton", body: "Inter Tight", displayWeight: 400, bodyWeight: 400, why: "Poster-weight headlines for a brand that does not ask to be liked." }
+        { display: "Anton", body: "Inter Tight", displayWeight: 400, bodyWeight: 400, why: "Poster-weight headlines for a brand that does not ask to be liked." },
+        { display: "Bebas Neue", body: "Montserrat", displayWeight: 400, bodyWeight: 400, why: "All-caps brutalism paired with a wide, confident geometric body." }
     ],
     trust: [
         { display: "Libre Franklin", body: "Inter Tight", displayWeight: 700, bodyWeight: 400, why: "A clean grotesk with newspaper bones. Professional with a heartbeat." },
-        { display: "IBM Plex Sans", body: "Source Sans 3", displayWeight: 600, bodyWeight: 400, why: "Engineered neutrality. Structured, dependable, quietly warm." }
+        { display: "IBM Plex Sans", body: "Source Sans 3", displayWeight: 600, bodyWeight: 400, why: "Engineered neutrality. Structured, dependable, quietly warm." },
+        { display: "Public Sans", body: "Source Sans 3", displayWeight: 700, bodyWeight: 400, why: "Strong, neutral, and institutional. Engineered for clarity." }
     ],
     future: [
         { display: "Space Grotesk", body: "Inter Tight", mono: "JetBrains Mono", displayWeight: 700, bodyWeight: 400, why: "The mono-plus-grotesk mix. Sharp geometry, terminal accents, priced like the future." },
-        { display: "Chivo Mono", body: "Chivo", displayWeight: 700, bodyWeight: 400, why: "One superfamily, two voices. The mono display is the brand moment." }
+        { display: "Chivo Mono", body: "Chivo", displayWeight: 700, bodyWeight: 400, why: "One superfamily, two voices. The mono display is the brand moment." },
+        { display: "Syne", body: "Inter", displayWeight: 700, bodyWeight: 400, why: "A display font pushing boundaries paired with invisible utility." }
     ]
 };
 
@@ -848,35 +854,43 @@ const TYPE_PAIRS = {
 const TYPE_PAIRS_MOOD = {
     "mv-editorial": [
         { display: "Fraunces", body: "Work Sans", displayWeight: 600, bodyWeight: 400, why: "A soft-serif display with real personality against an efficient grotesk body. Reads expensive without shouting." },
-        { display: "Cormorant Garamond", body: "Manrope", displayWeight: 600, bodyWeight: 400, why: "High-contrast serif elegance over a quiet modern body. Generous whitespace required." }
+        { display: "Cormorant Garamond", body: "Manrope", displayWeight: 600, bodyWeight: 400, why: "High-contrast serif elegance over a quiet modern body. Generous whitespace required." },
+        { display: "Playfair Display", body: "Lora", displayWeight: 600, bodyWeight: 400, why: "Classic editorial grace with high contrast, double serif pairing for maximum craft." }
     ],
     "mv-humanist": [
         { display: "Lora", body: "Karla", displayWeight: 600, bodyWeight: 400, why: "A warm text serif with just enough personality, paired with a friendly grotesk that keeps things human." },
-        { display: "Bitter", body: "Work Sans", displayWeight: 600, bodyWeight: 400, why: "Slab-serif warmth for the headline, a plain workhorse for the body. Nothing here is trying too hard." }
+        { display: "Bitter", body: "Work Sans", displayWeight: 600, bodyWeight: 400, why: "Slab-serif warmth for the headline, a plain workhorse for the body. Nothing here is trying too hard." },
+        { display: "Merriweather", body: "Open Sans", displayWeight: 700, bodyWeight: 400, why: "Friendly, highly legible and open." }
     ],
     "mv-geometric": [
         { display: "Space Grotesk", body: "Inter Tight", displayWeight: 700, bodyWeight: 400, why: "Geometric personality in the headline, invisible efficiency in the body." },
-        { display: "Sora", body: "Manrope", displayWeight: 700, bodyWeight: 400, why: "Rounded-geometric confidence, precise and current without feeling cold." }
+        { display: "Sora", body: "Manrope", displayWeight: 700, bodyWeight: 400, why: "Rounded-geometric confidence, precise and current without feeling cold." },
+        { display: "Outfit", body: "Inter", displayWeight: 700, bodyWeight: 400, why: "Clean, contemporary geometry for a modern, airy feel." }
     ],
     "mv-technical": [
         { display: "Chivo Mono", body: "Chivo", displayWeight: 700, bodyWeight: 400, why: "One superfamily, two voices. The mono display is the brand moment." },
-        { display: "Space Grotesk", body: "Inter Tight", mono: "JetBrains Mono", displayWeight: 700, bodyWeight: 400, why: "The mono-plus-grotesk mix. Sharp geometry, terminal accents, priced like the future." }
+        { display: "Space Grotesk", body: "Inter Tight", mono: "JetBrains Mono", displayWeight: 700, bodyWeight: 400, why: "The mono-plus-grotesk mix. Sharp geometry, terminal accents, priced like the future." },
+        { display: "Fira Code", body: "Fira Sans", mono: "Fira Code", displayWeight: 600, bodyWeight: 400, why: "Pure developer aesthetics. Code logic applied to brand." }
     ],
     "mv-playful": [
         { display: "Baloo 2", body: "Mulish", displayWeight: 700, bodyWeight: 400, why: "Rounded, friendly display weight over a light, approachable body. Confident without being loud." },
-        { display: "Fredoka", body: "Nunito Sans", displayWeight: 600, bodyWeight: 400, why: "Soft geometric roundness top to bottom. Reads energetic and safe at the same time." }
+        { display: "Fredoka", body: "Nunito Sans", displayWeight: 600, bodyWeight: 400, why: "Soft geometric roundness top to bottom. Reads energetic and safe at the same time." },
+        { display: "Quicksand", body: "Nunito", displayWeight: 700, bodyWeight: 400, why: "Extremely round, approachable, and soft." }
     ],
     "mv-brutalist": [
         { display: "Archivo Black", body: "Space Grotesk", displayWeight: 400, bodyWeight: 400, why: "Heavy display that demands attention, a grotesk body that keeps the energy." },
-        { display: "Anton", body: "Inter Tight", displayWeight: 400, bodyWeight: 400, why: "Poster-weight headlines for a brand that does not ask to be liked." }
+        { display: "Anton", body: "Inter Tight", displayWeight: 400, bodyWeight: 400, why: "Poster-weight headlines for a brand that does not ask to be liked." },
+        { display: "Bebas Neue", body: "Montserrat", displayWeight: 400, bodyWeight: 400, why: "All-caps brutalism paired with a wide, confident geometric body." }
     ],
     "mv-trust": [
         { display: "Libre Franklin", body: "Inter Tight", displayWeight: 700, bodyWeight: 400, why: "A clean grotesk with newspaper bones. Professional with a heartbeat." },
-        { display: "IBM Plex Sans", body: "Source Sans 3", displayWeight: 600, bodyWeight: 400, why: "Engineered neutrality. Structured, dependable, quietly warm." }
+        { display: "IBM Plex Sans", body: "Source Sans 3", displayWeight: 600, bodyWeight: 400, why: "Engineered neutrality. Structured, dependable, quietly warm." },
+        { display: "Public Sans", body: "Source Sans 3", displayWeight: 700, bodyWeight: 400, why: "Strong, neutral, and institutional. Engineered for clarity." }
     ],
     "mv-moody": [
         { display: "Bodoni Moda", body: "Work Sans", displayWeight: 600, bodyWeight: 400, why: "High-contrast didone strokes read as dramatic and a little withheld. A plain body keeps it legible instead of gothic." },
-        { display: "Unna", body: "Manrope", displayWeight: 700, bodyWeight: 400, why: "A quiet, inky text serif for brands that want to feel restrained rather than loud." }
+        { display: "Unna", body: "Manrope", displayWeight: 700, bodyWeight: 400, why: "A quiet, inky text serif for brands that want to feel restrained rather than loud." },
+        { display: "Cinzel", body: "Montserrat", displayWeight: 600, bodyWeight: 400, why: "Sharp, classic, and slightly dangerous." }
     ]
 };
 

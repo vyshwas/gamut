@@ -92,16 +92,55 @@ const License = (function() {
         return { ok: true, payload };
     }
 
-    async function redeem(codeString) {
-        const result = await parseAndVerify(codeString);
-        if (!result.ok) return result;
+    async function verifyServerSide(codeStr) {
+        try {
+            const res = await fetch('https://gamut-api.vyommehta197.workers.dev/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: codeStr })
+            });
+            if (res.status === 429) return null; // Too many requests, fallback to local
+            
+            const data = await res.json();
+            if (res.ok) {
+                return { ok: true };
+            } else {
+                return { ok: false, reason: data.error };
+            }
+        } catch (e) {
+            return null; // Network error, fallback to local
+        }
+    }
+
+    async function verifyOrFallback(codeStr) {
+        const serverResult = await verifyServerSide(codeStr);
         
-        const isRevoked = await checkRevoked(result.payload.id);
+        if (serverResult) {
+            return serverResult; // True API response (valid or invalid)
+        }
+        
+        // Fallback to local crypto check
+        const localResult = await parseAndVerify(codeStr);
+        if (!localResult.ok) return localResult;
+        
+        const isRevoked = await checkRevoked(localResult.payload.id);
         if (isRevoked) {
             return { ok: false, reason: "License has been revoked." };
         }
         
-        const { id, tier } = result.payload;
+        return { ok: true };
+    }
+
+    async function redeem(codeString) {
+        const result = await verifyOrFallback(codeString);
+        if (!result.ok) return result;
+        
+        // Extract tier locally for UI
+        const parts = codeString.substring(6).split('.');
+        const payloadB64 = parts[0];
+        const payload = JSON.parse(atob(payloadB64.replace(/-/g, '+').replace(/_/g, '/')));
+        
+        const { id, tier } = payload;
         currentLicense = { code: codeString, tier, id };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(currentLicense));
         
@@ -113,22 +152,17 @@ const License = (function() {
         if (stored) {
             try {
                 const parsed = JSON.parse(stored);
-                const result = await parseAndVerify(parsed.code);
+                const result = await verifyOrFallback(parsed.code);
+                
                 if (!result.ok) {
                     localStorage.removeItem(STORAGE_KEY);
                     currentLicense = null;
+                    if (window.toast) toast("Your license was deactivated.");
+                    if (window.updateLicenseUI) window.updateLicenseUI();
                     return;
                 }
-                currentLicense = parsed;
                 
-                checkRevoked(parsed.id).then(isRevoked => {
-                    if (isRevoked) {
-                        localStorage.removeItem(STORAGE_KEY);
-                        currentLicense = null;
-                        if (window.toast) toast("Your license was deactivated.");
-                        if (window.updateLicenseUI) window.updateLicenseUI();
-                    }
-                });
+                currentLicense = parsed;
             } catch (e) {
                 localStorage.removeItem(STORAGE_KEY);
             }
@@ -164,7 +198,7 @@ const License = (function() {
             const studioFeatures = [
                 "fix-image", "vision", "save-palette",
                 "export-tailwind", "export-scss", "export-json", "export-tokens", "export-svg",
-                "print-sheet", "ai-package", "agency", "lock-brand"
+                "print-sheet", "ai-package", "agency", "lock-brand", "custom-type"
             ];
             
             return !studioFeatures.includes(feature);
