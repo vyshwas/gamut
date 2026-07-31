@@ -198,7 +198,14 @@ const License = (function() {
             const studioFeatures = [
                 "fix-image", "vision", "save-palette",
                 "export-tailwind", "export-scss", "export-json", "export-tokens", "export-svg",
-                "print-sheet", "ai-package", "agency", "lock-brand", "custom-type"
+                "print-sheet", "ai-package", "agency", "lock-brand", "custom-type",
+                // "-unlimited" entries gate the *uncapped* version of a
+                // free-tier feature - Gate.has() must return false for
+                // free so the caller's daily-cap branch actually runs.
+                // (Bug found 2026-07-31: "fixer-unlimited" was missing
+                // here, so the pricing page's "3 diagnoses a day" free
+                // cap was never enforced for anyone.)
+                "fixer-unlimited", "extract-unlimited"
             ];
             
             return !studioFeatures.includes(feature);

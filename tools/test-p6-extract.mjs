@@ -96,8 +96,48 @@ console.log(`\nFuzz Results:`);
 console.log(`Passed: ${passes}`);
 console.log(`Failed: ${fails}`);
 
-if (fails > 0) {
+// Edge cases found by manual audit 2026-07-31: extractSystem used to
+// throw raw engine errors (or silently produce NaN hexes) on inputs a
+// real Figma scan or a hand-edited paste can legitimately produce.
+// These must now either succeed cleanly or throw a message a user can
+// act on - never an opaque "Cannot read properties of null" etc.
+const edgeCases = [
+    { name: "empty colors array", inv: { schema: "gamut.inventory.v1", observed: { colors: [], spacing: [{value:8,count:1}], radii: [] } }, expect: "throws-friendly" },
+    { name: "missing colors key entirely", inv: { schema: "gamut.inventory.v1", observed: { spacing: [{value:8,count:1}] } }, expect: "throws-friendly" },
+    { name: "all-zero-area colors", inv: { schema: "gamut.inventory.v1", observed: { colors: [{hex:"#112233",area:0,count:1},{hex:"#112234",area:0,count:1}], spacing: [], radii: [] } }, expect: "ok" },
+    { name: "missing spacing/radii keys", inv: { schema: "gamut.inventory.v1", observed: { colors: [{hex:"#334455",area:100,count:1}] } }, expect: "ok" },
+    { name: "single color only", inv: { schema: "gamut.inventory.v1", observed: { colors: [{hex:"#3355FF",area:500,count:2}], spacing: [], radii: [] } }, expect: "ok" },
+    { name: "malformed hex entry mixed with valid ones", inv: { schema: "gamut.inventory.v1", observed: { colors: [{hex:"not-a-hex",area:99999,count:1},{hex:"#3355FF",area:10,count:1}], spacing: [], radii: [] } }, expect: "ok" },
+];
+
+console.log("\nEdge case checks:");
+let edgeFails = 0;
+for (const { name, inv, expect } of edgeCases) {
+    try {
+        const r = Extractor.extractSystem(inv);
+        if (expect === "throws-friendly") {
+            console.error(`[${name}] expected a friendly throw, got a result instead`);
+            edgeFails++;
+        } else {
+            if (!r.proposed.palette.swatches || r.proposed.palette.swatches.length !== 4) {
+                console.error(`[${name}] result missing a 4-swatch palette`);
+                edgeFails++;
+            } else {
+                console.log(`[${name}] OK`);
+            }
+        }
+    } catch (e) {
+        if (expect === "throws-friendly" && !/cannot read|undefined|is not iterable|null|reduce of empty/i.test(e.message)) {
+            console.log(`[${name}] OK (friendly throw: "${e.message}")`);
+        } else {
+            console.error(`[${name}] unexpected/unfriendly throw: ${e.message}`);
+            edgeFails++;
+        }
+    }
+}
+
+if (fails > 0 || edgeFails > 0) {
     process.exit(1);
 } else {
-    console.log("Phase 6 extraction logic verified!");
+    console.log("\nPhase 6 extraction logic verified, including edge cases!");
 }

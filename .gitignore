@@ -1,3 +1,9 @@
 .impeccable/
 tools/keys/
 tools/issued.json
+
+# Committed to the public repo by mistake 2026-07-30 (~2270 files) -
+# untracked below via `git rm --cached`, ignored going forward.
+node_modules/
+scratch_test/
+worker/.wrangler/

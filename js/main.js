@@ -17,7 +17,8 @@ const state = {
     history: [],
     saved: [],
     agency: null,
-    assistantResult: null
+    assistantResult: null,
+    customTypePair: null
 };
 
 const SAVE_KEY = "gamut.saved.v1";
@@ -1027,7 +1028,35 @@ function renderTypeLab() {
 
 /* ---------- Extractor ---------- */
 
+const EXTRACT_MAX_CHARS = 2 * 1024 * 1024; // 2MB of JSON text - generous headroom over the plugin's 3000-node scan cap
+
 function runExtractor(inventoryString) {
+    if (!window.License.Gate.has("extract-unlimited")) {
+        const today = new Date().toISOString().split('T')[0];
+        let countObj = { date: today, n: 0 };
+        try {
+            const stored = localStorage.getItem("gamut.extract.count");
+            if (stored) countObj = JSON.parse(stored);
+        } catch (e) {}
+        if (countObj.date !== today) countObj = { date: today, n: 0 };
+        if (countObj.n >= 3) {
+            lockedToast();
+            return;
+        }
+        countObj.n++;
+        localStorage.setItem("gamut.extract.count", JSON.stringify(countObj));
+    }
+
+    if (typeof inventoryString !== "string" || !inventoryString.trim()) {
+        toast("Paste or upload an inventory JSON first");
+        return;
+    }
+    if (inventoryString.length > EXTRACT_MAX_CHARS) {
+        toast("That inventory is too large (max 2MB). Try scanning a smaller selection.");
+        $("extract-input").setAttribute("aria-invalid", "true");
+        return;
+    }
+
     let inventory;
     try {
         inventory = JSON.parse(inventoryString);
@@ -1036,44 +1065,50 @@ function runExtractor(inventoryString) {
         $("extract-input").setAttribute("aria-invalid", "true");
         return;
     }
-    
-    if (!inventory || inventory.schema !== "gamut.inventory.v1" || !inventory.observed) {
+
+    if (!inventory || inventory.schema !== "gamut.inventory.v1" || !inventory.observed || typeof inventory.observed !== "object") {
         toast("Not a valid Gamut inventory JSON");
         $("extract-input").setAttribute("aria-invalid", "true");
         return;
     }
 
     $("extract-input").setAttribute("aria-invalid", "false");
-    
+
     try {
         const result = window.Extractor.extractSystem(inventory);
         state.extracted = result;
-        
+
         $("extract-results").hidden = false;
-        
+
+        const confEl = $("extract-confidence");
+        if (confEl) {
+            const c = result.confidence && result.confidence.colors ? result.confidence.colors : "Unknown";
+            confEl.textContent = `Confidence: ${c} — a heuristic, not a guarantee. Check the mapping below.`;
+        }
+
         // Render drift report
         const drift = $("extract-drift");
         drift.innerHTML = `
-            <div style="background: var(--surface-2); padding: 1rem; border-radius: 4px;">
-                <p class="mono" style="margin-bottom:0.5rem; color:var(--muted)">Colors</p>
-                <p>Observed: <b>${result.drift.colors.observedCount}</b></p>
-                <p>Proposed: <b>${result.drift.colors.proposedCount}</b></p>
-                <p class="hint">Merged ${result.drift.colors.merges.length} values</p>
+            <div class="extract-stat">
+                <span class="exports-label mono">Colors</span>
+                <p>Observed: <b>${esc(result.drift.colors.observedCount)}</b></p>
+                <p>Proposed: <b>${esc(result.drift.colors.proposedCount)}</b></p>
+                <p class="hint">Merged ${esc(result.drift.colors.merges.length)} values</p>
             </div>
-            <div style="background: var(--surface-2); padding: 1rem; border-radius: 4px;">
-                <p class="mono" style="margin-bottom:0.5rem; color:var(--muted)">Spacing steps</p>
-                <p>Observed: <b>${result.drift.spacing.observedCount}</b></p>
-                <p>Proposed: <b>${result.drift.spacing.proposedCount}</b></p>
+            <div class="extract-stat">
+                <span class="exports-label mono">Spacing steps</span>
+                <p>Observed: <b>${esc(result.drift.spacing.observedCount)}</b></p>
+                <p>Proposed: <b>${esc(result.drift.spacing.proposedCount)}</b></p>
                 <p class="hint">Snapped to 4px grid</p>
             </div>
-            <div style="background: var(--surface-2); padding: 1rem; border-radius: 4px;">
-                <p class="mono" style="margin-bottom:0.5rem; color:var(--muted)">Radius steps</p>
-                <p>Observed: <b>${result.drift.radii.observedCount}</b></p>
-                <p>Proposed: <b>${result.drift.radii.proposedCount}</b></p>
+            <div class="extract-stat">
+                <span class="exports-label mono">Radius steps</span>
+                <p>Observed: <b>${esc(result.drift.radii.observedCount)}</b></p>
+                <p>Proposed: <b>${esc(result.drift.radii.proposedCount)}</b></p>
                 <p class="hint">Snapped to structural curves</p>
             </div>
         `;
-        
+
         // Render mapping
         const map = $("extract-mapping");
         map.innerHTML = "";
@@ -1084,7 +1119,7 @@ function runExtractor(inventoryString) {
             row.innerHTML = `<span class="map-chip" style="background:${esc(m.observed)}"></span><span class="map-hex mono">${esc(m.observed)}</span> &rarr; ${hexNode} <span class="map-note"><b>${esc(m.fate)}</b> &middot; ${esc(m.reason)} (${esc(m.law)})</span>`;
             map.appendChild(row);
         });
-        
+
         $("extract-results").scrollIntoView({ behavior: scrollBehavior(), block: "nearest" });
     } catch (e) {
         toast("Extraction failed: " + e.message);
@@ -1731,11 +1766,16 @@ document.addEventListener("DOMContentLoaded", () => {
             const file = e.target.files[0];
             e.target.value = "";
             if (!file) return;
+            if (file.size > EXTRACT_MAX_CHARS) {
+                toast("That file is too large (max 2MB).");
+                return;
+            }
             const reader = new FileReader();
             reader.onload = () => {
                 $("extract-input").value = reader.result;
                 runExtractor(reader.result);
             };
+            reader.onerror = () => toast("Could not read that file");
             reader.readAsText(file);
         });
     }
@@ -1768,31 +1808,16 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    $("custom-type-apply").addEventListener("click", () => {
-        if (!window.License.Gate.has("custom-type")) {
-            lockedToast();
-            return;
-        }
-        const disp = $("custom-type-display").value.trim();
-        const weight = $("custom-type-display-weight").value.trim() || "700";
-        const body = $("custom-type-body").value.trim();
-        const err = $("custom-type-error");
-        
-        if (!disp || !body) {
-            err.textContent = "Both display and body fonts are required.";
-            err.style.display = "block";
-            return;
-        }
-        err.style.display = "none";
-        
-        state.customTypePair = {
-            display: disp,
-            body: body,
-            displayWeight: Number(weight),
-            bodyWeight: 400,
-            why: "Custom typography applied by you."
-        };
-        state.typeIndex = 0;
+    /* A font name is only ever used as a Google Fonts query param and
+       a CSSOM font-family value - neither is an HTML injection risk -
+       but an unrestricted charset still lets stray "&"/"=" characters
+       silently break the fonts.googleapis.com querystring, and stray
+       quotes break the CSSOM font-family value. Google Fonts family
+       names are themselves letters/digits/spaces (a few carry a
+       hyphen, e.g. "IBM Plex Sans"), so that's the honest allowlist. */
+    const FONT_NAME_RE = /^[A-Za-z0-9][A-Za-z0-9 \-]{0,58}[A-Za-z0-9]$/;
+
+    function reRenderTypeSurfaces() {
         renderTypeLab();
         if (state.palette) {
             renderPrintSheet(state.palette);
@@ -1800,7 +1825,91 @@ document.addEventListener("DOMContentLoaded", () => {
             if ($("app-post")) renderSocial($("app-post"), state.palette.deployments.light, pair);
             if ($("app-story")) renderSocial($("app-story"), state.palette.deployments.dark, pair);
         }
-        toast("Custom pairing applied");
+    }
+
+    /* Confirms a family actually resolves to real glyphs rather than
+       the browser's silent fallback. document.fonts.load() rides the
+       stylesheet already injected by loadPairFonts() - no separate
+       network fetch, so it can't be blocked by CSP connect-src and
+       has no cross-origin response-reading concerns. */
+    async function fontActuallyLoaded(family, weight) {
+        if (!("fonts" in document)) return true; // very old browser: apply optimistically
+        try {
+            const faces = await document.fonts.load(`${weight} 16px "${family}"`);
+            return faces.length > 0;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    $("custom-type-apply").addEventListener("click", async () => {
+        if (!window.License.Gate.has("custom-type")) {
+            lockedToast();
+            return;
+        }
+        const applyBtn = $("custom-type-apply");
+        if (applyBtn.disabled) return; // guard against double-submit while a check is in flight
+        const disp = $("custom-type-display").value.trim();
+        const weight = Number($("custom-type-display-weight").value.trim() || "700") || 700;
+        const body = $("custom-type-body").value.trim();
+        const err = $("custom-type-error");
+        err.style.display = "none";
+
+        if (!disp || !body) {
+            err.textContent = "Both display and body fonts are required.";
+            err.style.display = "block";
+            return;
+        }
+        if (!FONT_NAME_RE.test(disp) || !FONT_NAME_RE.test(body)) {
+            err.textContent = "Font names can only contain letters, numbers, spaces, and hyphens.";
+            err.style.display = "block";
+            return;
+        }
+
+        const candidate = {
+            display: disp,
+            body: body,
+            displayWeight: weight,
+            bodyWeight: 400,
+            why: "Custom typography applied by you."
+        };
+
+        applyBtn.disabled = true;
+        applyBtn.textContent = "Checking font…";
+        try {
+            loadPairFonts(candidate);
+            const [dispOk, bodyOk] = await Promise.all([
+                fontActuallyLoaded(disp, weight),
+                fontActuallyLoaded(body, 400)
+            ]);
+            if (!dispOk || !bodyOk) {
+                const missing = [!dispOk ? disp : null, !bodyOk ? body : null].filter(Boolean).join(" and ");
+                err.textContent = `Could not find "${missing}" on Google Fonts. Check the spelling and try again.`;
+                err.style.display = "block";
+                return;
+            }
+
+            state.customTypePair = candidate;
+            state.typeIndex = 0;
+            reRenderTypeSurfaces();
+            $("custom-type-reset").hidden = false;
+            toast("Custom pairing applied");
+        } finally {
+            applyBtn.disabled = false;
+            applyBtn.textContent = "Apply pairing";
+        }
+    });
+
+    $("custom-type-reset").addEventListener("click", () => {
+        state.customTypePair = null;
+        state.typeIndex = 0;
+        $("custom-type-display").value = "";
+        $("custom-type-body").value = "";
+        $("custom-type-display-weight").value = "700";
+        $("custom-type-error").style.display = "none";
+        $("custom-type-reset").hidden = true;
+        reRenderTypeSurfaces();
+        toast("Reset to the engine's own pairing");
     });
 
     /* Scroll reveals */

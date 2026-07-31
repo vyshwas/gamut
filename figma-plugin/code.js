@@ -63,8 +63,9 @@ async function buildInventory() {
   }
 
   function addShadow(shadow, area) {
-    const key = `${shadow.offsetY}_${shadow.blur}_${shadow.color.a.toFixed(2)}`;
-    if (!shadows[key]) shadows[key] = { offsetY: shadow.offsetY, blur: shadow.blur, colorAlpha: shadow.color.a, area: 0, count: 0 };
+    const alpha = (shadow.color && typeof shadow.color.a === 'number') ? shadow.color.a : 1;
+    const key = `${shadow.offsetY}_${shadow.blur}_${alpha.toFixed(2)}`;
+    if (!shadows[key]) shadows[key] = { offsetY: shadow.offsetY, blur: shadow.blur, colorAlpha: alpha, area: 0, count: 0 };
     shadows[key].area += area;
     shadows[key].count += 1;
   }

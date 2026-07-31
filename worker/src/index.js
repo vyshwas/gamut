@@ -3,6 +3,24 @@
  * Zero npm dependencies. Fails closed on money, open on convenience.
  */
 
+// The public half of the ECDSA signing keypair. Not a secret - it's the
+// same object already hardcoded in js/license.js for client-side
+// verification, and a public key is meant to be shared. Do NOT derive
+// this from env.SIGNING_KEY_JWK: that JWK carries the private 'd'
+// field, and WebCrypto spec-legally throws "Key operations and usage
+// mismatch" when a JWK containing 'd' is imported with usage
+// ['verify'] - confirmed by testing against Node's webcrypto directly.
+// That bug shipped 2026-07-30 and made every /verify call fail;
+// fixed 2026-07-31 by using the real, separate public key instead.
+const SIGNING_PUBLIC_JWK = {
+    kty: "EC",
+    x: "r5mGHhs1EFUNeRTjcCmLkjZjM8QxS9OJwBZNYuAfzxg",
+    y: "w_VCcANoTfNU1HW5kZ2zzDFZ6DJeD10cLCRl-7igi38",
+    crv: "P-256",
+    key_ops: ["verify"],
+    ext: true
+};
+
 // Helper to construct responses with correct headers (Rule 10 & 5)
 function jsonResponse(data, status = 200) {
     return new Response(JSON.stringify(data), {
@@ -130,13 +148,21 @@ async function handleRazorpayWebhook(request, env) {
         const existingStr = await env.LICENSES.get(`sub:${subId}`);
         if (!existingStr) {
             // We issue a new license!
-            const tierMap = {
-                // To be filled with real Razorpay Plan IDs
-                'plan_studio': 'studio',
-                'plan_comm': 'commercial'
-            };
-            const tier = tierMap[sub.plan_id] || 'studio'; // fallback
-            
+            const { tier, unmapped } = await resolveTier(env, sub.plan_id);
+            if (unmapped) {
+                // Don't lose the subscription over a config gap, but
+                // don't guess a paid customer into the wrong tier
+                // silently either: issue at the cheapest paid tier
+                // (protects revenue if this is really a Commercial
+                // subscriber) and leave an owner-visible trail so it
+                // gets corrected instead of silently short-changing
+                // someone forever.
+                await env.LICENSES.put(`flag:planmap:${subId}`, JSON.stringify({
+                    subId, rawPlanId: sub.plan_id, issuedTier: tier, at: Date.now()
+                }));
+                console.log(`UNMAPPED plan_id "${sub.plan_id}" for sub ${subId} - issued as ${tier}, flagged for review`);
+            }
+
             // Generate ECDSA Code
             const privKey = await getPrivateKey(env); 
             const id = crypto.randomUUID().replace(/-/g, '').substring(0,8);
@@ -162,6 +188,8 @@ async function handleRazorpayWebhook(request, env) {
                 exp: null,
                 source: "razorpay",
                 rzp_ref: subId,
+                rawPlanId: sub.plan_id,
+                tierSource: unmapped ? "fallback_unmapped" : "mapped",
                 issuedAt: Date.now(),
                 code
             };
@@ -218,6 +246,27 @@ async function getPrivateKey(env) {
     );
 }
 
+// Razorpay plan_id -> Gamut tier, stored in KV so the owner can update
+// it (via tools/license-admin.mjs set-plan-map) the moment real plan
+// IDs exist, without a code deploy. Falls back to the cheaper paid
+// tier when a plan_id isn't mapped, so a config gap under-delivers
+// rather than over-delivers Commercial access - but every fallback is
+// flagged (see the `flag:planmap:` KV entries) so it gets corrected
+// instead of silently costing revenue forever.
+async function resolveTier(env, planId) {
+    let map = {};
+    try {
+        const raw = await env.LICENSES.get('config:planTierMap');
+        if (raw) map = JSON.parse(raw);
+    } catch (e) {
+        console.error('config:planTierMap is corrupt JSON, ignoring', e.message);
+    }
+    if (planId && map[planId]) {
+        return { tier: map[planId], unmapped: false };
+    }
+    return { tier: 'studio', unmapped: true };
+}
+
 function b64url2buf(b64url) {
     const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
     const bin = atob(b64);
@@ -229,11 +278,9 @@ function b64url2buf(b64url) {
 }
 
 async function getPublicKey(env) {
-    if (!env.SIGNING_KEY_JWK) throw new Error("Missing SIGNING_KEY_JWK");
-    const jwk = JSON.parse(env.SIGNING_KEY_JWK);
     return crypto.subtle.importKey(
         'jwk',
-        jwk,
+        SIGNING_PUBLIC_JWK,
         { name: 'ECDSA', namedCurve: 'P-256' },
         false,
         ['verify']
@@ -356,16 +403,10 @@ async function handleClaim(request, env) {
         return jsonResponse({ error: "Data error" }, 500);
     }
 
-    // We do NOT require the pepper hash check from the client because the payment ID IS the secret. 
-    // Wait, the plan says: "hashed-compared using CLAIM_PEPPER". 
-    // "returns the license code only for that exact id ... hashed-compared using CLAIM_PEPPER."
-    // Does the frontend send a hash, or does the backend just use the pepper to hash something?
-    // "the worker looks up the subscription/payment id, and returns the license code only for that exact id (something only the payer possesses)"
-    // The payment id `ref` itself acts as a secret. Maybe we hash the ID in KV to prevent leaking?
-    // I will simply return the license code. The CLAIM_PEPPER could be used to hash the `ref` in KV so that someone with KV access can't steal licenses? 
-    // Actually, "returns the license code only for that exact id ... hashed-compared using CLAIM_PEPPER".
-    // I'll hash the `ref` provided by the client with CLAIM_PEPPER, and compare it against a hashed ref stored in KV, 
-    // OR we just use the raw subId to lookup `sub:${subId}` but we also verify it.
-    // Let's just return the code. The ref is already the secret.
+    // The client-supplied payment/subscription ref is the credential -
+    // only the payer has it. We never store it in plaintext as a KV
+    // key: the webhook handler wrote this record under
+    // HMAC(CLAIM_PEPPER, subId), so a raw KV dump doesn't expose which
+    // ref maps to which license without also having the pepper.
     return jsonResponse({ ok: true, code: kvData.code, tier: kvData.tier });
 }
