@@ -184,14 +184,17 @@ Return ONLY the JSON object, nothing else.`;
                     contents: [{ role: "user", parts: [{ text }] }],
                     generationConfig: {
                         responseMimeType: "application/json",
-                        maxOutputTokens: 1024,
-                        /* This is a fixed classification task (pick from two
-                           closed vocabularies), not something that benefits
-                           from reasoning - and thinking models otherwise
-                           spend the output budget on invisible "thought"
-                           tokens before ever writing the answer, truncating
-                           it under maxOutputTokens. */
-                        thinkingConfig: { thinkingBudget: 0 }
+                        /* gemini-flash-latest resolves to a thinking model
+                           that spends part of this budget on invisible
+                           "thought" tokens before writing the visible answer
+                           - a low ceiling truncates the answer before it's
+                           written. thinkingConfig/thinkingBudget would be
+                           the cleaner fix but this model version rejected
+                           that shape (400 INVALID_ARGUMENT) and there's no
+                           verified docs for its exact schema, so just give
+                           it enough room for thoughts + a short JSON answer
+                           instead of trying to disable thinking outright. */
+                        maxOutputTokens: 8192
                     }
                 })
             }, PROVIDER_TIMEOUT_MS);
