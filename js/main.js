@@ -950,14 +950,25 @@ const ARCHETYPE_OPTIONS = Object.keys(E.ARCHETYPES);
 
 /* ---------- Type lab ---------- */
 
+/* Returns a promise resolving once the Google Fonts stylesheet has
+   actually loaded (or 2.5s elapses) - document.fonts.load() can only
+   match an @font-face rule that's already been parsed into the
+   document, so callers that need to verify a font (fontActuallyLoaded)
+   must await this instead of firing the link and checking immediately. */
 function loadPairFonts(pair) {
     const url = E.googleFontsUrl(pair);
-    if (state.loadedFonts.has(url)) return;
+    if (state.loadedFonts.has(url)) return Promise.resolve();
     const link = document.createElement("link");
     link.rel = "stylesheet";
     link.href = url;
+    const ready = new Promise(resolve => {
+        link.addEventListener("load", resolve, { once: true });
+        link.addEventListener("error", resolve, { once: true });
+        setTimeout(resolve, 2500);
+    });
     document.head.appendChild(link);
     state.loadedFonts.add(url);
+    return ready;
 }
 
 function currentPair() {
@@ -1828,10 +1839,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     /* Confirms a family actually resolves to real glyphs rather than
-       the browser's silent fallback. document.fonts.load() rides the
-       stylesheet already injected by loadPairFonts() - no separate
-       network fetch, so it can't be blocked by CSP connect-src and
-       has no cross-origin response-reading concerns. */
+       the browser's silent fallback. document.fonts.load() only matches
+       an @font-face rule already parsed into the document, so the
+       caller must await loadPairFonts() (which waits for the stylesheet's
+       load event) before calling this - otherwise the check races the
+       network fetch and reports real fonts as missing. Riding the
+       already-loaded stylesheet also means no separate network fetch
+       here, so it can't be blocked by CSP connect-src and has no
+       cross-origin response-reading concerns. */
     async function fontActuallyLoaded(family, weight) {
         if (!("fonts" in document)) return true; // very old browser: apply optimistically
         try {
@@ -1877,7 +1892,7 @@ document.addEventListener("DOMContentLoaded", () => {
         applyBtn.disabled = true;
         applyBtn.textContent = "Checking font…";
         try {
-            loadPairFonts(candidate);
+            await loadPairFonts(candidate);
             const [dispOk, bodyOk] = await Promise.all([
                 fontActuallyLoaded(disp, weight),
                 fontActuallyLoaded(body, 400)
