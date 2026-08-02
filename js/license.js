@@ -170,8 +170,8 @@ const License = (function() {
     }
 
     function tier() {
-        if (!currentLicense) return "free";
-        return currentLicense.tier;
+        // Temporarily free for beta testing
+        return "studio";
     }
 
     function getDetails() {
