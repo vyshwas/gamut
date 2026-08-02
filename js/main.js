@@ -1155,9 +1155,19 @@ function adoptExtracted() {
     }
     
     renderPalette(state.extracted.proposed.palette);
-    
+
     $("engine").scrollIntoView({ behavior: scrollBehavior() });
     toast("Extracted system loaded");
+}
+
+/* Closes the Extract door's loop without a detour through the general
+   Engine export menu: the just-extracted (not yet adopted) system, as
+   DTCG, ready to paste straight into the Figma plugin's Apply tab. */
+function copyExtractedForFigma() {
+    if (!state.extracted) return;
+    if (!window.License.Gate.has("export-dtcg")) { lockedToast(); return; }
+    const dtcg = E.exportDtcg(state.extracted.proposed.palette, currentPair());
+    copyText(JSON.stringify(dtcg, null, 2), "Figma variables (DTCG)", $("extract-copy-figma"));
 }
 
 /* ---------- Fixer ---------- */
@@ -1344,7 +1354,8 @@ const EXPORTERS = {
     tailwind: p => ["Tailwind theme", E.exportTailwind(p)],
     scss: p => ["SCSS variables", E.exportScss(p)],
     json: p => ["JSON", E.exportJson(p)],
-    tokens: p => ["Design system tokens", E.exportTokensJson(p, currentPair())]
+    tokens: p => ["Design system tokens", E.exportTokensJson(p, currentPair())],
+    dtcg: p => ["Figma variables (DTCG)", JSON.stringify(E.exportDtcg(p, currentPair()), null, 2)]
 };
 
 function renderPrintSheet(palette) {
@@ -1793,6 +1804,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const extAdopt = $("extract-adopt");
     if (extAdopt) {
         extAdopt.addEventListener("click", adoptExtracted);
+    }
+    const extCopyFigma = $("extract-copy-figma");
+    if (extCopyFigma) {
+        extCopyFigma.addEventListener("click", copyExtractedForFigma);
     }
 
     /* Fixer */

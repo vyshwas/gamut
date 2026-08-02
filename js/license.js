@@ -197,7 +197,7 @@ const License = (function() {
             
             const studioFeatures = [
                 "fix-image", "vision", "save-palette",
-                "export-tailwind", "export-scss", "export-json", "export-tokens", "export-svg",
+                "export-tailwind", "export-scss", "export-json", "export-tokens", "export-svg", "export-dtcg",
                 "print-sheet", "ai-package", "agency", "lock-brand", "custom-type",
                 // "-unlimited" entries gate the *uncapped* version of a
                 // free-tier feature - Gate.has() must return false for

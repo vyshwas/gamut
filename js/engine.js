@@ -1168,6 +1168,44 @@ function exportTokensJson(p, pair) {
     }, null, 2);
 }
 
+/* DTCG-shaped export consumed directly by figma-plugin/code.js's
+   applyDtcg() (Light/Dark groups of $type/$value tokens) so a
+   generated OR extracted palette can be pushed into Figma Variables
+   with no LLM involved anywhere in the path - deterministic in,
+   deterministic out. Not a claim of full W3C DTCG 2025.10 compliance
+   (no color colorSpace/components object form yet); schema tagged
+   accordingly so it's never mistaken for the spec-validated export a
+   future Phase 4 would add. Works on both generatePalette() and
+   fixPalette() output since both share .swatches/.deployments and
+   systemTokens() already falls back recipeKey->"custom" for palettes
+   with no archetype (Fixer/Extractor output). */
+function exportDtcg(p, pair) {
+    const sys = systemTokens(p);
+    const d = p.deployments;
+    const colorGroup = dep => ({
+        dominant: { $type: "color", $value: dep.bg },
+        brand: { $type: "color", $value: dep.brand },
+        accent: { $type: "color", $value: dep.accent },
+        ink: { $type: "color", $value: dep.ink }
+    });
+    const dimensionGroup = () => {
+        const out = {};
+        sys.spacing.forEach(s => { out[`spacing-${s.name}`] = { $type: "dimension", $value: `${s.px}px` }; });
+        sys.radius.forEach(r => { out[`radius-${r.name}`] = { $type: "dimension", $value: r.px === 999 ? "9999px" : `${r.px}px` }; });
+        return out;
+    };
+    const typographyGroup = () => pair ? {
+        display: { $type: "typography", $value: { fontFamily: pair.display } },
+        body: { $type: "typography", $value: { fontFamily: pair.body } }
+    } : {};
+
+    return {
+        schema: "gamut.dtcg.v1",
+        Light: { color: colorGroup(d.light), dimension: dimensionGroup(), typography: typographyGroup() },
+        Dark: { color: colorGroup(d.dark) }
+    };
+}
+
 function brandLine(p) {
     return p.swatches.map(s => `${s.role} ${s.hex}`).join("  ");
 }
@@ -1223,6 +1261,6 @@ window.Engine = {
     parseHexList, diagnosePalette, fixPalette,
     getTypePairs, googleFontsUrl, moodFromColor,
     spacingScale, radiusScale, elevationScale, stateVariants,
-    exportCss, exportTailwind, exportScss, exportJson, exportTokensJson, exportSvgCard,
+    exportCss, exportTailwind, exportScss, exportJson, exportTokensJson, exportSvgCard, exportDtcg,
     nameColor, TYPE_PAIRS_MOOD, HARMONY_LABELS
 };
