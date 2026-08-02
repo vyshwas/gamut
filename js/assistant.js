@@ -30,8 +30,18 @@ const Assistant = (function () {
             ollamaModel: "llama3.2",
             geminiKey: ""
         };
-        try { return Object.assign(defaults, JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}); }
-        catch { return defaults; }
+        try {
+            const stored = JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {};
+            /* Pre-Gemini-swap blobs saved a key under the old `claudeKey`
+               field and a now-unrecognized `provider: "claude"` - without
+               this, that key becomes invisible (geminiKey stays "") and
+               the provider matches neither branch in interpret(), so it
+               silently falls to offline with no indication why. */
+            if (stored.claudeKey && !stored.geminiKey) stored.geminiKey = stored.claudeKey;
+            if (stored.provider === "claude") stored.provider = "gemini";
+            delete stored.claudeKey;
+            return Object.assign(defaults, stored);
+        } catch { return defaults; }
     }
 
     function saveSettings(s) {
