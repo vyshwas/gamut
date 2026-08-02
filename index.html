@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gamut - Generate production-ready design systems</title>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.anthropic.com http://localhost:11434 https://fonts.googleapis.com https://fonts.gstatic.com https://gamut-api.vyommehta197.workers.dev; frame-src https://api.razorpay.com https://checkout.razorpay.com">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://generativelanguage.googleapis.com http://localhost:11434 https://fonts.googleapis.com https://fonts.gstatic.com https://gamut-api.vyommehta197.workers.dev; frame-src https://api.razorpay.com https://checkout.razorpay.com">
     <meta name="description" content="Generate production-ready design systems from a brief, category, hexes, or image. Complete with typography, tokens, and exports.">
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23D4FF00'/%3E%3Ctext x='16' y='23' font-family='Arial Black,sans-serif' font-size='20' font-weight='900' text-anchor='middle' fill='%23141414'%3EG%3C/text%3E%3C/svg%3E">
 
@@ -117,7 +117,7 @@
                         <label for="assistant-provider">Interpreter</label>
                         <select id="assistant-provider">
                             <option value="ollama">Local (Ollama)</option>
-                            <option value="claude">Claude API (your key)</option>
+                            <option value="gemini">Gemini API (your key)</option>
                             <option value="offline">Offline keyword match</option>
                         </select>
                     </div>
@@ -125,13 +125,13 @@
                         <label for="assistant-ollama-model">Ollama model</label>
                         <input type="text" id="assistant-ollama-model" class="mono" placeholder="llama3.2" spellcheck="false">
                     </div>
-                    <div class="field field-inline" id="assistant-claude-fields" hidden>
-                        <label for="assistant-claude-key">Claude API key</label>
-                        <input type="password" id="assistant-claude-key" class="mono" placeholder="sk-ant-..." spellcheck="false">
+                    <div class="field field-inline" id="assistant-gemini-fields" hidden>
+                        <label for="assistant-gemini-key">Gemini API key</label>
+                        <input type="password" id="assistant-gemini-key" class="mono" placeholder="AIza..." spellcheck="false">
                     </div>
                     <button class="btn-mini" id="assistant-settings-save" type="button">Save settings</button>
                 </div>
-                <p class="hint">Local runs entirely on this machine via <a href="https://ollama.com" target="_blank" rel="noopener">Ollama</a>, nothing leaves your browser. Claude API needs your own key, stored only in this browser&rsquo;s local storage. Offline mode does a plain keyword search with no network call at all.</p>
+                <p class="hint">Local runs entirely on this machine via <a href="https://ollama.com" target="_blank" rel="noopener">Ollama</a>, nothing leaves your browser. Gemini API needs your own key, stored only in this browser&rsquo;s local storage. Offline mode does a plain keyword search with no network call at all.</p>
             </details>
 
             <div class="assistant-result" id="assistant-result" hidden>

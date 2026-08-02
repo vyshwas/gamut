@@ -1426,19 +1426,19 @@ function downloadAiPackage() {
 
 function toggleAssistantFields(provider) {
     $("assistant-ollama-fields").hidden = provider !== "ollama";
-    $("assistant-claude-fields").hidden = provider !== "claude";
+    $("assistant-gemini-fields").hidden = provider !== "gemini";
 }
 
 function syncAssistantSettings() {
     const s = Assistant.loadSettings();
     $("assistant-provider").value = s.provider;
     $("assistant-ollama-model").value = s.ollamaModel;
-    $("assistant-claude-key").value = s.claudeKey;
+    $("assistant-gemini-key").value = s.geminiKey;
     toggleAssistantFields(s.provider);
 }
 
 const ASSISTANT_PROVIDER_LABEL = {
-    ollama: "Local (Ollama)", claude: "Claude API", offline: "Offline keyword match"
+    ollama: "Local (Ollama)", gemini: "Gemini API", offline: "Offline keyword match"
 };
 
 function renderAssistantResult(r) {
@@ -1591,7 +1591,7 @@ document.addEventListener("DOMContentLoaded", () => {
             provider: $("assistant-provider").value,
             ollamaUrl: Assistant.loadSettings().ollamaUrl,
             ollamaModel: $("assistant-ollama-model").value.trim() || "llama3.2",
-            claudeKey: $("assistant-claude-key").value.trim()
+            geminiKey: $("assistant-gemini-key").value.trim()
         });
         toast("Assistant settings saved");
     });

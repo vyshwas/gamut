@@ -11,7 +11,7 @@
    Three providers, tried in this order per user setting:
      - ollama  : local model via the Ollama HTTP API (default,
                  no network egress, no API key)
-     - claude  : Anthropic API with the user's own key, stored
+     - gemini  : Google Gemini API with the user's own key, stored
                  only in localStorage on this device
      - offline : plain keyword search against the lexicon, no
                  network call at all - always available as the
@@ -28,7 +28,7 @@ const Assistant = (function () {
             provider: "ollama",
             ollamaUrl: "http://localhost:11434",
             ollamaModel: "llama3.2",
-            claudeKey: ""
+            geminiKey: ""
         };
         try { return Object.assign(defaults, JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}); }
         catch { return defaults; }
@@ -159,26 +159,27 @@ Return ONLY the JSON object, nothing else.`;
         return validate(extractJson(data && data.message && data.message.content));
     }
 
-    /* ---------- Optional cloud: Claude, user's own key ---------- */
-    async function claudeInterpret(text, settings) {
-        const res = await fetchWithTimeout("https://api.anthropic.com/v1/messages", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "x-api-key": settings.claudeKey,
-                "anthropic-version": "2023-06-01",
-                "anthropic-dangerous-direct-browser-access": "true"
-            },
-            body: JSON.stringify({
-                model: "claude-sonnet-5",
-                max_tokens: 400,
-                system: systemPrompt(),
-                messages: [{ role: "user", content: text }]
-            })
-        }, PROVIDER_TIMEOUT_MS);
-        if (!res.ok) throw new Error("Claude HTTP " + res.status);
+    /* ---------- Optional cloud: Gemini, user's own key ---------- */
+    const GEMINI_MODEL = "gemini-flash-latest";
+    async function geminiInterpret(text, settings) {
+        const res = await fetchWithTimeout(
+            `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-goog-api-key": settings.geminiKey
+                },
+                body: JSON.stringify({
+                    systemInstruction: { parts: [{ text: systemPrompt() }] },
+                    contents: [{ role: "user", parts: [{ text }] }],
+                    generationConfig: { responseMimeType: "application/json", maxOutputTokens: 400 }
+                })
+            }, PROVIDER_TIMEOUT_MS);
+        if (!res.ok) throw new Error("Gemini HTTP " + res.status);
         const data = await res.json();
-        const raw = data && data.content && data.content[0] && data.content[0].text;
+        const raw = data && data.candidates && data.candidates[0]
+            && data.candidates[0].content && data.candidates[0].content.parts
+            && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text;
         return validate(extractJson(raw));
     }
 
@@ -189,8 +190,8 @@ Return ONLY the JSON object, nothing else.`;
         let result = null;
         let providerUsed = settings.provider;
         try {
-            if (settings.provider === "claude" && settings.claudeKey) {
-                result = await claudeInterpret(text, settings);
+            if (settings.provider === "gemini" && settings.geminiKey) {
+                result = await geminiInterpret(text, settings);
             } else if (settings.provider === "ollama") {
                 result = await ollamaInterpret(text, settings);
             }

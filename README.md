@@ -21,13 +21,13 @@ Designare/          (folder name predates the rename; the product is Gamut)
   css/style.css     tokens + styling + print sheet styles
   js/engine.js      color math, generation, fixing, type data (no DOM)
   js/mood.js        mood-keyword lexicon, independent of the business archetypes
-  js/assistant.js   LLM interpreter: Ollama / Claude API / offline keyword match
+  js/assistant.js   LLM interpreter: Ollama / Gemini API / offline keyword match
   js/main.js        UI wiring
 ```
 
 ## Quick start
 
-Open `index.html` in a browser, or serve it with any static server. Everything on the site works either way **except the Studio Assistant's local-Ollama and Claude-API providers**: browsers send `Origin: null` for `file://` pages, and Ollama's CORS layer rejects that outright (returns 403 on the preflight), so every request silently fails over to offline mode. Serve the folder over `http://` to use them - e.g. `python -m http.server` in this folder, then open `http://localhost:8000`. No other flags needed: Ollama reflects the request's Origin header for CORS by default on `http://` origins. The Assistant will tell you in-panel if it detects it's running from `file://`.
+Open `index.html` in a browser, or serve it with any static server. Everything on the site works either way **except the Studio Assistant's local-Ollama and Gemini-API providers**: browsers send `Origin: null` for `file://` pages, and Ollama's CORS layer rejects that outright (returns 403 on the preflight), so every request silently fails over to offline mode. Serve the folder over `http://` to use them - e.g. `python -m http.server` in this folder, then open `http://localhost:8000`. No other flags needed: Ollama reflects the request's Origin header for CORS by default on `http://` origins. The Assistant will tell you in-panel if it detects it's running from `file://`.
 
 The local provider additionally needs [Ollama](https://ollama.com) installed and running (`ollama pull llama3.2`, then just have the Ollama app/service running in the background).
 
@@ -43,7 +43,7 @@ The interpreter's system prompt hard-codes both lists and instructs strict JSON 
 Three providers, tried in this order per the setting in the Assistant panel:
 
 - **Local (Ollama)**, default. No API key, no network egress beyond `localhost:11434`. Any small instruction-following model works; `llama3.2` (2GB) is fast enough for this. Avoid very large/unstable local models for this feature - not every locally-installed model is a safe choice here.
-- **Claude API**, optional. Paste your own Anthropic key in the Assistant panel; it's stored only in this browser's `localStorage`, sent only to `api.anthropic.com`, and used only for this interpretation call. Gives noticeably more reliable keyword/archetype picks than a 2GB local model.
+- **Gemini API**, optional. Paste your own Google AI Studio key in the Assistant panel; it's stored only in this browser's `localStorage`, sent only to `generativelanguage.googleapis.com`, and used only for this interpretation call. Gives noticeably more reliable keyword/archetype picks than a 2GB local model.
 - **Offline keyword match**, the fallback. Plain substring search against the lexicon and archetype labels, no network call at all. Runs automatically if the chosen provider errors or is unreachable, so the feature never hard-fails.
 
 Typography note: business archetypes and the mood lexicon are deliberately kept on *disjoint* typography buckets (see `TYPE_PAIRS` / `TYPE_PAIRS_MOOD` in `js/engine.js`) so that, for example, "luxurious" and "nostalgic" - both used to collapse into one shared "craft" pairing - now get genuinely different real Google Fonts pairs. Every one of the ten archetypes was audited to use a unique typography bucket for the same reason.
