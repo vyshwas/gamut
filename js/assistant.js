@@ -182,7 +182,17 @@ Return ONLY the JSON object, nothing else.`;
                 body: JSON.stringify({
                     systemInstruction: { parts: [{ text: systemPrompt() }] },
                     contents: [{ role: "user", parts: [{ text }] }],
-                    generationConfig: { responseMimeType: "application/json", maxOutputTokens: 400 }
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        maxOutputTokens: 1024,
+                        /* This is a fixed classification task (pick from two
+                           closed vocabularies), not something that benefits
+                           from reasoning - and thinking models otherwise
+                           spend the output budget on invisible "thought"
+                           tokens before ever writing the answer, truncating
+                           it under maxOutputTokens. */
+                        thinkingConfig: { thinkingBudget: 0 }
+                    }
                 })
             }, PROVIDER_TIMEOUT_MS);
         if (!res.ok) throw new Error("Gemini HTTP " + res.status);
