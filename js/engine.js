@@ -116,15 +116,34 @@ function contrastGrade(ratio) {
 }
 
 /* Nudge a color's lightness until it clears a contrast target
-   against a fixed background. Direction is picked automatically. */
+   against a fixed background. Direction is picked from which
+   extreme (near-black or near-white) is actually achievable
+   against this bg — NOT from a fixed bg-luminance threshold on
+   the foreground's own starting point. A threshold-based pick
+   stalls when the foreground starts on the losing side (e.g. a
+   light fg over a mid-dark bg gets told to darken further,
+   walking deeper into the bg's own luminance range instead of
+   away from it) — the same failure class documented and fixed
+   below in readableOn(); this mirrors that fix. */
 function ensureContrast(fgHex, bgHex, target) {
     let fg = hexToHsl(fgHex);
-    const bgLum = relativeLuminance(hexToRgb(bgHex));
-    const darken = bgLum > 0.18;
-    for (let i = 0; i < 40; i++) {
+    const darken = contrastRatio('#000000', bgHex) >= contrastRatio('#FFFFFF', bgHex);
+    /* 48 steps of 2 covers the full 0-100 range; fewer steps can
+       strand a forged/extreme starting point short of the achievable
+       extreme (measured: a forged l:10 ink walking toward l:100 needed
+       45 steps and a 40-step budget cut it off early, landing under
+       the 4.5 floor readableOn's own comment guarantees is reachable).
+       The clamp itself must reach the true 0/100 extremes, not a 2/98
+       near-extreme: at l:98 residual chroma from a saturated starting
+       hue still shaves enough luminance off pure white to drop select
+       backgrounds' best-case contrast just under 4.5 (measured: white
+       at 4.60 vs. the l:98 near-white actually achieved at 4.43). HSL
+       collapses any hue/saturation to true black/white at l:0/l:100,
+       so reaching the real extreme is what the invariant assumes. */
+    for (let i = 0; i < 48; i++) {
         if (contrastRatio(hslToHex(fg), bgHex) >= target) break;
         fg.l += darken ? -2 : 2;
-        fg.l = Math.max(2, Math.min(98, fg.l));
+        fg.l = Math.max(0, Math.min(100, fg.l));
     }
     return hslToHex(fg);
 }
@@ -133,15 +152,15 @@ function ensureContrast(fgHex, bgHex, target) {
    s constant while l drops, which reads as grey: a muted amber
    dragged from l55 to l32 lands olive-sludge. Adding saturation
    on the way down keeps it ochre instead. Only the darkening
-   direction needs this; lightening toward pastel is fine. */
+   direction needs this; lightening toward pastel is fine.
+   Direction picked the same achievable-extreme way as ensureContrast. */
 function ensureContrastVivid(fgHex, bgHex, target) {
     let fg = hexToHsl(fgHex);
-    const bgLum = relativeLuminance(hexToRgb(bgHex));
-    const darken = bgLum > 0.35;
-    for (let i = 0; i < 40; i++) {
+    const darken = contrastRatio('#000000', bgHex) >= contrastRatio('#FFFFFF', bgHex);
+    for (let i = 0; i < 48; i++) {
         if (contrastRatio(hslToHex(fg), bgHex) >= target) break;
         fg.l += darken ? -2 : 2;
-        fg.l = Math.max(2, Math.min(98, fg.l));
+        fg.l = Math.max(0, Math.min(100, fg.l));
         if (darken) fg.s = Math.min(92, fg.s + 2);
     }
     return hslToHex(fg);

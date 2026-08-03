@@ -12,6 +12,7 @@ A brand color palette generator, palette fixer, and typography pairing tool buil
 - **Shareable palettes.** Seed and settings live in the URL (`?cat=&seed=&borrow=&lock=`), so any generated palette can be bookmarked or sent to a client. The Fixer reports the fate of every input color (kept / adjusted / retired, with the law that caused it).
 - **Studio Assistant.** A conversation bar: describe a brief or a mood in plain language ("a calm, trustworthy wellness brand with a modern edge") and it's interpreted onto Gamut's own frameworks - never onto invented hex codes. See "The Studio Assistant" below.
 - **AI Import Package.** A one-click ZIP (`js/aipack.js`) built for handing a palette to an AI coding or design agent instead of a human: the full `gamut.tokens.v1` payload, a `brand-system.json` provenance file, a generated `brand-book.md`, and a `figma-import.md` prompt written straight off that data. Attach the ZIP to Claude Code, Codex, Cursor, Gemini CLI, Windsurf, or anything that can build a Figma file, and it has everything needed - no AI involved in generating it, and byte-for-byte identical on every re-export of the same palette.
+- **Extract (Figma → system).** The second door, for going the other direction: reverse-engineer a design system out of screens that already exist. A companion Figma plugin (`figma-plugin/`) scans a selection and emits a `gamut.inventory.v1` JSON (every color/text/spacing/radius/shadow actually used, area-weighted, `declared` vs `observed` split). Paste that into the `#extract` section and `js/extract.js` clusters it, infers 60-30-10 roles, snaps spacing/radii onto the same scales the Engine uses, and runs the result through the Fixer so extraction obeys the same ten laws as generation — with full per-value provenance (kept/merged/adjusted/retired, same vocabulary as the Fixer). "Load into the Engine" adopts the extracted system into every existing feature (system tokens, exports, print sheet). "Copy for Figma" (or the general export menu's "Figma variables") produces a DTCG-shaped JSON (`gamut.dtcg.v1` - a Gamut-specific shape, not yet the full W3C DTCG 2025.10 spec) that the plugin's own Apply tab turns into **real Figma Variables** (COLOR + FLOAT, Light/Dark modes, plus text styles) - re-applying updates in place rather than duplicating. Zero LLM anywhere in the extraction or apply path.
 
 ## File structure
 
@@ -19,10 +20,15 @@ A brand color palette generator, palette fixer, and typography pairing tool buil
 Designare/          (folder name predates the rename; the product is Gamut)
   index.html        structure + all copy
   css/style.css     tokens + styling + print sheet styles
-  js/engine.js      color math, generation, fixing, type data (no DOM)
+  js/engine.js      color math, generation, fixing, type/system tokens, DTCG export (no DOM)
+  js/extract.js     Extractor: inventory -> clusters -> law-compliant proposed system (no DOM)
   js/mood.js        mood-keyword lexicon, independent of the business archetypes
   js/assistant.js   LLM interpreter: Ollama / Gemini API / offline keyword match
+  js/aipack.js      deterministic AI Import Package ZIP builder
+  js/license.js     license code verify/redeem + tier gating (Gate.has)
   js/main.js        UI wiring
+  figma-plugin/     Gamut's own Figma plugin: scanner (Phase 5) + Apply/variables (Phase 7)
+  tools/            regression.mjs (Phase 9 suite), license-admin.mjs, other node test scripts
 ```
 
 ## Quick start
@@ -48,13 +54,15 @@ Three providers, tried in this order per the setting in the Assistant panel:
 
 Typography note: business archetypes and the mood lexicon are deliberately kept on *disjoint* typography buckets (see `TYPE_PAIRS` / `TYPE_PAIRS_MOOD` in `js/engine.js`) so that, for example, "luxurious" and "nostalgic" - both used to collapse into one shared "craft" pairing - now get genuinely different real Google Fonts pairs. Every one of the ten archetypes was audited to use a unique typography bucket for the same reason.
 
-## Turning the demo into a paid subscription product
+## Licensing and payments
 
-The site currently runs fully unlocked as a demo. To sell it:
+Offline ECDSA-signed license codes (`js/license.js`, issued/revoked via `tools/license-admin.mjs`), a Razorpay checkout UI, and client-side tier gating (`License.Gate.has(feature)`) are all built - see `LAUNCH-CHECKLIST.md` and `PROGRESS-LAUNCH.md` for the phase log. **Currently disabled for a free beta**: `License.tier()` in `js/license.js` unconditionally returns `"studio"`, so every feature is unlocked for everyone regardless of a redeemed code (commit `f7df689`, a deliberate product decision, not a bug). To turn real gating back on, revert that one function; the rest of the pipeline (signature verification, expiry, revocation via `licenses/revoked.json` and remote KV) already works end-to-end (`tools/test-l4.mjs`). What's still owner-only manual work, not code: Razorpay KYC, 2FA, bank verification (`LAUNCH-CHECKLIST.md`).
 
-1. **Payments, no backend (fastest).** Create Stripe Payment Links (or Razorpay subscription links / Gumroad memberships) for Studio and Agency, and point the two pricing buttons at them. This gets you paid before you build anything else.
-2. **Gating (needs auth).** Real feature gating requires accounts. Lightest path: Supabase or Clerk for auth + a `plan` claim, then gate the export buttons and Fixer rate limit client-side, with the palette engine moved behind a tiny API if you want it properly protected. Until then, front-end-only "gating" is decoration; the demo deliberately doesn't pretend.
-3. **The pricing numbers are placeholders.** $0 / $12 / $49 were picked as sane anchors; validate against Khroma, Huemint, Coolors Pro (~$3-8/mo consumer) and Baseline/Standards-type brand tooling (~$30-100/mo agency) before launch.
+The pricing numbers ($0/$12/$49) are placeholders, not validated against Khroma/Huemint/Coolors Pro or agency-tier brand tooling.
+
+## Verifying changes
+
+`node tools/regression.mjs` runs the full Phase 9 suite in one command: every existing test script, a `generatePalette` contrast sweep (all archetypes x 30 seeds x both deployments), a `fixPalette` fuzz sweep (5,000 random inputs x 3 strategies), DTCG export shape/fidelity checks, an Extractor law-compliance fuzz, and a few anti-pattern greps. Node-level only - it does not replace a headless-Chrome or manual-Figma-desktop pass for UI-layer or plugin-load changes (see `figma-plugin/test/*.test.mjs`'s own comments on that limit).
 
 ## Customization
 

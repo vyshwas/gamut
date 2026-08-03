@@ -16,7 +16,7 @@ No primary segment has been chosen yet; the Studio (solo) / Agency (team) pricin
 
 ## Product Purpose
 
-Gamut generates brand color palettes, fixes existing broken palettes, and pairs typography — derived from The Brand Color Bible v2 methodology (60-30-10 rule, ten laws of color, nine psychology profiles), with a taste layer on top: within a category's law-compliant range, seed and a curated set of color-harmony choices (the category's own pairing, or a complementary/split-complementary/triadic alternative rolled from the brand hue) drive genuine hue variety instead of one narrow "safe" answer per category. The laws are the floor (contrast, the 60-30-10 ratio, Law 2's saturation relationship) — never bypassed; taste decides which law-compliant result you get. It also generates the rest of a matched design system (spacing, radius, elevation, component states) from the same archetype signal as the colors, and exports everything as CSS/Tailwind/SCSS/JSON. Success means a user leaves with a complete, law-compliant, contrast-safe, print-and-digital-ready design system they can paste directly into a project.
+Gamut generates brand color palettes, fixes existing broken palettes, and pairs typography — derived from The Brand Color Bible v2 methodology (60-30-10 rule, ten laws of color, nine psychology profiles), with a taste layer on top: within a category's law-compliant range, seed and a curated set of color-harmony choices (the category's own pairing, or a complementary/split-complementary/triadic alternative rolled from the brand hue) drive genuine hue variety instead of one narrow "safe" answer per category. The laws are the floor (contrast, the 60-30-10 ratio, Law 2's saturation relationship) — never bypassed; taste decides which law-compliant result you get. It also generates the rest of a matched design system (spacing, radius, elevation, component states) from the same archetype signal as the colors, and exports everything as CSS/Tailwind/SCSS/JSON. Two doors in: **Generate** (brief/category in, full system out, described above) and **Extract** (an existing Figma file in, via a companion plugin — scan real screens, diagnose the drift against the same ten laws, get a normalized system with full per-value provenance, push it back into Figma as real Variables). Success means a user leaves with a complete, law-compliant, contrast-safe, print-and-digital-ready design system they can paste directly into a project, whether they started from a brief or from screens that already exist.
 
 ## Positioning
 
@@ -28,11 +28,13 @@ Runs as a static site (plain HTML/CSS/JS, no build step, no framework, no backen
 
 ## Capabilities and Constraints
 
-- No backend and no accounts exist yet. Feature gating for paid tiers is explicitly not implemented — the demo runs fully unlocked.
+- No accounts/backend beyond a Cloudflare Worker used for license verification and revocation lookups. Offline ECDSA-signed license codes, Razorpay checkout UI, and client-side tier gating are built (`js/license.js`, `tools/license-admin.mjs`) — but `License.tier()` currently returns `"studio"` unconditionally, a deliberate free-beta decision, so the demo runs fully unlocked in practice today even though the gating machinery is real.
 - Pricing ($0/$12/$49 Free/Studio/Agency) is a placeholder anchor, not validated or finalized.
 - CMYK conversion is a naive uncoated approximation, honestly labeled in the UI — not an ICC-accurate pipeline.
 - All ten business archetypes and the mood lexicon are code-owned, fixed vocabularies; the LLM assistant layer never operates outside them.
 - Structured token export (`gamut.tokens.v1`) is also consumed as seed data by a separate project (Design OS's Change Impact Engine) — Gamut and that project stay independent codebases with no merge.
+- Extract's DTCG export (`gamut.dtcg.v1`) is a Gamut-specific shape, not yet compliant with the full W3C DTCG 2025.10 spec (bare-hex `$value` rather than the spec's object form) — real spec compliance and an import path are unbuilt.
+- No manual Figma-desktop verification of the plugin has been done in this environment (no Figma runtime available to an agent) — only Node tests against a stubbed `global.figma`, which cannot exercise real plugin load/selection/postMessage.
 
 ## Brand Commitments
 

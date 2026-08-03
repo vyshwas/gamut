@@ -1143,7 +1143,15 @@ function adoptExtracted() {
     // Wire Studio Assistant suggestion if possible
     const brand = state.extracted.proposed.palette.swatches.find(s => s.role === "Brand");
     if (brand) {
-        const archetype = E.moodFromColor(brand.hex);
+        /* moodFromColor() returns a mood bucket (e.g. "trust"), not an
+           ARCHETYPES key — renderAssistantResult expects the latter
+           (E.ARCHETYPES[r.archetype].label). Every archetype carries a
+           matching .mood field, so look up the archetype whose mood
+           matches instead of handing the bucket name straight through
+           as if it were a key (that threw: E.ARCHETYPES["trust"] is
+           undefined, only E.ARCHETYPES.fintech has mood "trust"). */
+        const moodBucket = E.moodFromColor(brand.hex);
+        const archetype = Object.keys(E.ARCHETYPES).find(k => E.ARCHETYPES[k].mood === moodBucket) || null;
         state.assistantResult = {
             providerUsed: "Extraction",
             explanation: "Archetype inferred from extracted brand color.",

@@ -1,7 +1,12 @@
 # Gamut V2 — Brand System Studio: Implementation Plan
 
 **Date:** 2026-07-29
-**Status:** Plan only. Nothing here is built. Written for phased execution in fresh chat contexts (Sonnet), one phase per session.
+**Status (updated 2026-08-03, Phase 9 close-out):**
+- **Built + verified:** Phase 0 (discovery), Phase 4b (AI Import Package), Phase 5 (Figma plugin scanner), Phase 6 (Extractor engine + `#extract` UI), Phase 7 (Apply tab / real Figma Variables creation via `exportDtcg`, closed 2026-08-03).
+- **Not built:** Phase 1 (type scale/grid/motion tokens), Phase 2 (component preview gallery), Phase 3 (multi-page brand book), Phase 4 (full W3C DTCG 2025.10 spec compliance + `importDtcg` — current export is a custom `gamut.dtcg.v1` shape, not spec-compliant), Phase 8 (two-door IA recomposition — Generate and Extract exist as sections on one page, not yet a recomposed landing).
+- **Phase 9 (this pass, 2026-08-03):** full regression suite written (`tools/regression.mjs`), headless-Chrome E2E of both doors run and green, two real bugs found and fixed (see engine.js/main.js changelog below), docs updated. Manual Figma-desktop Import-from-manifest pass still not done — no Figma runtime available in this environment, flagged as an open item in every phase that touches the plugin.
+
+Original plan text below is unmodified from 2026-07-29 aside from this status block.
 **Product thesis:** Gamut stops being "a palette tool with extras" and becomes a **brand-system studio** with two doors:
 
 1. **Generate** — brief in, complete law-checked brand design system out (color, type scale, spacing, radius, elevation, states, components preview, brand book). Deletes the days a brand designer spends assembling tokens + a guidelines document after the creative decisions are made.
@@ -270,6 +275,15 @@ Both doors end at the same place: one system, exported as CSS/Tailwind/SCSS/`gam
 6. **Deploy:** commit + push to `github.com/vyshwas/gamut` (Pages auto-publishes). Note: the 2026-07-25 off-white light-theme change may still be uncommitted — verify `git status` and fold it into the first commit rather than losing it.
 
 ---
+
+## Phase 9 changelog (2026-08-03)
+
+Two real bugs found by actually running the verification this plan calls for (not just re-reading code):
+
+1. **`ensureContrast`/`ensureContrastVivid` (engine.js) could land under the 4.5 contrast floor.** Two stacked issues: (a) walk direction was picked from a fixed background-luminance threshold instead of which extreme (black/white) is actually achievable — the exact failure class `readableOn()`'s own comment already documented and fixed, just never propagated to these two; (b) the lightness clamp stopped at 2/98, and at l:98 residual chroma from a saturated starting hue shaved just enough luminance off "near white" to drop select backgrounds' best-case contrast under 4.45 (measured: true white 4.60 vs. the l:98 near-white actually reached, 4.43). Fixed: direction now derives from `contrastRatio('#000000'/'#FFFFFF', bg)`, clamp extended to the true 0/100 extremes (which resolve to literal black/white in HSL regardless of hue/saturation), iteration budget raised 40→48 to cover the full range. Verified clean across 60,000 fuzzed `fixPalette` calls + 400 `generatePalette` calls (0 failures, was previously failing ~1 in 4,000).
+2. **Extract door's "Load into the Engine" button silently did nothing on real extractions.** `adoptExtracted()` (main.js) called `E.moodFromColor(brand.hex)` — which returns a mood-bucket string ("trust", "heat", "future"...) — and handed it to `renderAssistantResult()` as if it were an `ARCHETYPES` key, which threw `Cannot read properties of undefined (reading 'label')` and aborted the function before `renderPalette()` ever ran. Every archetype carries a matching `.mood` field (fintech.mood="trust", fnb.mood="heat", etc.), so fixed by looking up the archetype whose `.mood` matches the bucket instead of using the bucket as a key directly. Verified via headless Chrome: swatches now genuinely update to the extracted palette and the suggested-archetype chip renders correctly.
+
+Both were caught only because Phase 9's own checklist items (node fuzz sweep, headless Chrome E2E of both doors) were actually run against the live code — this project's memory already has two prior incidents (R2's `rgbToHex`, `effectiveBackground`'s parent-walk) of an agent logging PASS on work that was actually broken. Don't skip the headless E2E step in future phases on the assumption unit tests are enough.
 
 ## Explicitly out of scope for V2 (documented so they aren't accidentally started)
 

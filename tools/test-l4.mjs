@@ -38,21 +38,28 @@ async function runTests() {
     let failed = 0;
     
     // Test 1: Gate.has matrix
+    // NOTE: License.tier() is hardcoded to return "studio" unconditionally
+    // (js/license.js, commit f7df689 "feat: make app free for beta testing")
+    // — a deliberate product decision, not a bug. Real per-tier gating is
+    // dormant until beta ends. Assert the actual current contract (always
+    // studio, everything unlocked) instead of the pre-beta free/gated one;
+    // when beta mode is turned off, revert `tier()` and restore the
+    // free-tier-is-gated assertions this replaced.
     localStorage.removeItem('gamut.license');
     await License.init();
-    
-    if (License.tier() !== 'free') {
-        console.error("FAIL: Default tier should be free");
+
+    if (License.tier() !== 'studio') {
+        console.error("FAIL: Beta tier() should unconditionally report studio");
         failed++;
     }
-    
-    if (License.Gate.has('export-tailwind')) {
-        console.error("FAIL: export-tailwind should be blocked on free");
+
+    if (!License.Gate.has('export-tailwind')) {
+        console.error("FAIL: export-tailwind should be unlocked during the beta");
         failed++;
     }
-    
+
     // Ensure keys exist
-    
+
     
     // Issue studio code
     const res = execSync('node tools/license-admin.mjs issue --tier studio --expires never --note "test"').toString();

@@ -39,6 +39,10 @@ One canonical payload (`schema: "gamut.tokens.v1"`) combining color roles + depl
 - **No component library.** Tokens only (spacing/radius/elevation/states) — not actual button/card/input component markup or CSS. That's a much larger, separate scope decision, not implied by "design system generator."
 - **No Figma sync.** The structured export is a static JSON download; pushing it into Figma variables is a real future integration but wasn't part of this pass.
 
+## V2 update (2026-08-03): the Figma sync scope cut above no longer holds
+
+`GAMUT-V2-PLAN.md` Phases 5-7 built the other half: a Figma plugin (`figma-plugin/`) that scans real screens into a `gamut.inventory.v1` inventory, `js/extract.js`'s `extractSystem()` that reverse-engineers a law-compliant system from it (reusing this doc's `systemTokens`/scales), `Engine.exportDtcg()` mapping that (or any generated) system onto a DTCG-shaped payload, and the plugin's Apply tab creating real Figma Variables + text styles from it — idempotent, re-applying updates in place. See `README.md`'s "Extract (Figma → system)" section and `figma-plugin/test/extract-to-variables.test.mjs` for the verified round trip (inventory → extraction → DTCG → real Figma Variables via a stubbed `global.figma`). Still open: full W3C DTCG 2025.10 spec compliance (current export is a custom `gamut.dtcg.v1` shape) and a manual Figma-desktop verification pass, since no Figma runtime exists in this environment.
+
 ## Verification
 
 - Node: 10 archetypes × 20 seeds — correct shape (14 spacing steps, 5 radius steps, 5 elevation steps incl. `0`), deterministic output for a fixed seed, valid `exportTokensJson` JSON for every combination.
