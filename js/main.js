@@ -31,6 +31,23 @@ const $ = id => document.getElementById(id);
 const prefersReduced = () =>
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+/* A button that reveals an already-rendered, hidden sibling and
+   relabels itself - the generic version of the pattern used across
+   the applied-format mockups, the vision-simulation variants, and
+   the secondary export formats. No-ops quietly if either id is
+   missing rather than throwing, since it's called unconditionally
+   from init(). */
+function wireReveal(btnId, targetId, showLabel, hideLabel) {
+    const btn = $(btnId), target = $(targetId);
+    if (!btn || !target) return;
+    btn.addEventListener("click", () => {
+        const willShow = target.hidden;
+        target.hidden = !willShow;
+        btn.setAttribute("aria-expanded", String(willShow));
+        btn.textContent = willShow ? hideLabel : showLabel;
+    });
+}
+
 /* Smooth scrolling is motion; the preference asks us not to. */
 const scrollBehavior = () => (prefersReduced() ? "auto" : "smooth");
 
@@ -95,7 +112,7 @@ function oklchToRgb({ L, C, H }) {
    hover gimmick. Before a first generation it's plain ink.
    ========================================================= */
 const Wordmark = (() => {
-    let texts = [], dots = [], theme = "light", current = null;
+    let texts = [], dots = [], theme = "dark", current = null;
     const PAPER = "#F9F8F6";
     const LIGHT_MIN = 9;
 
@@ -128,7 +145,7 @@ const Wordmark = (() => {
     function start() {
         texts = [...document.querySelectorAll(".wm-text")];
         dots = [...document.querySelectorAll(".wm-dot")];
-        theme = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+        theme = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
     }
 
     /* Called once per regenerate from renderPalette. */
@@ -142,10 +159,11 @@ const Wordmark = (() => {
 
 /* =========================================================
    Theme
-   ONE locked palette, two deployments. Light (warm paper) is the
-   default and lives in :root; dark is the stored override, stamped
-   onto <html> by the inline <head> script before first paint so
-   there is no flash. This module owns every change after that.
+   ONE locked palette, two deployments. Dark (Structured Depth) is
+   the default and lives in :root; light is the stored override,
+   stamped onto <html> by the inline <head> script before first
+   paint so there is no flash. This module owns every change after
+   that.
    ========================================================= */
 const Theme = (() => {
     const KEY = "gamut.theme";
@@ -153,7 +171,7 @@ const Theme = (() => {
     let btn = null, fadeTimer = null;
 
     const current = () =>
-        document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+        document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
 
     function syncButton() {
         if (!btn) return;
@@ -169,7 +187,7 @@ const Theme = (() => {
        kind of large-area motion it asks us to drop. */
     function apply(theme, animate) {
         const root = document.documentElement;
-        if (theme === "dark") root.setAttribute("data-theme", "dark");
+        if (theme === "light") root.setAttribute("data-theme", "light");
         else root.removeAttribute("data-theme");
 
         if (animate && !prefersReduced()) {
@@ -182,6 +200,12 @@ const Theme = (() => {
         /* The wordmark's ink derivation is theme-dependent; re-run it
            for the surface it now sits on. */
         Wordmark.setTheme(theme);
+        /* Law 4 ("design the dark mode at the same time as the
+           light") stayed a claim in an export file until this: the
+           hero's live preview now actually shows the palette's dark
+           deployment when the site itself is in dark mode, instead
+           of just re-theming the chrome around an unchanged demo. */
+        if (typeof paintThemedPreview === "function") paintThemedPreview();
     }
 
     function set(theme) {
@@ -199,7 +223,7 @@ const Theme = (() => {
         if (btn) btn.addEventListener("click", toggle);
         /* Same site open in two tabs: keep them in step. */
         window.addEventListener("storage", e => {
-            if (e.key === KEY) apply(e.newValue === "dark" ? "dark" : "light", true);
+            if (e.key === KEY) apply(e.newValue === "light" ? "light" : "dark", true);
         });
     }
 
@@ -303,7 +327,7 @@ function textOn(hex) {
 
 function renderBand(el, swatches, withLabels) {
     el.innerHTML = "";
-    const shares = { Dominant: 60, Brand: 30, Accent: 10, Ink: 0 };
+    const shares = { Dominant: 60, Primary: 30, Secondary: 10, Ink: 0 };
     swatches.forEach(s => {
         const share = shares[s.role];
         if (share === 0) return;
@@ -336,8 +360,33 @@ function renderBand(el, swatches, withLabels) {
    Nothing is printed on the color. Hex readouts go to the caption rail
    below the field, whose cells match the band widths; small mono text
    over an arbitrary generated hue cannot clear 4.5:1 in every case. */
-const HERO_SHARES = { Dominant: 60, Brand: 30, Accent: 10 };
-const HERO_RAIL_CELLS = { Dominant: "hero-dominant", Brand: "hero-brand", Accent: "hero-accent" };
+const HERO_SHARES = { Dominant: 60, Primary: 30, Secondary: 10 };
+const HERO_RAIL_CELLS = { Dominant: "hero-dominant", Primary: "hero-brand", Secondary: "hero-accent" };
+
+/* ---------- Theme-aware live preview ----------
+   palette.swatches are fitted to the LIGHT deployment - that's the
+   canonical value everything else (exports, shades, copy/save) reads
+   from, and it stays that way. The hero field is different: it's a
+   live decorative preview, not a data source, so it's the one place
+   that's allowed to show the dark deployment when the site itself is
+   in dark mode - see paintThemedPreview, wired from Theme.apply(). */
+function themedHeroSwatches(palette, theme) {
+    if (theme !== "dark" || !palette.deployments || !palette.deployments.dark) return palette.swatches;
+    const dep = palette.deployments.dark;
+    const hexFor = { Dominant: dep.bg, Primary: dep.brand, Secondary: dep.accent, Ink: dep.ink };
+    return palette.swatches.map(s => {
+        const hex = hexFor[s.role];
+        if (!hex) return s;
+        const rgb = E.hexToRgb(hex);
+        return { ...s, hex, rgb, hsl: E.hexToHsl(hex), cmyk: E.rgbToCmyk(rgb), name: E.nameColor(hex), print: E.gamutRisk(hex) };
+    });
+}
+
+function paintThemedPreview() {
+    if (!state.palette) return;
+    const swatches = themedHeroSwatches(state.palette, Theme.current());
+    renderHeroField({ ...state.palette, swatches });
+}
 
 function renderHeroField(palette) {
     const field = $("hero-field");
@@ -416,6 +465,9 @@ function harmonySentence(harmony, delta) {
             return `<b>Your accent was carried over from the palette you pasted.</b> The Fixer assigned it the supporting role and checked the saturation relationship numerically, rather than choosing a new hue for you.`;
         case "complementary":
             return `<b>Your accent sits directly opposite the brand colour.</b> Opposites give the strongest possible contrast, which is why the accent catches the eye immediately. Use it for one thing per screen and it will always be the thing people notice first.`;
+        case "analogous-a":
+        case "analogous-b":
+            return `<b>Your accent sits right next to the brand colour on the wheel.</b> Neighbouring hues read as one family rather than two competing choices - calmer than a complementary pop, closer to a mood than a contrast.`;
         case "split-complementary-a":
         case "split-complementary-b":
             return `<b>Your accent sits just to one side of the brand's opposite.</b> That gives you nearly the pop of a true opposite, but it is easier to live with across a whole interface - less of a head-on clash.`;
@@ -432,7 +484,7 @@ function renderReading(palette) {
     if (!list) return;
 
     const byRole = r => palette.swatches.find(s => s.role === r);
-    const brand = byRole("Brand"), accent = byRole("Accent"), ink = byRole("Ink");
+    const brand = byRole("Primary"), accent = byRole("Secondary"), ink = byRole("Ink");
     if (!brand || !accent || !ink) return;
 
     const dHue = (() => {
@@ -459,6 +511,17 @@ function renderReading(palette) {
     list.innerHTML = items.map(t => `<li>${t}</li>`).join("");
 }
 
+const HARMONY_SHORT = {
+    archetype: "Curated",
+    "analogous-a": "Analogous",
+    "analogous-b": "Analogous",
+    complementary: "Complementary",
+    "split-complementary-a": "Split-complementary",
+    "split-complementary-b": "Split-complementary",
+    "triadic-a": "Triadic",
+    "triadic-b": "Triadic"
+};
+
 function buildSwatches(palette, row) {
     row.innerHTML = "";
     palette.swatches.forEach(s => {
@@ -468,12 +531,16 @@ function buildSwatches(palette, row) {
         const shift = s.print && s.print.risk !== "none"
             ? `<p class="swatch-print" title="Outside typical CMYK range. Heuristic estimate, not an ICC conversion.">print shift ${s.print.risk} &middot; safe <button class="safe-hex mono" data-hex="${s.print.safeHex}" type="button" aria-label="Copy press-safer alternate ${s.print.safeHex}">${s.print.safeHex}</button></p>`
             : "";
+        const harmonyBadge = (s.role === "Secondary" && palette.accentHarmony && HARMONY_SHORT[palette.accentHarmony])
+            ? `<p class="swatch-harmony mono">${HARMONY_SHORT[palette.accentHarmony]}</p>`
+            : "";
         d.innerHTML = `
             <div class="swatch-chip" style="background:${s.hex}" data-hex="${s.hex}" role="button" tabindex="0" aria-label="Copy ${s.hex}">
                 <span class="copy-hint" style="color:${labelColorFor(s.hex)}">copy</span>
             </div>
             <div class="swatch-info">
                 <p class="swatch-role">${s.role} <span class="pct">${s.pct === "Text" ? "text" : s.pct + "%"}</span></p>
+                ${harmonyBadge}
                 <p class="swatch-name">${s.name}</p>
                 <p class="swatch-job">${s.job}</p>
                 <p class="swatch-values">
@@ -589,7 +656,8 @@ function currentSettings() {
     return {
         cat: $("ctl-category").value,
         borrow: $("ctl-borrow").checked,
-        lock: $("ctl-brand").value.trim()
+        lock: $("ctl-brand").value.trim(),
+        harmony: $("ctl-harmony").value
     };
 }
 
@@ -618,6 +686,7 @@ function restorePalette(entry) {
     $("ctl-borrow").checked = entry.settings.borrow;
     $("ctl-brand").value = entry.settings.lock;
     $("ctl-brand-clear").hidden = !entry.settings.lock;
+    if (entry.settings.harmony) $("ctl-harmony").value = entry.settings.harmony;
     /* != null, not truthiness: 0 is a real seed. */
     if (entry.palette.seed != null) state.seed = entry.palette.seed;
     else safeReplaceUrl(location.pathname + location.hash);
@@ -772,7 +841,7 @@ function onAgencyChange() {
 function renderPalette(palette) {
     state.palette = palette;
 
-    renderHeroField(palette);
+    renderHeroField({ ...palette, swatches: themedHeroSwatches(palette, Theme.current()) });
 
     $("seed-label").textContent = palette.seed != null ? "seed " + palette.seed : "from the Fixer";
 
@@ -870,8 +939,8 @@ function renderSystem(palette) {
 
     const statesEl = $("states-row");
     statesEl.innerHTML = "";
-    ["brand", "accent"].forEach(role => {
-        const source = role === "brand" ? palette.swatches[1].hex : palette.swatches[2].hex;
+    ["primary", "secondary"].forEach(role => {
+        const source = role === "primary" ? palette.swatches[1].hex : palette.swatches[2].hex;
         const s = E.stateVariants(source, palette.swatches[0].hex);
         ["default", "hover", "active", "disabled"].forEach(key => {
             const chip = document.createElement("div");
@@ -904,7 +973,8 @@ function generate(newSeed = true) {
         category: $("ctl-category").value,
         seed: state.seed,
         borrow: $("ctl-borrow").checked,
-        lockedBrand: locked
+        lockedBrand: locked,
+        harmony: $("ctl-harmony").value
     });
     state.typeIndex = 0;
     renderPalette(palette);
@@ -923,6 +993,7 @@ function syncUrl() {
     q.set("cat", $("ctl-category").value);
     q.set("seed", p.seed);
     if ($("ctl-borrow").checked) q.set("borrow", "1");
+    if ($("ctl-harmony").value !== "auto") q.set("harmony", $("ctl-harmony").value);
     const { locked } = readLockedInput();
     if (locked) q.set("lock", locked.slice(1));
     safeReplaceUrl("?" + q.toString() + location.hash);
@@ -940,6 +1011,8 @@ function restoreFromUrl() {
     const cat = q.get("cat");
     if (cat && ARCHETYPE_OPTIONS.includes(cat)) $("ctl-category").value = cat;
     $("ctl-borrow").checked = q.get("borrow") === "1";
+    const harmony = q.get("harmony");
+    if (harmony && [...$("ctl-harmony").options].some(o => o.value === harmony)) $("ctl-harmony").value = harmony;
     if (q.get("lock") && E.hexToRgb("#" + q.get("lock"))) $("ctl-brand").value = "#" + q.get("lock").toUpperCase();
     state.seed = seed;
     generate(false);
@@ -1141,7 +1214,7 @@ function adoptExtracted() {
     if (!state.extracted) return;
     
     // Wire Studio Assistant suggestion if possible
-    const brand = state.extracted.proposed.palette.swatches.find(s => s.role === "Brand");
+    const brand = state.extracted.proposed.palette.swatches.find(s => s.role === "Primary");
     if (brand) {
         /* moodFromColor() returns a mood bucket (e.g. "trust"), not an
            ARCHETYPES key — renderAssistantResult expects the latter
@@ -1631,8 +1704,17 @@ document.addEventListener("DOMContentLoaded", () => {
        compared apples to apples; the Generate buttons mint a new one. */
     $("ctl-generate").addEventListener("click", () => generate(true));
     $("hero-regen").addEventListener("click", () => generate(true));
+    /* Native anchor jump to #engine still fires (smooth, via the
+       html { scroll-behavior: smooth } rule) - this only adds the
+       regenerate so the CTA does both at once instead of landing on
+       a palette the user has already seen. */
+    const heroGenerateCta = $("hero-generate-cta");
+    if (heroGenerateCta) {
+        heroGenerateCta.addEventListener("click", () => generate(true));
+    }
     $("ctl-category").addEventListener("change", () => generate(false));
     $("ctl-borrow").addEventListener("change", () => generate(false));
+    $("ctl-harmony").addEventListener("change", () => generate(false));
     $("ctl-brand").addEventListener("change", (e) => {
         if (!window.License.Gate.has("lock-brand")) { lockedToast(); e.target.value = ""; return; }
         generate(false);
@@ -1642,6 +1724,15 @@ document.addEventListener("DOMContentLoaded", () => {
         $("ctl-brand").value = "";
         generate(false);
     });
+
+    /* Reveal-more toggles: the applied-format mockups, the
+       colorblind-vision variants, and the secondary export formats
+       are all rendered on load but hidden - this just flips the
+       [hidden] attribute and swaps the button's own label, no other
+       state to track since the content underneath never changes. */
+    wireReveal("applied-toggle", "applied-more", "See it applied elsewhere (3 more)", "Show fewer formats");
+    wireReveal("vision-toggle", "vision-more", "Check colorblind safety", "Hide colorblind variants");
+    wireReveal("exports-toggle", "exports-more", "More formats", "Fewer formats");
 
     $("copy-link").addEventListener("click", () => {
         if (state.palette && (state.palette.seed == null || state.palette.custom)) {

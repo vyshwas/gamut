@@ -389,16 +389,20 @@ const ARCHETYPE_KEYS = Object.keys(ARCHETYPES);
    and saturation-ratio passes later in generatePalette are completely
    unaffected - this only decides where the accent starts. */
 const ACCENT_HARMONIES = [
-    { name: "archetype", offset: null, weight: 0.42 },
-    { name: "complementary", offset: 180, weight: 0.14 },
-    { name: "split-complementary-a", offset: 150, weight: 0.11 },
-    { name: "split-complementary-b", offset: 210, weight: 0.11 },
-    { name: "triadic-a", offset: 120, weight: 0.11 },
-    { name: "triadic-b", offset: 240, weight: 0.11 }
+    { name: "archetype", offset: null, weight: 0.30 },
+    { name: "analogous-a", offset: 30, weight: 0.10 },
+    { name: "analogous-b", offset: -30, weight: 0.10 },
+    { name: "complementary", offset: 180, weight: 0.15 },
+    { name: "split-complementary-a", offset: 150, weight: 0.0875 },
+    { name: "split-complementary-b", offset: 210, weight: 0.0875 },
+    { name: "triadic-a", offset: 120, weight: 0.0875 },
+    { name: "triadic-b", offset: 240, weight: 0.0875 }
 ];
 
 const HARMONY_LABELS = {
     archetype: "the category's own curated pairing",
+    "analogous-a": "an analogous accent, neighboring the brand on the wheel",
+    "analogous-b": "an analogous accent, neighboring the brand on the wheel",
     complementary: "a complementary accent, opposite the brand on the wheel",
     "split-complementary-a": "a split-complementary accent",
     "split-complementary-b": "a split-complementary accent",
@@ -406,7 +410,21 @@ const HARMONY_LABELS = {
     "triadic-b": "a triadic accent"
 };
 
-function pickAccentHarmony(rng, A, brandHue) {
+/* forceFamily lets a user pin the wheel relationship explicitly
+   ("complementary", "analogous", "split-complementary", "triadic")
+   from the Engine controls, instead of leaving it to the weighted
+   roll. "auto" (or anything falsy) keeps the original behavior. */
+function pickAccentHarmony(rng, A, brandHue, forceFamily = null) {
+    if (forceFamily && forceFamily !== "auto") {
+        const pool = ACCENT_HARMONIES.filter(h => h.offset !== null && (h.name === forceFamily || h.name.startsWith(forceFamily + "-")));
+        if (pool.length) {
+            const chosen = pool[Math.floor(rng() * pool.length)];
+            const jitter = randIn(rng, -8, 8);
+            let hue = brandHue + chosen.offset + jitter;
+            hue = ((hue % 360) + 360) % 360;
+            return { name: chosen.name, hue };
+        }
+    }
     /* aitech's whole point is a brand and accent in the same electric
        hue family (Law 2 still separates them by saturation/lightness);
        harmony exploration would fight that, so it always uses the
@@ -438,7 +456,7 @@ function pickAccentHarmony(rng, A, brandHue) {
     ink            - the dark anchor for text (Law 1)
   Every palette ships a light and a dark deployment (Law 4).
 */
-function generatePalette({ category = "saas", seed = Date.now(), borrow = false, lockedBrand = null, customArchetype = null } = {}) {
+function generatePalette({ category = "saas", seed = Date.now(), borrow = false, lockedBrand = null, customArchetype = null, harmony = "auto" } = {}) {
     const rng = mulberry32(seed);
 
     /* A customArchetype (from a mood-driven brief) is already the
@@ -511,12 +529,12 @@ function generatePalette({ category = "saas", seed = Date.now(), borrow = false,
        soften a too-thin accent without ever contradicting the ratio
        that was just computed. Lightness is pre-fit to the canvas so
        the contrast pass barely has to move it. */
-    const accentSat = Math.round(brandHsl.s * randIn(rng, 0.7, 0.85));
-    const accentSatFloor = Math.min(50, Math.round(brandHsl.s * 0.6));
-    const accentHarmony = pickAccentHarmony(rng, A, brandHsl.h);
+    const accentSat = Math.round(brandHsl.s * randIn(rng, 0.9, 1.0)); // No longer muting secondary
+    const accentSatFloor = Math.min(60, Math.round(brandHsl.s * 0.8));
+    const accentHarmony = pickAccentHarmony(rng, A, brandHsl.h, harmony);
     let accentHsl = {
         h: Math.round(accentHarmony.hue) % 360,
-        s: Math.min(88, Math.max(accentSatFloor, accentSat)),
+        s: Math.min(100, Math.max(accentSatFloor, accentSat)),
         l: domIsDark ? Math.round(randIn(rng, 56, 66)) : Math.round(randIn(rng, 42, 52))
     };
 
@@ -533,12 +551,12 @@ function generatePalette({ category = "saas", seed = Date.now(), borrow = false,
 
     const swatches = [
         Object.assign(build(dominant), { role: "Dominant", pct: "60", job: "The canvas. Backgrounds, large surfaces, breathing room." }),
-        Object.assign(build(brandHex), { role: "Brand", pct: "30", job: "The color people remember. Logo, primary buttons, hero blocks." }),
-        Object.assign(build(accentHex), { role: "Accent", pct: "10", job: "The pop. CTAs, highlights, micro-interactions. Sparingly." }),
+        Object.assign(build(brandHex), { role: "Primary", pct: "30", job: "The color people remember. Logo, primary buttons, hero blocks." }),
+        Object.assign(build(accentHex), { role: "Secondary", pct: "10", job: "The pop. CTAs, highlights, micro-interactions. Sparingly." }),
         Object.assign(build(inkFixed), { role: "Ink", pct: "Text", job: "The anchor. Text and small UI, grounding the noise." })
     ];
-    /* Same hue family for Brand and Accent (aitech does this on
-       purpose) would read as "Lime / Lime"; qualify the accent. */
+    /* Same hue family for Primary and Secondary (aitech does this on
+       purpose) would read as "Lime / Lime"; qualify the secondary. */
     if (swatches[2].name === swatches[1].name) swatches[2].name = "Soft " + swatches[2].name;
 
     /* Law 4: the dark deployment, built at the same time as the light. */
@@ -562,8 +580,8 @@ function generatePalette({ category = "saas", seed = Date.now(), borrow = false,
         },
         contrasts: [
             { pair: "Ink on Dominant", ratio: contrastRatio(swatches[3].hex, swatches[0].hex) },
-            { pair: "Brand on Dominant", ratio: contrastRatio(swatches[1].hex, swatches[0].hex) },
-            { pair: "Accent on Dominant", ratio: contrastRatio(swatches[2].hex, swatches[0].hex) }
+            { pair: "Primary on Dominant", ratio: contrastRatio(swatches[1].hex, swatches[0].hex) },
+            { pair: "Secondary on Dominant", ratio: contrastRatio(swatches[2].hex, swatches[0].hex) }
         ]
     };
 }
@@ -602,34 +620,25 @@ function diagnosePalette(hexes) {
         });
     }
 
-    /* Law 2: saturate the brand color, mute the accent. */
-    const fighters = brights.filter(i => i.hsl.s > 78);
-    if (fighters.length >= 2) {
-        const [a, b] = fighters;
-        if (Math.abs(a.hsl.l - b.hsl.l) < 18) {
-            issues.push({
-                law: 2, title: "Two colors fighting at full power",
-                detail: `${nameColor(a.hex)} and ${nameColor(b.hex)} are both near full saturation at similar lightness. One must lead, one must support.`,
-                fix: "One voice leads at full power; the supporting color drops to roughly 70% saturation. The verdict list below shows which."
-            });
-        }
-    }
-
-    /* Law 5: one bold color is a brand, three is a circus. */
-    if (brights.length >= 3) {
-        issues.push({
-            law: 5, title: `${brights.length} loud colors`,
-            detail: "If you need a third loud color, the first two are not doing their job. Add neutrals, not more brights.",
-            fix: "Kept the two strongest voices, neutralized the rest into supporting tones."
-        });
-    }
-
-    /* All muted: the palette looks tired (Law 2's other failure mode). */
+    /* Law 2, relaxed: Primary and Secondary are both allowed to run
+       loud together (two voices can lead a duet) - only flag the
+       palette when NOTHING in it has any voice at all. */
     if (maxSat < 35 && items.length > 1) {
         issues.push({
             law: 2, title: "Everything is muted",
-            detail: "When every color whispers, the brand looks tired. One color has to lead at full power.",
-            fix: "Saturated the most distinctive hue into a proper brand color."
+            detail: "When every color whispers, the brand looks tired. At least one has to lead at full power.",
+            fix: "Saturated the most distinctive hue into a proper Primary."
+        });
+    }
+
+    /* Law 5, relaxed: two loud colors is a duet, not a circus - Primary
+       and Secondary can both shout. A third loud color is still one
+       too many; it competes with both instead of supporting either. */
+    if (brights.length >= 3) {
+        issues.push({
+            law: 5, title: `${brights.length} loud colors`,
+            detail: "Primary and Secondary can both run at full power together. A third loud color doesn't support either one - it just competes with both.",
+            fix: "Kept the two strongest voices as Primary and Secondary, retired the rest into neutrals."
         });
     }
 
@@ -689,7 +698,7 @@ function fixPalette(hexes, options = { strategy: 'balanced' }) {
         }
     }
 
-    /* No brand candidate: promote the dominant's hue at full power. */
+    /* No primary candidate: promote the dominant's hue at full power. */
     let brandSynth = false;
     if (!brand) {
         const h = dominant.hsl.h;
@@ -697,24 +706,18 @@ function fixPalette(hexes, options = { strategy: 'balanced' }) {
         brandSynth = true;
     }
 
-    /* All muted fix: give the brand its voice back. */
+    /* All muted fix: give the primary its voice back. */
     const brandOrig = brand.hex;
     if (brand.hsl.s < muteThresh) {
         brand = { hsl: { ...brand.hsl, s: 80 }, hex: hslToHex({ ...brand.hsl, s: 80 }), src: brand };
     }
 
-    /* Law 2 fix: accent supports at 60-80% of the brand's saturation.
-       Floored at 45 so muting never collapses into khaki. */
+    /* Law 2 is disabled. Secondary is kept at high saturation if requested. */
     let accentSynth = false;
     const accentOrig = accent ? accent.hex : null;
-    if (accent) {
-        const target = Math.max(45, Math.round(brand.hsl.s * (strat === 'preserve' ? 0.9 : strat === 'maximize' ? 0.5 : 0.7)));
-        if (accent.hsl.s > target) {
-            accent = { hsl: { ...accent.hsl, s: target }, hex: hslToHex({ ...accent.hsl, s: target }), src: accent };
-        }
-    } else {
-        const h = (brand.hsl.h + 40) % 360;
-        const hsl = { h, s: Math.max(45, Math.round(brand.hsl.s * 0.7)), l: 55 };
+    if (!accent) {
+        const h = (brand.hsl.h + 180) % 360; // Complementary by default
+        const hsl = { h, s: Math.max(70, Math.round(brand.hsl.s * 0.9)), l: 55 };
         accent = { hsl, hex: hslToHex(hsl) };
         accentSynth = true;
     }
@@ -749,32 +752,32 @@ function fixPalette(hexes, options = { strategy: 'balanced' }) {
     }
     if (!brandSynth) {
         fate.set(brandOrig, brandHex === brandOrig
-            ? "Kept as Brand, the lead voice."
-            : `Adjusted to ${brandHex} as Brand.`);
+            ? "Kept as Primary, the lead voice."
+            : `Adjusted to ${brandHex} as Primary.`);
         fateAction.set(brandOrig, brandHex === brandOrig ? "kept" : "adjusted");
         fateReason.set(brandOrig, brandHex === brandOrig ? "" : "contrast / mute");
     }
     if (!accentSynth && accentOrig) {
         fate.set(accentOrig, accentHex === accentOrig
-            ? "Kept as Accent."
-            : `Muted to ${accentHex} as Accent (Law 2).`);
+            ? "Kept as Secondary."
+            : `Adjusted to ${accentHex} as Secondary.`);
         fateAction.set(accentOrig, accentHex === accentOrig ? "kept" : "adjusted");
-        fateReason.set(accentOrig, accentHex === accentOrig ? "" : "Law 2");
+        fateReason.set(accentOrig, accentHex === accentOrig ? "" : "contrast");
     }
     retired.forEach(r => {
-        fate.set(r.hex, "Retired to keep two voices (Law 5).");
+        fate.set(r.hex, "Retired to keep two voices, Primary and Secondary (Law 5).");
         fateAction.set(r.hex, "retired");
         fateReason.set(r.hex, "Law 5");
     });
 
-    const mapping = hexes.map(hex => ({ 
-        from: hex, 
-        note: fate.get(hex) || "Retired to keep two voices (Law 5).",
+    const mapping = hexes.map(hex => ({
+        from: hex,
+        note: fate.get(hex) || "Retired to keep two voices, Primary and Secondary (Law 5).",
         action: fateAction.get(hex) || "retired",
         reason: fateReason.get(hex) || "Law 5"
     }));
     if (ink.forged) mapping.push({ from: inkHex, note: "Forged: the dark anchor your palette was missing (Law 1).", action: "forged", reason: "Law 1" });
-    if (accentSynth) mapping.push({ from: accentHex, note: "Synthesized: a supporting accent at 70% of the Brand's power.", action: "forged", reason: "synth" });
+    if (accentSynth) mapping.push({ from: accentHex, note: "Synthesized: a supporting secondary color.", action: "forged", reason: "synth" });
 
     const build = (hex, role, pct, job) => {
         const rgb = hexToRgb(hex);
@@ -783,8 +786,8 @@ function fixPalette(hexes, options = { strategy: 'balanced' }) {
 
     const swatches = [
         build(dominant.hex, "Dominant", "60", "The canvas. Backgrounds, large surfaces, breathing room."),
-        build(brandHex, "Brand", "30", "The color people remember. Logo, primary buttons, hero blocks."),
-        build(accentHex, "Accent", "10", "The pop. CTAs, highlights, micro-interactions. Sparingly."),
+        build(brandHex, "Primary", "30", "The color people remember. Logo, primary buttons, hero blocks."),
+        build(accentHex, "Secondary", "10", "The pop. CTAs, highlights, micro-interactions. Sparingly."),
         build(inkHex, "Ink", "Text", "The anchor. Text and small UI, grounding the noise.")
     ];
     if (swatches[2].name === swatches[1].name) swatches[2].name = "Soft " + swatches[2].name;
@@ -818,8 +821,8 @@ function fixPalette(hexes, options = { strategy: 'balanced' }) {
         },
         contrasts: [
             { pair: "Ink on Dominant", ratio: contrastRatio(swatches[3].hex, swatches[0].hex) },
-            { pair: "Brand on Dominant", ratio: contrastRatio(swatches[1].hex, swatches[0].hex) },
-            { pair: "Accent on Dominant", ratio: contrastRatio(swatches[2].hex, swatches[0].hex) }
+            { pair: "Primary on Dominant", ratio: contrastRatio(swatches[1].hex, swatches[0].hex) },
+            { pair: "Secondary on Dominant", ratio: contrastRatio(swatches[2].hex, swatches[0].hex) }
         ]
     };
 }
@@ -1051,8 +1054,8 @@ function systemTokens(p) {
         radius: radiusScale(recipeKey),
         elevation: elevationScale(p.swatches[3].hex, domIsDark, p.swatches[0].hex),
         states: {
-            brand: stateVariants(p.swatches[1].hex, p.swatches[0].hex),
-            accent: stateVariants(p.swatches[2].hex, p.swatches[0].hex)
+            primary: stateVariants(p.swatches[1].hex, p.swatches[0].hex),
+            secondary: stateVariants(p.swatches[2].hex, p.swatches[0].hex)
         }
     };
 }
@@ -1072,13 +1075,13 @@ function exportCss(p) {
     return `:root {
   /* ${brandLine(p)} */
   --color-dominant: ${p.swatches[0].hex};
-  --color-brand: ${p.swatches[1].hex};
-  --color-accent: ${p.swatches[2].hex};
+  --color-primary: ${p.swatches[1].hex};
+  --color-secondary: ${p.swatches[2].hex};
   --color-ink: ${p.swatches[3].hex};
-  --color-brand-hover: ${sys.states.brand.hover};
-  --color-brand-active: ${sys.states.brand.active};
-  --color-accent-hover: ${sys.states.accent.hover};
-  --color-accent-active: ${sys.states.accent.active};
+  --color-primary-hover: ${sys.states.primary.hover};
+  --color-primary-active: ${sys.states.primary.active};
+  --color-secondary-hover: ${sys.states.secondary.hover};
+  --color-secondary-active: ${sys.states.secondary.active};
 
   /* Spacing (Law 8: build the ramp, not the swatch) */
 ${spacingVars}
@@ -1093,8 +1096,8 @@ ${elevationVars}${surfaceVars ? "\n\n  /* Elevation surfaces (dark canvas: lift,
 @media (prefers-color-scheme: dark) {
   :root {
     --color-dominant: ${d.dark.bg};
-    --color-brand: ${d.dark.brand};
-    --color-accent: ${d.dark.accent};
+    --color-primary: ${d.dark.brand};
+    --color-secondary: ${d.dark.accent};
     --color-ink: ${d.dark.ink};
   }
 }`;
@@ -1109,12 +1112,12 @@ function exportTailwind(p) {
     return `@theme {
   /* ${brandLine(p)} */
   --color-dominant: ${p.swatches[0].hex};
-  --color-brand: ${p.swatches[1].hex};
-  --color-accent: ${p.swatches[2].hex};
+  --color-primary: ${p.swatches[1].hex};
+  --color-secondary: ${p.swatches[2].hex};
   --color-ink: ${p.swatches[3].hex};
   --color-dominant-dark: ${d.dark.bg};
-  --color-brand-dark: ${d.dark.brand};
-  --color-accent-dark: ${d.dark.accent};
+  --color-primary-dark: ${d.dark.brand};
+  --color-secondary-dark: ${d.dark.accent};
   --color-ink-dark: ${d.dark.ink};
 
 ${spacingVars}
@@ -1132,8 +1135,8 @@ function exportScss(p) {
     const elevationVars = sys.elevation.filter(e => e.name !== "0").map(e => `$elevation-${e.name}: ${e.css};`).join("\n");
     return `// ${brandLine(p)}
 $color-dominant: ${p.swatches[0].hex}; // 60
-$color-brand: ${p.swatches[1].hex};    // 30
-$color-accent: ${p.swatches[2].hex};   // 10
+$color-primary: ${p.swatches[1].hex};  // 30
+$color-secondary: ${p.swatches[2].hex}; // 10
 $color-ink: ${p.swatches[3].hex};      // text
 
 // Spacing
@@ -1203,8 +1206,8 @@ function exportDtcg(p, pair) {
     const d = p.deployments;
     const colorGroup = dep => ({
         dominant: { $type: "color", $value: dep.bg },
-        brand: { $type: "color", $value: dep.brand },
-        accent: { $type: "color", $value: dep.accent },
+        primary: { $type: "color", $value: dep.brand },
+        secondary: { $type: "color", $value: dep.accent },
         ink: { $type: "color", $value: dep.ink }
     });
     const dimensionGroup = () => {

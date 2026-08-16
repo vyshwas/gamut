@@ -10,44 +10,48 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Google Fonts: Space Grotesk, Inter, JetBrains Mono. -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 
-    <!-- No-flash theme stamp. Light (warm paper) is the default
-         deployment and lives in :root, so only an explicit "dark"
+    <!-- No-flash theme stamp. Dark (Structured Depth) is the default
+         deployment and lives in :root, so only an explicit "light"
          choice needs stamping. Runs before first paint; if storage is
          unavailable (private mode, file:// in some browsers) the site
-         simply renders light. -->
+         simply renders dark. -->
     <script>
         (function () {
             try {
-                if (localStorage.getItem("gamut.theme") === "dark") {
-                    document.documentElement.setAttribute("data-theme", "dark");
+                if (localStorage.getItem("gamut.theme") === "light") {
+                    document.documentElement.setAttribute("data-theme", "light");
                 }
-            } catch (e) { /* no storage: stay on the light default */ }
+            } catch (e) { /* no storage: stay on the dark default */ }
         })();
     </script>
 </head>
 <body>
+
+    <div class="grain" aria-hidden="true"></div>
 
     <a href="#main-content" class="skip-link">Skip to main content</a>
 
     <nav class="site-nav">
         <a href="#top" class="logo wordmark" aria-label="Gamut, home"><span class="wm-text">Gamut</span><span class="logo-dot wm-dot" aria-hidden="true">.</span></a>
         <div class="nav-links" id="nav-links">
-            <a href="#assistant">Assistant</a>
             <a href="#engine">Engine</a>
+            <a href="#assistant">Assistant</a>
             <a href="#fixer">Fixer</a>
+            <a href="#extract">Extract</a>
             <a href="#type">Type</a>
             <a href="#system">System</a>
             <a href="#method">Method</a>
-            <a href="#pricing" style="display: none;">Pricing</a>
+            <a href="#pricing">Pricing</a>
         </div>
         <!-- Toggle button, not a switch: static accessible name plus
              aria-pressed, so it announces "Dark mode, toggle button,
              pressed/not pressed" instead of relabelling itself. The
              glyph shown is the mode you'd switch TO (CSS picks one). -->
-        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Dark mode" aria-pressed="false" title="Switch to dark mode">
+        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Light mode" aria-pressed="false" title="Switch to light mode">
             <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
                 <path d="M20.5 14.3A8.5 8.5 0 0 1 9.7 3.5a8.5 8.5 0 1 0 10.8 10.8z"/>
             </svg>
@@ -72,12 +76,18 @@
     <header class="hero" id="top">
         <div class="hero-field" id="hero-field" role="img" aria-label="Live palette preview"></div>
         <div class="hero-content">
+            <p class="hero-kicker hero-enter" aria-hidden="true"><span class="hero-kicker-dot"></span>Live palette engine</p>
             <h1 class="hero-enter">Generate production-ready design systems.</h1>
             <p class="hero-sub hero-enter">From a written brief, category, pasted hexes, or an image &mdash; complete system out: color, typography, spacing, radius, elevation, states, tokens &mdash; exported for CSS/Tailwind/SCSS, Figma-ready via the AI import package.</p>
             <div class="hero-ctas hero-enter">
-                <a href="#engine" class="btn btn-hero-primary">Generate a system</a>
+                <a href="#engine" class="btn btn-hero-primary" id="hero-generate-cta">Generate a system</a>
                 <a href="#fixer" class="btn btn-hero-ghost">Fix an existing palette</a>
+                <span class="hero-hint mono" aria-hidden="true">press space</span>
             </div>
+            <!-- Names the third path without giving it equal button
+                 weight - the Assistant is a shortcut into the same
+                 Engine, not a competing destination. -->
+            <p class="hero-alt hero-enter"><a href="#assistant">Or just describe it in plain language &rarr;</a></p>
         </div>
         <!-- Caption rail: cells align to the band widths above, so each
              readout labels its band without printing text on the color. -->
@@ -98,7 +108,7 @@
     <section class="section" id="assistant">
         <div class="section-head">
             <h2>Studio Assistant</h2>
-            <p>Describe a mood, feeling, or brand brief in plain language. It gets mapped onto Gamut's own frameworks &mdash; the mood lexicon and the ten business archetypes &mdash; never onto invented colors, so the Engine's laws and contrast guarantees still hold underneath whatever it understood.</p>
+            <p>Describe a mood, feeling, or brand brief in plain language and it fills in the Engine below for you &mdash; same laws, same contrast guarantees, just a shortcut past picking a category by hand. Prefer to pick one yourself? Skip straight to <a href="#engine">the Engine</a>.</p>
         </div>
 
         <div class="assistant">
@@ -147,7 +157,7 @@
     <section class="section section-bleed" id="engine">
         <div class="section-head">
             <h2>The Engine</h2>
-            <p>Every palette it produces has four colors with four jobs: a Dominant canvas, a Brand voice, a muted Accent, and a dark Ink anchor. Both deployments ship together, because a brand color that only works on white is a website background. The laws are a floor, not a formula: regenerate and the Engine explores real hue variety within your category, and the Accent will sometimes break from the expected pairing into a complementary or triadic one, taste choosing where, the laws still checking that it works.</p>
+            <p>Pick a category and generate. Every palette gets four colors with four jobs &mdash; canvas, voice, pop, anchor &mdash; in both light and dark, contrast-checked automatically. <a href="#method">How the ten laws behind it work &rarr;</a></p>
         </div>
 
         <div class="workbench bleed-right">
@@ -181,6 +191,17 @@
                         Break category
                     </label>
                     <p class="hint">Law 7: borrow a palette from a category you are not in. Standing out is mostly refusing to look like your neighbors.</p>
+                </div>
+                <div class="field">
+                    <label for="ctl-harmony">Secondary via <span class="optional">color-wheel math</span></label>
+                    <select id="ctl-harmony">
+                        <option value="auto" selected>Auto (mix of all)</option>
+                        <option value="complementary">Complementary</option>
+                        <option value="analogous">Analogous</option>
+                        <option value="split-complementary">Split-complementary</option>
+                        <option value="triadic">Triadic</option>
+                    </select>
+                    <p class="hint">Pin how the Secondary is rolled from the Primary hue, or leave it on Auto and let the seed pick.</p>
                 </div>
                 <button class="btn btn-primary btn-generate" id="ctl-generate" type="button">Generate</button>
                 <p class="hint hint-space">or press <kbd>space</kbd> anywhere on the page</p>
@@ -217,10 +238,13 @@
                 <div class="vision-row" role="group" aria-label="Color vision simulation">
                     <span class="exports-label mono">Vision <span class="studio-tag mono">Studio</span></span>
                     <button class="btn-mini vision-btn active" data-vision="none" type="button" aria-pressed="true">Typical</button>
-                    <button class="btn-mini vision-btn" data-vision="protanopia" type="button" aria-pressed="false">Protanopia</button>
-                    <button class="btn-mini vision-btn" data-vision="deuteranopia" type="button" aria-pressed="false">Deuteranopia</button>
-                    <button class="btn-mini vision-btn" data-vision="tritanopia" type="button" aria-pressed="false">Tritanopia</button>
-                    <button class="btn-mini vision-btn" data-vision="achromatopsia" type="button" aria-pressed="false">Greyscale</button>
+                    <button class="btn-mini" id="vision-toggle" type="button" aria-expanded="false" aria-controls="vision-more">Check colorblind safety</button>
+                    <span class="reveal-more" id="vision-more" hidden>
+                        <button class="btn-mini vision-btn" data-vision="protanopia" type="button" aria-pressed="false">Protanopia</button>
+                        <button class="btn-mini vision-btn" data-vision="deuteranopia" type="button" aria-pressed="false">Deuteranopia</button>
+                        <button class="btn-mini vision-btn" data-vision="tritanopia" type="button" aria-pressed="false">Tritanopia</button>
+                        <button class="btn-mini vision-btn" data-vision="achromatopsia" type="button" aria-pressed="false">Greyscale</button>
+                    </span>
                 </div>
 
                 <!-- The palette doing its actual job. Law 3 says test at
@@ -243,40 +267,47 @@
                         </div>
                     </figure>
 
-                    <figure class="app-item app-story">
-                        <figcaption>Story &middot; 9:16 &middot; dark</figcaption>
-                        <div class="app-frame" id="app-story" data-mode="dark">
-                            <span class="app-kicker">DROP 04</span>
-                            <p class="app-head">Every color<br>needs a job.</p>
-                            <span class="app-cta">Shop the drop</span>
-                            <span class="app-mark app-mark-btm">Marlowe&nbsp;Goods</span>
-                        </div>
-                    </figure>
-
-                    <figure class="app-item app-web">
-                        <figcaption>Web hero &middot; light</figcaption>
-                        <div class="app-frame deploy-mock" id="deploy-light" data-mode="light">
-                            <div class="mock-nav"><span class="mock-brand">Marlowe&nbsp;Goods</span><span class="mock-menu">Shop&nbsp;&nbsp;Story&nbsp;&nbsp;Contact</span></div>
-                            <div class="mock-hero">
-                                <p class="mock-h">Made to be remembered.</p>
-                                <p class="mock-p">Real words at interface size, so you judge legibility, not swatches.</p>
-                                <div class="mock-btn-row"><span class="mock-btn">Shop now</span><span class="mock-link">See the story</span></div>
+                    <!-- The other 3 formats stay in the DOM (already rendered
+                         by renderSocial/renderDeployment) but hidden by
+                         default - one mockup is enough to judge a palette
+                         at first look; the rest are one click away. -->
+                    <div class="reveal-more" id="applied-more" hidden>
+                        <figure class="app-item app-story">
+                            <figcaption>Story &middot; 9:16 &middot; dark</figcaption>
+                            <div class="app-frame" id="app-story" data-mode="dark">
+                                <span class="app-kicker">DROP 04</span>
+                                <p class="app-head">Every color<br>needs a job.</p>
+                                <span class="app-cta">Shop the drop</span>
+                                <span class="app-mark app-mark-btm">Marlowe&nbsp;Goods</span>
                             </div>
-                        </div>
-                    </figure>
+                        </figure>
 
-                    <figure class="app-item app-web">
-                        <figcaption>Web hero &middot; dark</figcaption>
-                        <div class="app-frame deploy-mock" id="deploy-dark" data-mode="dark">
-                            <div class="mock-nav"><span class="mock-brand">Marlowe&nbsp;Goods</span><span class="mock-menu">Shop&nbsp;&nbsp;Story&nbsp;&nbsp;Contact</span></div>
-                            <div class="mock-hero">
-                                <p class="mock-h">Made to be remembered.</p>
-                                <p class="mock-p">Real words at interface size, so you judge legibility, not swatches.</p>
-                                <div class="mock-btn-row"><span class="mock-btn">Shop now</span><span class="mock-link">See the story</span></div>
+                        <figure class="app-item app-web">
+                            <figcaption>Web hero &middot; light</figcaption>
+                            <div class="app-frame deploy-mock" id="deploy-light" data-mode="light">
+                                <div class="mock-nav"><span class="mock-brand">Marlowe&nbsp;Goods</span><span class="mock-menu">Shop&nbsp;&nbsp;Story&nbsp;&nbsp;Contact</span></div>
+                                <div class="mock-hero">
+                                    <p class="mock-h">Made to be remembered.</p>
+                                    <p class="mock-p">Real words at interface size, so you judge legibility, not swatches.</p>
+                                    <div class="mock-btn-row"><span class="mock-btn">Shop now</span><span class="mock-link">See the story</span></div>
+                                </div>
                             </div>
-                        </div>
-                    </figure>
+                        </figure>
+
+                        <figure class="app-item app-web">
+                            <figcaption>Web hero &middot; dark</figcaption>
+                            <div class="app-frame deploy-mock" id="deploy-dark" data-mode="dark">
+                                <div class="mock-nav"><span class="mock-brand">Marlowe&nbsp;Goods</span><span class="mock-menu">Shop&nbsp;&nbsp;Story&nbsp;&nbsp;Contact</span></div>
+                                <div class="mock-hero">
+                                    <p class="mock-h">Made to be remembered.</p>
+                                    <p class="mock-p">Real words at interface size, so you judge legibility, not swatches.</p>
+                                    <div class="mock-btn-row"><span class="mock-btn">Shop now</span><span class="mock-link">See the story</span></div>
+                                </div>
+                            </div>
+                        </figure>
+                    </div>
                 </div>
+                <button class="btn-mini" id="applied-toggle" type="button" aria-expanded="false" aria-controls="applied-more">See it applied elsewhere (3 more)</button>
 
                 <div class="checks" id="contrast-checks"></div>
 
@@ -285,9 +316,13 @@
                     <div class="history-row" id="history-row"></div>
                 </div>
 
-                <div class="agency-panel" id="agency-panel">
+                <!-- Folded away by default, same disclosure pattern as the
+                     Assistant's interpreter settings: three open text fields
+                     for a feature most visitors (Free tier) can't use yet
+                     read as a settings panel, not a prompt. -->
+                <details class="assistant-config agency-panel" id="agency-panel">
+                    <summary>Client documentation <span class="studio-tag mono">Studio</span></summary>
                     <div class="agency-head">
-                        <span class="exports-label mono">Client documentation</span>
                         <label class="toggle toggle-mini">
                             <input type="checkbox" id="agency-whitelabel">
                             <span class="toggle-track" aria-hidden="true"></span>
@@ -312,17 +347,20 @@
                         </div>
                     </div>
                     <p class="hint">Saved on this device only. Turn on White-label to stamp the print sheet and SVG card with your studio instead of Gamut, so what you hand a client looks like it came from you.</p>
-                </div>
+                </details>
 
                 <div class="exports" id="exports-row">
                     <span class="exports-label mono">Export</span>
                     <button class="btn-mini" data-export="css" type="button">CSS variables</button>
-                    <button class="btn-mini" data-export="tailwind" type="button">Tailwind v4 <span class="studio-tag mono">Studio</span></button>
-                    <button class="btn-mini" data-export="scss" type="button">SCSS <span class="studio-tag mono">Studio</span></button>
-                    <button class="btn-mini" data-export="json" type="button">JSON <span class="studio-tag mono">Studio</span></button>
                     <button class="btn-mini" id="svg-card" type="button">SVG swatch card</button>
-                    <button class="btn-mini" id="print-sheet" type="button">Print brand sheet <span class="studio-tag mono">Studio</span></button>
-                    <button class="btn-mini" id="ai-package" type="button">AI import package <span class="studio-tag mono">Studio</span></button>
+                    <button class="btn-mini" id="exports-toggle" type="button" aria-expanded="false" aria-controls="exports-more">More formats</button>
+                    <span class="reveal-more" id="exports-more" hidden>
+                        <button class="btn-mini" data-export="tailwind" type="button">Tailwind v4 <span class="studio-tag mono">Studio</span></button>
+                        <button class="btn-mini" data-export="scss" type="button">SCSS <span class="studio-tag mono">Studio</span></button>
+                        <button class="btn-mini" data-export="json" type="button">JSON <span class="studio-tag mono">Studio</span></button>
+                        <button class="btn-mini" id="print-sheet" type="button">Print brand sheet <span class="studio-tag mono">Studio</span></button>
+                        <button class="btn-mini" id="ai-package" type="button">AI import package <span class="studio-tag mono">Studio</span></button>
+                    </span>
                 </div>
                 <p class="hint">The AI import package is a ZIP you can attach to Claude Code, Codex, Cursor, Gemini CLI, Windsurf, or any AI assistant that can create or edit Figma files — it contains the full token set, brand documentation, and a ready-to-use import prompt. Generated offline, no AI involved.</p>
             </div>
@@ -370,7 +408,12 @@
             <p>Paste the palette you already have. It gets diagnosed against the ten laws, then rebuilt with every color assigned a job, and every color you pasted gets a verdict: kept, adjusted, or retired, with the law that decided it.</p>
         </div>
 
-        <div class="fixer-stepper mono" id="fixer-stepper" style="margin-bottom: 2rem; font-size: 0.85rem; color: var(--muted); border-bottom: 1px solid var(--line); padding-bottom: 1rem; display: none;">
+        <!-- Visible from the start, not just after the first diagnose
+             (updateStepper() in main.js only ever advances it from
+             here) - a breadcrumb that only appears once step 1 is
+             already done doesn't tell a first-time visitor this is a
+             guided flow. -->
+        <div class="fixer-stepper mono" id="fixer-stepper" style="margin-bottom: 2rem; font-size: 0.85rem; color: var(--muted); border-bottom: 1px solid var(--line); padding-bottom: 1rem;">
             <span id="step-import" style="color: var(--ink);">Import</span> &rarr;
             <span id="step-review">Review</span> &rarr;
             <span id="step-build">Build Design System</span> &rarr;
@@ -484,7 +527,7 @@
                 <div class="elevation-row" id="elevation-row"></div>
             </div>
             <div class="system-block">
-                <span class="exports-label mono">Component states &mdash; Brand / Accent</span>
+                <span class="exports-label mono">Component states &mdash; Primary / Secondary</span>
                 <div class="states-row" id="states-row"></div>
             </div>
         </div>
@@ -508,8 +551,8 @@
         <div class="method-band-wrap bleed-full">
             <div class="method-band">
                 <div class="mb mb-60"><span class="mb-pct">60</span><span class="mb-role">Dominant. The canvas, not the brand.</span></div>
-                <div class="mb mb-30"><span class="mb-pct">30</span><span class="mb-role">Brand. The color they remember.</span></div>
-                <div class="mb mb-10"><span class="mb-pct">10</span><span class="mb-role">Accent.</span></div>
+                <div class="mb mb-30"><span class="mb-pct">30</span><span class="mb-role">Primary. The color they remember.</span></div>
+                <div class="mb mb-10"><span class="mb-pct">10</span><span class="mb-role">Secondary.</span></div>
             </div>
             <p class="method-caption">Equal-weight colors fight. Stacked-weight colors sing.</p>
         </div>
@@ -529,8 +572,8 @@
                 <p>Bright plus bright is chaos. Bright plus dark is identity. Every loud brand that works has a black, navy, or charcoal grounding the noise. The Engine forges an Ink anchor into every palette.</p>
             </details>
             <details>
-                <summary><span class="law-n mono">02</span>Saturate the brand color, mute the accent</summary>
-                <p>If both colors run at full saturation, they fight. If both are muted, the brand looks tired. One leads at full power; the other supports at 60 to 80 percent. The Engine enforces the ratio numerically &mdash; but which hue the accent takes is a separate, looser decision: usually the category's own curated pairing, sometimes a complementary, split-complementary, or triadic hue rolled from the brand color itself. The law fixes the relationship, not the hue.</p>
+                <summary><span class="law-n mono">02</span>Two loud colors can lead together &mdash; nothing can lead muted</summary>
+                <p>Primary and Secondary are both allowed to run near full saturation; two confident voices can share a stage. What the law forbids is the other failure: everything muted, nothing leading. Which hue the Secondary takes is a separate, looser decision, resolved by real color-wheel math &mdash; complementary, analogous, split-complementary, or triadic, rolled from the Primary hue itself, and shown on the swatch. The law fixes the floor, not the hue.</p>
             </details>
             <details>
                 <summary><span class="law-n mono">03</span>Test at 5% of the screen, not 50%</summary>
@@ -541,8 +584,8 @@
                 <p>If your brand color only works on white, you have a website background, not a brand color. Every export ships both deployments, contrast-checked against both canvases.</p>
             </details>
             <details>
-                <summary><span class="law-n mono">05</span>One bold color is a brand. Three is a circus</summary>
-                <p>If you need a third loud color, the first two are not doing their job. The Fixer counts your brights and retires the extras into neutrals.</p>
+                <summary><span class="law-n mono">05</span>Two loud colors is a duet. Three is a circus</summary>
+                <p>Primary and Secondary can both shout. A third loud color doesn't add a voice, it starts a fight neither of them can win. The Fixer counts your brights and retires anything past two into neutrals.</p>
             </details>
             <details>
                 <summary><span class="law-n mono">06</span>Use color for hierarchy, not decoration</summary>
@@ -568,7 +611,7 @@
     </section>
 
     <!-- ================= PRICING ================= -->
-    <section class="section" id="pricing" style="display: none;">
+    <section class="section" id="pricing">
         <div class="section-head">
             <h2>Pricing</h2>
             <p>For solo designers up to full agencies. Every tier exports real values; the difference is how much of the system you take with you. Subscriptions are billed by Razorpay; codes activate on this device/browser.</p>
@@ -592,7 +635,8 @@
                     <li>White-label client documentation</li>
                     <li>Brand color lock</li>
                 </ul>
-                <a href="<!-- OWNER: fill Razorpay Studio link -->" target="_blank" rel="noopener" class="btn btn-primary">Start Studio</a>
+                <!-- OWNER: replace with the real Razorpay Studio checkout link once set up; mailto is an honest interim CTA, not a placeholder href. -->
+                <a href="mailto:hello@gamut.studio?subject=Studio plan signup" class="btn btn-primary">Start Studio</a>
             </div>
             <div class="price-card">
                 <h3>Free</h3>
@@ -615,7 +659,8 @@
                     <li>Use across your whole team, no seat limit</li>
                     <li>Priority support</li>
                 </ul>
-                <a href="<!-- OWNER: fill Razorpay Commercial link -->" target="_blank" rel="noopener" class="btn btn-ghost">Start Commercial</a>
+                <!-- OWNER: replace with the real Razorpay Commercial checkout link once set up; mailto is an honest interim CTA, not a placeholder href. -->
+                <a href="mailto:hello@gamut.studio?subject=Commercial plan signup" class="btn btn-ghost">Start Commercial</a>
                 <p style="margin-top: 1rem; text-align: center;"><a href="mailto:hello@gamut.studio?subject=Commercial plan questions" class="optional" style="text-decoration: underline;">Questions? hello@gamut.studio</a></p>
             </div>
         </div>

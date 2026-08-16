@@ -1,118 +1,154 @@
 /* =========================================================
-   GAMUT — Museum Editorial (2026-07-25)
+   GAMUT — Structured Depth (2026-08-16)
 
-   THESIS: Chrome disappears into gallery-wall restraint so the
-   generated palette is the only color in the room; scale and
-   composition carry the premium feeling, not ornament.
-   OWN-WORLD: Near-black ink on near-white canvas (Combo 06's
-   locked charcoal/bone pair), one accent (the locked lime) used
-   only for primary actions; Bricolage Grotesque at editorial
-   scale; zero gradients, shadows, texture, or bounce in the
-   site's own chrome — color and depth exist only inside the
-   Engine's actual output.
-   STORY: one oversized thesis line, one live swatch strip as the
-   sole color event, and a visitor reads "this tool has taste."
-   FIRST VIEWPORT: full-bleed hero, huge left-aligned headline,
-   thin rule, live swatch strip, regenerate control.
-   FORM: user-pinned direction; instrument.com referenced for
-   feel, not content. See DESIGN.md for the full token record —
-   this file's job is to build it, not restate it.
+   THESIS: A precise, spatial instrument, not a flat page - depth
+   comes from real glass (blur + translucency + a soft tinted glow),
+   never from a flat drop shadow or a gradient standing in for light.
+   OWN-WORLD: Dark-first, cool near-black canvas, glass panels with a
+   1px inner highlight, a real radius scale (pill/sm/md/lg, not one
+   flat value), locked lime + electric-pink Secondary as the only two
+   saturated colors in the room. Zero purple, zero hard offset
+   shadows, zero flat 0px-everywhere brutalism.
+   STORY: the hero opens on an ambient glow behind a huge headline,
+   the live palette sits in its own glass panel, and a visitor reads
+   "this is a precision tool," the way Linear or Raycast reads before
+   a single word is parsed.
+   FORM: 2026's "structured depth / liquid glass" movement - dark
+   mode as the default rather than an afterthought, translucency with
+   real depth cues instead of flat minimalism. See DESIGN.md for the
+   full token record — this file's job is to build it, not restate it.
 
-   Supersedes the prior "print-lab" system (paper grain, halftone,
-   registration marks, blurred hero mesh, gradient wordmark,
-   paper-peel chips, overshoot easing) — see DESIGN.md Overview
-   for why. Print vocabulary stays in Method-section copy and the
-   real CMYK/print-sheet features; it no longer drives motion or
-   atmosphere.
+   Supersedes "Tactile Brutalism" (warm paper, hard ink shadows,
+   hand-drawn marginalia) — see DESIGN.md Overview for why. That
+   pass solved "looks mechanical" with warmth and paper texture;
+   this one solves it with precision and depth instead, which is
+   the direction actually chosen for this build.
    ========================================================= */
 
 /* -------- Theme tokens --------
-   Two deployments of the ONE locked palette (Combo 06), not an
-   inverted afterthought (Law 04). The two brand hexes are locked and
-   theme-independent: --charcoal #1A1A1A is the Ink used ON lime and as
-   body text on paper; --lime #D4FF00 is the accent.
+   Structured Depth (2026-08-16, see DESIGN.md): thin translucent
+   edges, a soft blurred glow instead of a hard offset shadow, a real
+   radius scale, glass panels. Two deployments of the same locked
+   accents, not an inverted afterthought (Law 04): --charcoal is the
+   ink that sits ON the lime accent and does not change between
+   themes (lime doesn't change either); --lime and --secondary are
+   the locked Primary/Secondary hues.
 
-   The paper deployment has one real problem: #D4FF00 on warm paper is
-   1.01:1 - it cannot carry a stroke, a focus ring, or a word. The
-   answer is NOT a second hue. It is the same hue darkened in OKLCH
-   (L 0.94 -> 0.46, H 121.2deg kept), which is the exact move this
-   product teaches - see --lime-ink. Everything else that changes
-   between deployments - canvas, surfaces, ink, hairlines - is
-   theme-scoped below.
+   The light deployment has one real problem: #D4FF00 on a light
+   surface is far too low-contrast to carry a stroke, a focus ring,
+   or a word. The answer is NOT a second hue, it's the same hue
+   darkened in OKLCH (L 0.94 -> 0.46, hue kept) - see --lime-ink.
+   Everything else that changes between deployments - canvas,
+   surfaces, ink, edges, glass tint - is theme-scoped below.
 
-   LIGHT is the default deployment (off-white stock), so its values live in
-   :root; dark is the override. An inline <head> script stamps
-   data-theme before first paint, so this is also the no-JS fallback. */
+   DARK is the default deployment, so its values live in :root;
+   light is the override. An inline <head> script stamps data-theme
+   before first paint, so this is also the no-JS fallback. */
 :root {
     /* locked, theme-independent */
-    --charcoal: #1A1A1A;      /* Ink: text on lime + dark ink       */
-    --lime: #D4FF00;          /* the 10, the accent, locked          */
-    --lime-hover: #E4FF4A;    /* primary button hover tint           */
-    /* The locked lime, darkened in OKLCH so it survives paper: same
-       hue (121.2deg), same chroma ceiling, L 0.94 -> 0.46. Not a new
-       color - the same accent, deployed on a light surface.
-       6.46:1 on --canvas, 6.73:1 on --surface, 5.90:1 on --surface-2. */
+    --charcoal: #101014;      /* Ink used ON lime, never inverted -
+                                  lime is bright enough that dark text
+                                  reads on it in both deployments. */
+    --lime: #D4FF00;          /* Primary voice, locked                */
+    --lime-hover: #E4FF4A;
+    /* The locked lime, darkened in OKLCH so it survives a light
+       surface: same hue (121.2deg), same chroma ceiling, L 0.94 ->
+       0.46. Not a new color - the same accent, deployed on paper.
+       Dark deployment doesn't need this - lime-on-near-black already
+       clears 16.9:1 as-is. */
     --lime-ink: #4D6200;
+    --secondary: #FF3D6E;      /* Secondary voice, locked - allowed to
+                                   run just as loud as Primary (Law 2). */
+    --secondary-hover: #FF6B92;
     --blue: #2242E5;          /* v2 pop, print-sheet role names only  */
 
-    /* ---- LIGHT deployment (default) ---- */
-    --canvas: #F9F8F6;        /* off-white stock, the Dominant 60    */
-    --surface: #FDFDFB;       /* raised panels (a fresh sheet)       */
-    --surface-2: #EFEEE9;     /* inputs, inset panels                */
-    --bone: #1A1A1A;          /* primary text = Ink on paper         */
-    --muted: #605E58;         /* secondary text, 6.11:1 on canvas    */
-    --line: #E3E1DA;          /* decorative hairlines                */
-    --line-strong: #82807A;   /* a control's ONLY edge: 3.72:1 (1.4.11)*/
-    --accent: var(--lime-ink);/* meaningful stroke/text accent       */
-    --focus: var(--lime-ink); /* keyboard focus ring, 6.46:1 on stock*/
-    --danger: #BE3A1C;        /* fail/destructive, 5.19:1 on stock   */
+    /* ---- DARK deployment (default) ----
+       Structured Depth (2026-08-16): dark-first, cool neutrals, glass
+       panels, tinted glow instead of a hard offset shadow. Replaces
+       Tactile Brutalism - see DESIGN.md Overview for why. */
+    --canvas: #0B0B0D;
+    --surface: #141417;
+    --surface-2: #1B1B1F;
+    --bone: #EDEDEF;           /* primary text                        */
+    --muted: #8B8B93;          /* secondary text, 5.8:1 on canvas     */
+    --line: rgba(237, 237, 239, 0.10);   /* hairline - thin and quiet  */
+    --line-strong: rgba(237, 237, 239, 0.16); /* card/control border   */
+    --accent: var(--lime);
+    --focus: var(--lime);
+    --danger: #FF5C5C;         /* fail/destructive, 6.5:1 on canvas    */
 
-    --nav-bg: rgba(249, 248, 246, 0.82);
-    --chip-hover-ring: rgba(0, 0, 0, 0.28);/* swatch hover inset ring */
+    --nav-bg: rgba(11, 11, 13, 0.72);
+    --chip-hover-ring: rgba(237, 237, 239, 0.3);
 
-    /* method-band 60-30-10 demo: the "30/brand" block + its figure    */
-    --band-30: #1A1A1A;
-    --band-30-ink: #F9F8F6;
-    --band-30-accent: var(--lime);
+    /* method-band 60-30-10 demo: the "30/Primary" block + its figure */
+    --band-30: #EDEDEF;
+    --band-30-ink: #0B0B0D;
+    --band-30-accent: var(--secondary);
 
-    --font-display: 'Bricolage Grotesque', sans-serif;
-    --font-body: 'Hanken Grotesk', sans-serif;
+    --font-display: 'Space Grotesk', sans-serif;
+    --font-body: 'Inter', sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
 
     --pad: clamp(1.25rem, 5vw, 5rem);
     /* Single source of truth for the sticky header's height. */
     --nav-h: 80px;
     --ease: cubic-bezier(0.16, 1, 0.3, 1);
-    /* The one authored motion grammar (DESIGN.md "The Flat-By-Default
-       Rule" neighbor for motion): a quiet, exponential ease-out, never
-       overshoot. Used by every reveal/entrance moment on the site. */
+    /* The one authored motion grammar: a quiet, exponential ease-out,
+       never overshoot, for reveal/entrance moments. */
     --snap: cubic-bezier(0.25, 1, 0.5, 1);
 
-    color-scheme: light;
-}
-
-/* ---- DARK deployment (the original rebrand build, re-tuned not
-   re-pasted). Charcoal dominant, off-white ink, lime accent. ---- */
-:root[data-theme="dark"] {
-    --canvas: #141414;
-    --surface: #1B1B1A;
-    --surface-2: #212120;
-    --bone: #EFEEE8;
-    --muted: #8F8E86;
-    --line: #2C2C2A;
-    --line-strong: #6E6E68;   /* 3.59:1 on --canvas */
-    --accent: var(--lime);
-    --focus: var(--lime);
-    --danger: #FF6B4A;
-
-    --nav-bg: rgba(20, 20, 20, 0.88);
-    --chip-hover-ring: rgba(255, 255, 255, 0.22);
-
-    --band-30: #EFEEE8;
-    --band-30-ink: #1A1A1A;
-    --band-30-accent: var(--blue);
+    /* Structured Depth chrome: a thin translucent edge, a soft blurred
+       glow instead of a hard offset shadow, and a real radius scale
+       (design-context.md: "one radius scale per project" - pill for
+       buttons/chips/tags, sm for nested blocks inside a card, md for
+       cards, lg for hero/closing containers). */
+    --r-pill: 999px;
+    --r-sm: 8px;
+    --r-md: 14px;
+    --r-lg: 24px;
+    --glass-blur: 20px;
+    --glass-bg: rgba(20, 20, 23, 0.6);
+    --glass-border: rgba(237, 237, 239, 0.1);
+    --shadow-soft: 0 20px 60px -20px rgba(0, 0, 0, 0.6);
+    --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    --glow-primary: rgba(212, 255, 0, 0.08);
+    --glow-secondary: rgba(255, 61, 110, 0.08);
 
     color-scheme: dark;
+}
+
+/* ---- LIGHT deployment: same laws, same radius/glass system, warm
+   neutrals inverted. Frosted-white glass on a cool-white canvas
+   instead of a glow on near-black - the surface material changes,
+   the structure (radius scale, blur, soft shadow) does not (Law 4:
+   designed alongside dark, not an afterthought). ---- */
+:root[data-theme="light"] {
+    --canvas: #F4F4F6;
+    --surface: #FFFFFF;
+    --surface-2: #E7E7EC;
+    --bone: #101014;
+    --muted: #6B6B76;          /* 4.8:1 on --canvas                    */
+    --line: rgba(16, 16, 20, 0.08);
+    --line-strong: rgba(16, 16, 20, 0.14);
+    --accent: var(--lime-ink);
+    --focus: var(--lime-ink);
+    --danger: #C42D17;         /* 5.1:1 on --canvas                    */
+
+    --nav-bg: rgba(244, 244, 246, 0.72);
+    --chip-hover-ring: rgba(16, 16, 20, 0.25);
+
+    --band-30: #101014;
+    --band-30-ink: #F4F4F6;
+    --band-30-accent: var(--secondary);
+
+    --glass-bg: rgba(255, 255, 255, 0.6);
+    --glass-border: rgba(16, 16, 20, 0.08);
+    --shadow-soft: 0 20px 45px -22px rgba(16, 16, 20, 0.28);
+    --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    --glow-primary: rgba(77, 98, 0, 0.06);
+    --glow-secondary: rgba(255, 61, 110, 0.07);
+
+    color-scheme: light;
 }
 
 /* Live wordmark: two color slots the mark cycles through, fed real
@@ -122,14 +158,16 @@
 @property --wm-c1 {
     syntax: "<color>";
     inherits: false;
-    initial-value: #1A1A1A;
+    initial-value: #EDEDEF;
 }
 
-/* Pre-JS seed: plain ink until the Engine has run once. */
-:root:not([data-theme="dark"]) .wm-text,
-:root:not([data-theme="dark"]) .wm-dot { --wm-c1: #1A1A1A; }
-:root[data-theme="dark"] .wm-text,
-:root[data-theme="dark"] .wm-dot { --wm-c1: #EFEEE8; }
+/* Pre-JS seed: plain ink until the Engine has run once. Dark is the
+   default deployment now, so the un-attributed root gets the dark
+   ink; only the light override needs stamping. */
+:root:not([data-theme="light"]) .wm-text,
+:root:not([data-theme="light"]) .wm-dot { --wm-c1: #EDEDEF; }
+:root[data-theme="light"] .wm-text,
+:root[data-theme="light"] .wm-dot { --wm-c1: #101014; }
 
 * { box-sizing: border-box; }
 
@@ -350,11 +388,13 @@ button { font-family: inherit; cursor: pointer; }
 }
 .theme-toggle:hover { color: var(--bone); border-color: var(--accent); }
 .theme-toggle svg { width: 18px; height: 18px; display: block; }
-/* Only one glyph shows per theme. */
-.theme-toggle .icon-sun { display: none; }
-.theme-toggle .icon-moon { display: block; }
-:root[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
-:root[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
+/* Only one glyph shows per theme. Dark is the default deployment now,
+   so the un-attributed root shows the sun (switch TO light); the
+   light override shows the moon (switch TO dark). */
+.theme-toggle .icon-moon { display: none; }
+.theme-toggle .icon-sun { display: block; }
+:root[data-theme="light"] .theme-toggle .icon-moon { display: block; }
+:root[data-theme="light"] .theme-toggle .icon-sun { display: none; }
 
 .nav-toggle {
     display: none;
@@ -443,6 +483,30 @@ button { font-family: inherit; cursor: pointer; }
     max-width: 14ch;
 }
 
+/* Kicker: a small status line ("Live palette engine") in the same
+   guaranteed-safe ink as the headline, not the site's lime - see the
+   note below on why hero content never uses site accent colors
+   directly. The dot is a plain shape, not an animated pulse: motion
+   here would compete with the hero's one authored entrance moment. */
+.hero-kicker {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    opacity: 0.7;
+    margin: 0 0 1.1rem;
+}
+.hero-kicker-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+}
+
 .hero-sub {
     color: inherit;
     opacity: 0.78;
@@ -451,7 +515,26 @@ button { font-family: inherit; cursor: pointer; }
     margin: 1.6rem 0 2.4rem;
 }
 
-.hero-ctas { display: flex; gap: 1rem; flex-wrap: wrap; }
+.hero-ctas { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; position: relative; }
+.hero-hint {
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    opacity: 0.55;
+}
+
+/* Tertiary - a named path, not a third button competing with the two
+   primary CTAs above it. Underlined text at body size reads as "one
+   more option" rather than "a third equally-weighted choice." */
+.hero-alt {
+    margin: 1rem 0 0;
+    font-size: 0.92rem;
+    opacity: 0.75;
+}
+.hero-alt a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
 
 /* Hero controls derive from the palette, not from the site accent.
    Inside the color field the site's lime would compete with the
@@ -489,6 +572,7 @@ button { font-family: inherit; cursor: pointer; }
     grid-row: 2;
     grid-column: 1;
     display: flex;
+    min-width: 0;
     background: var(--canvas);
     border-top: 1px solid var(--line);
     font-family: var(--font-mono);
@@ -524,6 +608,9 @@ button { font-family: inherit; cursor: pointer; }
     padding: 6.5rem var(--pad);
     max-width: 1400px;
     margin: 0 auto;
+    /* Anchor jumps (nav links, the hero CTAs) would otherwise land
+       with the heading half-covered by the sticky nav. */
+    scroll-margin-top: var(--nav-h);
 }
 
 /* ---------- Full-bleed grid primitive ----------
@@ -633,7 +720,7 @@ select, input[type="text"] {
     padding: 0.7rem 0.9rem;
     font-size: 0.9rem;
     font-family: inherit;
-    border-radius: 0;
+    border-radius: var(--r-sm);
     appearance: none;
     -webkit-appearance: none;
 }
@@ -673,6 +760,7 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
     height: 20px;
     background: var(--surface-2);
     border: 1px solid var(--line);
+    border-radius: var(--r-pill);
     position: relative;
     flex-shrink: 0;
     transition: background 0.2s var(--ease);
@@ -684,6 +772,7 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
     left: 2px;
     width: 14px;
     height: 14px;
+    border-radius: 50%;
     background: var(--muted);
     transition: transform 0.2s var(--ease), background 0.2s var(--ease);
 }
@@ -778,13 +867,18 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
 .swatch-row {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 1px;
-    background: var(--line);
-    border: 1px solid var(--line);
-    border-right: none;
+    /* Real gaps between floating cards, not a shared hairline-grid
+       background - each .swatch gets its own radius and border, so a
+       1px shared seam would fight the rounded corners. */
+    gap: 0.75rem;
 }
 
-.swatch { background: var(--surface); }
+.swatch {
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-md);
+    overflow: hidden;
+}
 
 /* Taller than before: these chips are the product, and the bleed gives
    them the room the old 300px-rail layout could not. */
@@ -824,6 +918,18 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
     letter-spacing: -0.01em;
 }
 .swatch-role .pct { font-family: var(--font-mono); font-weight: 400; font-size: 0.66rem; color: var(--muted); }
+.swatch-harmony {
+    display: inline-block;
+    font-size: 0.62rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--bone);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius, 0px);
+    padding: 0.12rem 0.55rem;
+    margin: 0.3rem 0 0;
+}
 .swatch-name { font-size: 0.76rem; color: var(--muted); margin: 0.15rem 0 0.65rem; }
 .swatch-job { font-size: 0.72rem; color: var(--muted); line-height: 1.5; margin: 0 0 0.7rem; min-height: 3.15em; }
 .swatch-values {
@@ -879,6 +985,8 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
     margin-top: 2rem;
     align-items: start;
 }
+
+#applied-toggle { margin-top: 1rem; }
 
 .app-item { margin: 0; min-width: 0; }
 .app-item figcaption {
@@ -1001,6 +1109,7 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
     font-size: 0.68rem;
     padding: 0.35rem 0.7rem;
     border: 1px solid var(--line);
+    border-radius: var(--r-pill);
     color: var(--muted);
 }
 .check b { color: var(--bone); font-weight: 600; }
@@ -1064,10 +1173,12 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
 /* Shades panel */
 
 .shades-panel {
-    margin-top: 1px;
-    border: 1px solid var(--line);
-    border-top: none;
-    background: var(--surface);
+    margin-top: 0.6rem;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-md);
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
     padding: 0.9rem;
 }
 .shades-head {
@@ -1123,6 +1234,19 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
     gap: 0.5rem;
     margin-top: 1.2rem;
 }
+
+/* ---------- Reveal-more ----------
+   A generic "show N more, already-rendered items" pattern: the
+   wrapped elements stay real DOM children of their flex/grid parent
+   (display: contents) so layout is unaffected once revealed, and
+   [hidden] - higher specificity than the bare class - collapses them
+   entirely until the matching toggle button is clicked. Used for the
+   applied-format mockups, the vision-simulation variants, and the
+   secondary export formats: one thing rendered by default, the rest
+   one click away instead of all of it landing on the page at once. */
+.reveal-more { display: contents; }
+.reveal-more[hidden] { display: none; }
+
 .vision-btn.active {
     border-color: var(--accent);
     color: var(--accent);
@@ -1153,6 +1277,13 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
     align-items: flex-end;
     gap: 4px;
     height: 56px;
+    /* Grid items default to min-width:auto, so this flex row's
+       content (no wrap, one bar per step) was forcing its whole
+       grid track - and the page - wider than the viewport on
+       mobile. min-width:0 lets it actually shrink; overflow-x is
+       the fallback if the bars still don't all fit at 320px. */
+    min-width: 0;
+    overflow-x: auto;
 }
 /* Filled from the palette's Brand by renderSystem, not from the site
    accent: these bars are generated output, and DESIGN.md reserves lime
@@ -1182,6 +1313,7 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
     display: flex;
     flex-wrap: wrap;
     gap: 1rem;
+    min-width: 0;
 }
 .radius-chip, .elevation-card, .state-chip {
     width: 76px;
@@ -1191,6 +1323,7 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
     justify-content: center;
     padding-bottom: 0.5rem;
     border: 1px solid var(--line);
+    border-radius: var(--r-sm);
 }
 .radius-chip span, .elevation-card span, .state-chip span {
     font-family: var(--font-mono);
@@ -1198,12 +1331,11 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
     color: var(--muted);
     text-align: center;
 }
-/* Square, like everything else. These tiles demonstrate elevation and
-   component states; the radius row above is what demonstrates radius,
-   and it uses the palette's own generated values. A fixed radius here
-   was drift against the Shapes rule, not a demo of anything. */
+/* radius-chip uses the palette's own generated radius values (set
+   inline by renderSystem) and overrides this default. elevation-card
+   and state-chip use the site's own --r-sm, matching the rest of
+   this system's chrome instead of standing apart from it. */
 .elevation-card { background: var(--surface); }
-.state-chip { border-radius: 0; }
 
 /* History + saved palettes */
 
@@ -1222,6 +1354,7 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
     height: 32px;
     padding: 0;
     border: 1px solid var(--line);
+    border-radius: var(--r-sm);
     background: none;
     overflow: hidden;
     transition: border-color 0.2s var(--ease), transform 0.15s var(--ease);
@@ -1261,7 +1394,7 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
     font-size: 0.7rem;
     border: 1px solid var(--line);
     padding: 0.05rem 0.45rem;
-    border-radius: 3px;
+    border-radius: var(--r-sm);
     color: var(--bone);
 }
 
@@ -1285,7 +1418,7 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
     font-size: 1.05rem;
     line-height: 1.5;
     font-family: inherit;
-    border-radius: 0;
+    border-radius: var(--r-sm);
     min-height: 5.5rem;
 }
 .assistant-input-row textarea:focus { outline: none; border-color: var(--accent); }
@@ -1333,20 +1466,24 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
     padding: 0.55rem 0.7rem;
     font-size: 0.85rem;
     font-family: inherit;
-    border-radius: 0;
+    border-radius: var(--r-sm);
 }
 
 .assistant-result {
     margin-top: 1.6rem;
     padding: 1.2rem 1.4rem;
-    background: var(--surface);
-    border: 1px solid var(--line);
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-md);
 }
 .assistant-provider { font-size: 0.72rem; color: var(--muted); margin: 0 0 0.4rem; }
 .assistant-explanation { margin: 0 0 0.9rem; }
 .assistant-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.1rem; }
 .assistant-chip {
     display: inline-block;
+    border-radius: var(--r-pill);
     padding: 0.35rem 0.75rem;
     background: var(--surface-2);
     border: 1px solid var(--line);
@@ -1381,9 +1518,13 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
 
 .fixer-results { margin-top: 2.5rem; }
 
-.diagnosis { display: flex; flex-direction: column; gap: 1px; background: var(--line); border: 1px solid var(--line); }
+.diagnosis { display: flex; flex-direction: column; gap: 0.6rem; }
 .diag-item {
-    background: var(--surface-2);
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-md);
     padding: 1rem 1.2rem;
     display: grid;
     grid-template-columns: auto 1fr;
@@ -1395,7 +1536,8 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
     font-size: 0.68rem;
     color: var(--canvas);
     background: var(--bone);
-    padding: 0.2rem 0.5rem;
+    border-radius: var(--r-pill);
+    padding: 0.2rem 0.6rem;
     white-space: nowrap;
     margin-top: 0.15rem;
 }
@@ -1560,6 +1702,11 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
     display: flex;
     height: clamp(120px, 18vh, 180px);
     border-block: 1px solid var(--line);
+    /* Clips the literal-color demo bands to the container's own
+       rounded corners, so the 60-30-10 colors stay flat and exact
+       (no glass, no blur - they're a color demonstration, not
+       chrome) while the container still reads as one rounded card. */
+    overflow: hidden;
 }
 .mb {
     display: flex;
@@ -1639,16 +1786,20 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
 .pricing {
     display: grid;
     grid-template-columns: 1.6fr 0.7fr 0.7fr;
-    gap: 1px;
+    /* Real spacing, not a hairline grid - floating glass cards with
+       their own radius and border read as separate objects; a 1px
+       shared-background seam was a brutalist-grid pattern that fought
+       the rounded corners once each card got its own border. */
+    gap: 1rem;
     align-items: stretch;
-    background: var(--line);
-    border: 1px solid var(--line);
 }
 
 /* No card fills and no gaps: the hairline grid itself separates tiers,
    which keeps the whole section flat per DESIGN.md. */
 .price-card {
-    background: var(--canvas);
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
     padding: 2rem;
     display: flex;
     flex-direction: column;
@@ -1659,7 +1810,7 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
     letter-spacing: 0.06em;
 }
 
-.price-card-featured { padding: 2.5rem 2.25rem; }
+.price-card-featured { position: relative; padding: 2.5rem 2.25rem; }
 .price-card-featured h3 { font-size: 1.35rem; }
 .price-card-featured .price-num { font-size: 4rem; }
 .price-card-featured li { font-size: 0.92rem; color: var(--bone); }
@@ -1928,6 +2079,7 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
     .rail-dom, .rail-brand, .rail-accent { flex: none; }
     .rail-cell {
         width: 100%;
+        min-width: 0;
         justify-content: space-between;
         border-right: none;
         border-bottom: 1px solid var(--line);
@@ -1957,6 +2109,13 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
     /* The spec index collapses to a stacked label-then-values list. */
     .system-block { grid-template-columns: 1fr; gap: 0.85rem; }
     .system-block > .exports-label { padding-top: 0; }
+
+    /* The Dominant rail cell packs a label, a seed, and the
+       Regenerate button into one row - .rail-actions refusing to
+       shrink (flex-shrink:0, by design so the button never
+       truncates) meant it clipped instead of shrinking on narrow
+       phones. Wrapping to a second line keeps every part readable. */
+    .rail-dom { flex-wrap: wrap; row-gap: 0.5rem; }
 }
 
 /* =========================================================
@@ -2013,9 +2172,12 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
     box-sizing: border-box;
     padding: 1rem;
     border: 1px solid var(--line);
-    border-radius: 4px;
-    background: var(--surface-1);
-    color: var(--fg);
+    border-radius: var(--r-sm);
+    /* Was var(--surface-1)/var(--fg) - neither token exists in this
+       system (only --surface/--surface-2/--bone), so the textarea
+       was rendering unthemed in both deployments. */
+    background: var(--surface-2);
+    color: var(--bone);
 }
 .extract-input-row .extract-actions {
     margin-top: 1rem;
@@ -2035,7 +2197,7 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
 .extract-stat {
     background: var(--surface-2);
     padding: 1rem;
-    border-radius: 4px;
+    border-radius: var(--r-sm);
 }
 .extract-stat .exports-label { margin-bottom: 0.5rem; display: block; }
 .extract-confidence {
@@ -2073,4 +2235,181 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
     margin-top: 0.5rem;
     font-size: 0.85rem;
     display: none;
+}
+
+/* =========================================================
+   STRUCTURED DEPTH CHROME
+   The graphic edge: a thin translucent border plus a soft, tinted,
+   blurred glow instead of a hard offset shadow, at a real radius
+   scale instead of zero. Applied once here, to real selectors, on
+   top of each component's own rules (normal cascade order, no
+   !important) rather than as a blanket override - so it can never
+   reach a selector that doesn't exist or a control it shouldn't
+   touch (radio/checkbox inputs, and disclosures like
+   .assistant-config and the law/FAQ <details> keep their plain
+   hairline - a glow on a "+" toggle reads as a broken button, not
+   an accent).
+
+   Radius follows design-context.md's rule: pill for buttons, a
+   small step for nested blocks inside a card (form fields, swatch
+   chips), a medium step for cards themselves. .swatch-chip is
+   deliberately excluded from the glow/blur below - its entire job
+   is showing one exact generated color, and a translucent blur over
+   it would misrepresent the color it exists to display. */
+
+.btn { border-radius: var(--r-pill); }
+.swatch-chip,
+select, input[type="text"], input[type="number"], textarea, .input {
+    border-radius: var(--r-sm);
+}
+.price-card, .method-band { border-radius: var(--r-md); }
+
+.btn, .price-card, .method-band,
+select, input[type="text"], input[type="number"], textarea, .input {
+    border: 1px solid var(--line-strong);
+}
+.swatch-chip {
+    border: 1px solid var(--line-strong);
+}
+
+.btn, .price-card, .method-band {
+    box-shadow: var(--shadow-soft);
+}
+
+.btn, .swatch-chip {
+    transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease), border-color 0.15s var(--ease);
+}
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px -8px var(--glow-primary), var(--shadow-soft);
+}
+.btn:active { transform: translateY(0); }
+/* The chip keeps its existing copy-hint ring on hover instead of
+   losing it to a plain box-shadow override - the two are combined
+   into one declaration so both effects survive at once. */
+.swatch-chip:hover, .swatch-chip:focus-visible {
+    box-shadow: inset 0 0 0 2px var(--chip-hover-ring);
+    border-color: var(--bone);
+}
+
+.btn-primary, .btn-hero-primary {
+    border-color: var(--charcoal);
+    box-shadow: 0 8px 28px -10px var(--glow-primary), var(--shadow-soft);
+}
+/* .btn-hero-ghost is deliberately excluded here: it sits on the
+   Engine's own generated Dominant color, not a site token, and its
+   own rule below keeps it transparent with a hero-ink border so it
+   stays legible on every possible generated palette. A fixed glass
+   tint here would fight that contrast guarantee. */
+.btn-ghost { background: var(--glass-bg); backdrop-filter: blur(var(--glass-blur)); -webkit-backdrop-filter: blur(var(--glass-blur)); }
+
+.site-nav { border-bottom: 1px solid var(--line); }
+.site-footer { border-top: 1px solid var(--line); }
+
+/* ---------- Accessibility fixes carried over from the audit pass,
+   re-scoped to what they actually needed to touch ---------- */
+
+/* Tap targets: 44px floor on the controls that were measured under it. */
+.nav-links a { padding: 0.5rem; min-height: 44px; display: inline-flex; align-items: center; }
+.logo.wordmark { padding: 0.5rem; min-height: 44px; display: inline-flex; align-items: center; }
+.btn-mini, #hero-regen { min-height: 44px; padding: 0.5rem 1rem; display: inline-flex; align-items: center; line-height: 1.5; }
+
+/* Small-caption legibility floor: scoped to the specific compact
+   mono captions that were measured under 12px, not every .mono
+   element on the page (that included law numbers, code output,
+   and export blocks that were never too small to begin with). */
+#hero-dominant, #hero-seed, #hero-brand, .rail-caption, .output-meta .mono, .shades-head .mono {
+    font-size: 12px;
+}
+
+/* =========================================================
+   PERSONALITY LAYER — Structured Depth
+   The prior pass answered "looks mechanical" with hand-drawn marks
+   (paper grain, a marker swipe, tape, rotated stickers) because that
+   pass's material was paper and ink. This system's material is glass
+   and light, so its personality moments are precise instead of
+   hand-made: a status glow, a soft ring instead of a hard stamp, a
+   clean glass pill instead of a rotated sticker. Nothing here
+   changes layout or removes a state the chrome layer set up - it
+   only marks real facts on top of it. See DESIGN.md.
+   ========================================================= */
+
+/* ---- Grain: a fixed, low-opacity noise field over the whole page -
+   a film-grain layer over glass, not a paper texture. Pure CSS/SVG,
+   no image request, no motion. Dark is the default deployment, so
+   screen-blend is the default; the light override switches to
+   multiply the same way the old system did in reverse. */
+.grain {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    pointer-events: none;
+    opacity: 0.05;
+    mix-blend-mode: screen;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+:root[data-theme="light"] .grain { opacity: 0.035; mix-blend-mode: multiply; }
+
+/* ---- Studio badge: a small glass/glow pill instead of a rotated
+   sticker - precise, not hand-made. Un-rotated, sits flush inline;
+   the glow deepens on hover instead of the badge lifting off the
+   page. */
+.studio-tag {
+    display: inline-flex;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--lime);
+    background: var(--glass-bg);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-pill);
+    padding: 0.1rem 0.55rem;
+    margin-left: 0.5em;
+    transition: box-shadow 0.15s var(--ease), border-color 0.15s var(--ease);
+    vertical-align: middle;
+}
+a:hover > .studio-tag, button:hover > .studio-tag,
+.studio-tag:hover {
+    border-color: var(--lime);
+    box-shadow: 0 0 0 3px var(--glow-primary);
+}
+
+/* ---- Clean-palette ring: the Fixer's "no law broken" verdict gets
+   a soft glow ring instead of an ink stamp - the one moment of
+   ceremony in the product, expressed as precision instead of a
+   hand mark. */
+.diag-item.clean .diag-law {
+    background: var(--glass-bg);
+    color: var(--secondary);
+    border: 1px solid var(--secondary);
+    border-radius: var(--r-pill);
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.78rem;
+    letter-spacing: 0.03em;
+    padding: 0.3rem 0.75rem;
+    box-shadow: 0 0 0 4px var(--glow-secondary);
+}
+
+/* ---- Harmony badge: a clean glass pill in the locked Secondary,
+   no rotation - the same restrained language as the studio badge
+   and the clean ring, one visual system for every marginalia
+   moment instead of three unrelated decorations. */
+.swatch-harmony {
+    color: var(--secondary);
+    background: var(--glass-bg);
+    border-color: var(--secondary);
+}
+
+/* ---- Featured-tier glow edge: the recommended pricing card gets a
+   soft lime glow along its top edge instead of a tape strip or a
+   "Most popular" pill - the composition already carries the
+   recommendation (bigger card, first in the DOM); this only adds
+   the same precision-glow language the rest of the page uses to
+   mark a real fact. */
+.price-card-featured {
+    position: relative;
+    box-shadow: 0 -1px 0 var(--lime), 0 12px 40px -16px var(--glow-primary), var(--shadow-soft);
 }
