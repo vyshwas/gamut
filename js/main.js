@@ -102,32 +102,45 @@ function oklchToRgb({ L, C, H }) {
     return { r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255) };
 }
 
+/* Darken OR lighten `hex` in OKLCH, hue and relative chroma held,
+   until it clears `min`:1 against `bgHex` - whichever direction the
+   background demands. Shared by the wordmark (always darkens, toward
+   a fixed paper) and SiteTheme (either direction, toward whichever
+   canvas the live palette is currently deployed on). This product's
+   own Law 09 move, generalized. */
+function contrastSafe(hex, bgHex, min) {
+    if (E.contrastRatio(hex, bgHex) >= min) return hex;
+    const src = hexToOklch(hex);
+    const bgIsDark = hexToOklch(bgHex).L < 0.5;
+    let out = hex;
+    if (bgIsDark) {
+        for (let L = src.L; L <= 0.96; L += 0.02) {
+            out = E.rgbToHex(oklchToRgb({ L, C: Math.min(src.C, (1 - L) * 0.32 + 0.02), H: src.H }));
+            if (E.contrastRatio(out, bgHex) >= min) return out;
+        }
+    } else {
+        for (let L = src.L; L >= 0.08; L -= 0.02) {
+            out = E.rgbToHex(oklchToRgb({ L, C: Math.min(src.C, L * 0.32), H: src.H }));
+            if (E.contrastRatio(out, bgHex) >= min) return out;
+        }
+    }
+    return out;
+}
+
 /* =========================================================
    Wordmark
-   Solid-fill, not gradient (DESIGN.md: The Product Is the Color
-   Rule — the site's chrome carries at most one color event, and
-   that's the hero's live swatch strip, not the nav logo). The mark
-   still reflects the CURRENT palette's Brand hue, updated only when
-   the user actually regenerates - no ambient auto-cycling, no
-   hover gimmick. Before a first generation it's plain ink.
+   Solid-fill, not gradient. The mark reflects the CURRENT palette's
+   Brand hue, updated only when the user actually regenerates - no
+   ambient auto-cycling, no hover gimmick. Before a first generation
+   it's plain ink.
    ========================================================= */
 const Wordmark = (() => {
     let texts = [], dots = [], theme = "dark", current = null;
     const PAPER = "#F9F8F6";
     const LIGHT_MIN = 9;
 
-    /* Engine output is tuned for a charcoal canvas - a lime, a cyan,
-       a warm yellow all vanish on paper (1.0-1.3:1). Darken the
-       sampled hue in OKLCH until it clears `min`:1 on paper; hue and
-       relative chroma survive. This product's own Law 09 move. */
     function inkify(hex, min) {
-        const src = hexToOklch(hex);
-        let out = hex;
-        for (let L = src.L; L >= 0.10; L -= 0.02) {
-            out = E.rgbToHex(oklchToRgb({ L, C: Math.min(src.C, L * 0.32), H: src.H }));
-            if (E.contrastRatio(out, PAPER) >= min) return out;
-        }
-        return out;
+        return contrastSafe(hex, PAPER, min);
     }
 
     function apply(hex) {
@@ -155,6 +168,76 @@ const Wordmark = (() => {
     }
 
     return { start, injectLive, setTheme };
+})();
+
+/* =========================================================
+   SiteTheme
+   The Engine's generated Primary/Secondary now drive Gamut's own
+   loud-color tokens (--lime family, --secondary family, both glow
+   pairs) - buttons, focus rings, the Studio badge, the featured-card
+   edge, everywhere the chrome already spent a saturated accent takes
+   the live palette instead of the locked hue, the same way the
+   wordmark already did. Structural tokens (canvas, surface, text,
+   borders, --danger) stay put; only the two "loud voice" roles go
+   live, matching Law 2's own framing of Primary/Secondary as the
+   product's two saturated colors.
+
+   Replaces the former mock social/web-hero panel (Law 3) - that
+   panel showed the palette applied to a fictional brand's formats;
+   this shows it applied to a real one, live, in both themes. Before
+   a first generation the site stays on its own locked identity, same
+   as the wordmark.
+
+   Primary is used as a flat FILL in the site's own chrome regardless
+   of site theme (Law 2: "unchanged across every pass"), so it only
+   needs one raw value plus a light-surface-safe ink variant for text/
+   border use (mirrors --lime / --lime-ink). Secondary is used
+   directly as TEXT/border on the page's own canvas in a couple of
+   spots, so unlike Primary it needs an independently contrast-checked
+   value per theme - --secondary-dark/-light feed the existing
+   --secondary indirection in style.css, and swap automatically with
+   the data-theme attribute the same way --accent already does. */
+const SiteTheme = (() => {
+    const CANVAS = { dark: "#0B0B0D", light: "#F4F4F6" };
+    const PAPER = "#F9F8F6";
+    const LIGHT_MIN = 9;
+    const TEXT_MIN = 4.5;
+
+    function hexToRgba(hex, a) {
+        const { r, g, b } = E.hexToRgb(hex);
+        return `rgba(${r}, ${g}, ${b}, ${a})`;
+    }
+
+    function lighten(hex, amount) {
+        const src = hexToOklch(hex);
+        return E.rgbToHex(oklchToRgb({ L: Math.min(0.97, src.L + amount), C: src.C, H: src.H }));
+    }
+
+    /* Called once per regenerate from renderPalette. No-op before the
+       first generation - the locked identity stays exactly as shipped. */
+    function injectLive(p) {
+        if (!p) return;
+        const root = document.documentElement.style;
+
+        const brand = p.swatches[1].hex;       // Primary, full saturation - same source the wordmark uses
+        const brandInk = contrastSafe(brand, PAPER, LIGHT_MIN); // same derivation as the wordmark's light-mode ink
+        root.setProperty("--lime", brand);
+        root.setProperty("--lime-hover", lighten(brand, 0.08));
+        root.setProperty("--lime-ink", brandInk);
+        root.setProperty("--on-primary", E.readableOn(brand));
+        root.setProperty("--glow-primary-dark", hexToRgba(brand, 0.08));
+        root.setProperty("--glow-primary-light", hexToRgba(brandInk, 0.06));
+
+        const accent = p.swatches[2].hex;      // Secondary, full saturation
+        const accentDark = contrastSafe(accent, CANVAS.dark, TEXT_MIN);
+        const accentLight = contrastSafe(accent, CANVAS.light, TEXT_MIN);
+        root.setProperty("--secondary-dark", accentDark);
+        root.setProperty("--secondary-light", accentLight);
+        root.setProperty("--glow-secondary-dark", hexToRgba(accentDark, 0.08));
+        root.setProperty("--glow-secondary-light", hexToRgba(accentLight, 0.07));
+    }
+
+    return { injectLive };
 })();
 
 /* =========================================================
@@ -563,58 +646,6 @@ function renderSwatches(palette) {
     buildSwatches(palette, $("swatch-row"));
 }
 
-/* Social formats, coloured from the same deployment the web mocks use.
-   Every foreground is derived from the surface it sits on, so no
-   generated palette can produce an unreadable mock. The accent appears
-   exactly once per frame - it is the 10%, and showing it any larger
-   here would contradict the band directly above. */
-function renderSocial(frameEl, dep, pair) {
-    if (!frameEl) return;
-    frameEl.style.background = dep.bg;
-
-    const head = frameEl.querySelector(".app-head");
-    head.style.color = dep.ink;
-    if (pair) head.style.fontFamily = `'${pair.display}', sans-serif`;
-
-    const kicker = frameEl.querySelector(".app-kicker");
-    if (kicker) kicker.style.color = dep.accent;
-
-    frameEl.querySelectorAll(".app-mark").forEach(el => {
-        el.style.color = dep.brand;
-        if (pair) el.style.fontFamily = `'${pair.display}', sans-serif`;
-    });
-
-    const tag = frameEl.querySelector(".app-tag");
-    if (tag) tag.style.color = dep.ink;
-
-    const cta = frameEl.querySelector(".app-cta");
-    if (cta) {
-        cta.style.background = dep.brand;
-        cta.style.color = textOn(dep.brand);
-        if (pair) cta.style.fontFamily = `'${pair.display}', sans-serif`;
-    }
-
-    const rule = frameEl.querySelector(".app-rule");
-    if (rule) rule.style.background = dep.ink + "33";
-}
-
-function renderDeployment(mockEl, dep) {
-    mockEl.style.background = dep.bg;
-    mockEl.querySelector(".mock-nav").style.borderBottomColor = dep.ink + "22";
-    const brandEl = mockEl.querySelector(".mock-brand");
-    brandEl.style.color = dep.brand;
-    const menu = mockEl.querySelector(".mock-menu");
-    menu.style.color = dep.ink;
-    mockEl.querySelector(".mock-h").style.color = dep.ink;
-    mockEl.querySelector(".mock-p").style.color = dep.ink;
-    const btn = mockEl.querySelector(".mock-btn");
-    btn.style.background = dep.brand;
-    btn.style.color = textOn(dep.brand);
-    const link = mockEl.querySelector(".mock-link");
-    link.style.color = dep.accent;
-    link.style.textDecorationColor = dep.accent;
-}
-
 function renderChecks(palette) {
     const wrap = $("contrast-checks");
     wrap.innerHTML = "";
@@ -848,12 +879,6 @@ function renderPalette(palette) {
     renderReading(palette);
     renderSwatches(palette);
     renderBand($("ratio-band"), palette.swatches, false);
-    /* The ids sit on the frames themselves now, not on wrappers. */
-    const appliedPair = currentPair();
-    renderSocial($("app-post"), palette.deployments.light, appliedPair);
-    renderSocial($("app-story"), palette.deployments.dark, appliedPair);
-    renderDeployment($("deploy-light"), palette.deployments.light);
-    renderDeployment($("deploy-dark"), palette.deployments.dark);
     renderChecks(palette);
 
     /* The accent's harmony used to be appended here as jargon. It now
@@ -868,10 +893,10 @@ function renderPalette(palette) {
     renderSystem(palette);
     syncUrl();
 
-    /* The wordmark is the one piece of chrome that reflects the
-       current palette (DESIGN.md: The Product Is the Color Rule
-       reserves everywhere else for the actual generated output). */
+    /* The site's own chrome now reflects the current palette too, not
+       just the wordmark - see SiteTheme above. */
     Wordmark.injectLive(palette);
+    SiteTheme.injectLive(palette);
 
     $("shades-panel").hidden = true;
     pushHistory(palette);
@@ -1725,12 +1750,11 @@ document.addEventListener("DOMContentLoaded", () => {
         generate(false);
     });
 
-    /* Reveal-more toggles: the applied-format mockups, the
-       colorblind-vision variants, and the secondary export formats
-       are all rendered on load but hidden - this just flips the
-       [hidden] attribute and swaps the button's own label, no other
-       state to track since the content underneath never changes. */
-    wireReveal("applied-toggle", "applied-more", "See it applied elsewhere (3 more)", "Show fewer formats");
+    /* Reveal-more toggles: the colorblind-vision variants and the
+       secondary export formats are rendered on load but hidden - this
+       just flips the [hidden] attribute and swaps the button's own
+       label, no other state to track since the content underneath
+       never changes. */
     wireReveal("vision-toggle", "vision-more", "Check colorblind safety", "Hide colorblind variants");
     wireReveal("exports-toggle", "exports-more", "More formats", "Fewer formats");
 
@@ -1764,9 +1788,14 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     /* Color-vision simulation: an feColorMatrix filter over the
-       palette visuals, never over the site chrome. */
+       palette visuals themselves. Not extended to the live site chrome
+       (nav, buttons) even though those now carry the same colors -
+       a filter over sticky/backdrop-blur chrome risks its own
+       rendering bugs, and this couldn't be checked in a real browser
+       here. Simulating the swatches and the 60-30-10 band still tells
+       you whether the palette itself is colorblind-safe. */
     const visionTargets = () =>
-        [$("swatch-row"), $("ratio-band"), $("applied")].filter(Boolean);
+        [$("swatch-row"), $("ratio-band")].filter(Boolean);
     document.querySelectorAll(".vision-btn").forEach(btn => {
         btn.addEventListener("click", () => {
             if (!window.License.Gate.has("vision")) { lockedToast(); return; }
@@ -1925,12 +1954,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!btn) return;
         state.typeIndex = Number(btn.dataset.pair);
         renderTypeLab();
-        if (state.palette) {
-            renderPrintSheet(state.palette);
-            const pair = currentPair();
-            if ($("app-post")) renderSocial($("app-post"), state.palette.deployments.light, pair);
-            if ($("app-story")) renderSocial($("app-story"), state.palette.deployments.dark, pair);
-        }
+        if (state.palette) renderPrintSheet(state.palette);
     });
 
     /* A font name is only ever used as a Google Fonts query param and
@@ -1944,12 +1968,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function reRenderTypeSurfaces() {
         renderTypeLab();
-        if (state.palette) {
-            renderPrintSheet(state.palette);
-            const pair = currentPair();
-            if ($("app-post")) renderSocial($("app-post"), state.palette.deployments.light, pair);
-            if ($("app-story")) renderSocial($("app-story"), state.palette.deployments.dark, pair);
-        }
+        if (state.palette) renderPrintSheet(state.palette);
     }
 
     /* Confirms a family actually resolves to real glyphs rather than

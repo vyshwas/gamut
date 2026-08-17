@@ -80,7 +80,7 @@
             <h1 class="hero-enter">Generate production-ready design systems.</h1>
             <p class="hero-sub hero-enter">From a written brief, category, pasted hexes, or an image &mdash; complete system out: color, typography, spacing, radius, elevation, states, tokens &mdash; exported for CSS/Tailwind/SCSS, Figma-ready via the AI import package.</p>
             <div class="hero-ctas hero-enter">
-                <a href="#engine" class="btn btn-hero-primary" id="hero-generate-cta">Generate a system</a>
+                <a href="#engine" class="btn btn-hero-primary">Generate a system</a>
                 <a href="#fixer" class="btn btn-hero-ghost">Fix an existing palette</a>
                 <span class="hero-hint mono" aria-hidden="true">press space</span>
             </div>
@@ -247,67 +247,14 @@
                     </span>
                 </div>
 
-                <!-- The palette doing its actual job. Law 3 says test at
-                     5% of the screen, not 50%, and these are the surfaces
-                     a brand palette really lands on. Light and dark are
-                     both represented, so Law 4 still holds. Copy is
-                     placeholder for a fictional brand; nothing here is a
-                     real customer. -->
-                <div class="applied" id="applied" aria-label="The palette applied to real formats">
-                    <figure class="app-item app-post">
-                        <figcaption>Social post &middot; 1:1 &middot; light</figcaption>
-                        <div class="app-frame" id="app-post" data-mode="light">
-                            <span class="app-kicker">NEW SEASON</span>
-                            <p class="app-head">Made to be remembered.</p>
-                            <div class="app-foot">
-                                <span class="app-mark">Marlowe&nbsp;Goods</span>
-                                <span class="app-tag">@marlowegoods</span>
-                            </div>
-                            <span class="app-rule" aria-hidden="true"></span>
-                        </div>
-                    </figure>
-
-                    <!-- The other 3 formats stay in the DOM (already rendered
-                         by renderSocial/renderDeployment) but hidden by
-                         default - one mockup is enough to judge a palette
-                         at first look; the rest are one click away. -->
-                    <div class="reveal-more" id="applied-more" hidden>
-                        <figure class="app-item app-story">
-                            <figcaption>Story &middot; 9:16 &middot; dark</figcaption>
-                            <div class="app-frame" id="app-story" data-mode="dark">
-                                <span class="app-kicker">DROP 04</span>
-                                <p class="app-head">Every color<br>needs a job.</p>
-                                <span class="app-cta">Shop the drop</span>
-                                <span class="app-mark app-mark-btm">Marlowe&nbsp;Goods</span>
-                            </div>
-                        </figure>
-
-                        <figure class="app-item app-web">
-                            <figcaption>Web hero &middot; light</figcaption>
-                            <div class="app-frame deploy-mock" id="deploy-light" data-mode="light">
-                                <div class="mock-nav"><span class="mock-brand">Marlowe&nbsp;Goods</span><span class="mock-menu">Shop&nbsp;&nbsp;Story&nbsp;&nbsp;Contact</span></div>
-                                <div class="mock-hero">
-                                    <p class="mock-h">Made to be remembered.</p>
-                                    <p class="mock-p">Real words at interface size, so you judge legibility, not swatches.</p>
-                                    <div class="mock-btn-row"><span class="mock-btn">Shop now</span><span class="mock-link">See the story</span></div>
-                                </div>
-                            </div>
-                        </figure>
-
-                        <figure class="app-item app-web">
-                            <figcaption>Web hero &middot; dark</figcaption>
-                            <div class="app-frame deploy-mock" id="deploy-dark" data-mode="dark">
-                                <div class="mock-nav"><span class="mock-brand">Marlowe&nbsp;Goods</span><span class="mock-menu">Shop&nbsp;&nbsp;Story&nbsp;&nbsp;Contact</span></div>
-                                <div class="mock-hero">
-                                    <p class="mock-h">Made to be remembered.</p>
-                                    <p class="mock-p">Real words at interface size, so you judge legibility, not swatches.</p>
-                                    <div class="mock-btn-row"><span class="mock-btn">Shop now</span><span class="mock-link">See the story</span></div>
-                                </div>
-                            </div>
-                        </figure>
-                    </div>
-                </div>
-                <button class="btn-mini" id="applied-toggle" type="button" aria-expanded="false" aria-controls="applied-more">See it applied elsewhere (3 more)</button>
+                <!-- The palette doing its actual job. Previously a set of
+                     fictional social/web mockups (Law 3); replaced
+                     2026-08-17 with the live site itself - the Engine's
+                     Primary/Secondary now drive Gamut's own nav, buttons,
+                     focus rings and badges (see SiteTheme in main.js), so
+                     scrolling back up to the nav or clicking any button on
+                     this page IS the "applied" proof now, in both themes,
+                     not a static stand-in for a fictional brand. -->
 
                 <div class="checks" id="contrast-checks"></div>
 
