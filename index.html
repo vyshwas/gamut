@@ -37,12 +37,8 @@
 
     <nav class="site-nav">
         <a href="#top" class="logo wordmark" aria-label="Gamut, home"><span class="wm-text">Gamut</span><span class="logo-dot wm-dot" aria-hidden="true">.</span></a>
-            <a href="#engine">Engine</a>
-            <a href="#method">Method</a>
-        <!-- Toggle button, not a switch: static accessible name plus
-             aria-pressed, so it announces "Dark mode, toggle button,
-             pressed/not pressed" instead of relabelling itself. The
-             glyph shown is the mode you'd switch TO (CSS picks one). -->
+        <a href="#brief">Brief</a>
+        <a href="#method">Method</a>
         <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Light mode" aria-pressed="false" title="Switch to light mode">
             <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
                 <path d="M20.5 14.3A8.5 8.5 0 0 1 9.7 3.5a8.5 8.5 0 1 0 10.8 10.8z"/>
@@ -52,7 +48,6 @@
                 <path d="M12 2.2v2.4M12 19.4v2.4M4.1 4.1l1.7 1.7M18.2 18.2l1.7 1.7M2.2 12h2.4M19.4 12h2.4M4.1 19.9l1.7-1.7M18.2 5.8l1.7-1.7"/>
             </svg>
         </button>
-        <a href="#engine" class="btn btn-primary nav-cta">Start free</a>
         <button class="nav-toggle" id="nav-toggle" aria-label="Menu" aria-expanded="false">
             <span></span><span></span>
         </button>
@@ -60,242 +55,87 @@
 
     <main id="main-content" tabindex="-1">
 
-    <!-- ================= HERO =================
-         The full-bleed color field. The bands are a live generated
-         palette at its own 60-30-10 proportions; the headline sits
-         inside the Dominant 60. role="img" carries the palette to
-         screen readers, since the band labels are visual. -->
     <header class="hero" id="top">
         <div class="hero-field" id="hero-field" role="img" aria-label="Live palette preview"></div>
         <div class="hero-content">
-            <p class="hero-kicker hero-enter" aria-hidden="true"><span class="hero-kicker-dot"></span>Live palette engine</p>
-            <h1 class="hero-enter">Generate production-ready design systems.</h1>
-            <p class="hero-sub hero-enter">From a written brief, category, pasted hexes, or an image &mdash; complete system out: color, typography, spacing, radius, elevation, states, tokens.</p>
+            <p class="hero-kicker hero-enter" aria-hidden="true"><span class="hero-kicker-dot"></span>Design Direction</p>
+            <h1 class="hero-enter">Align design strategy before you paint.</h1>
+            <p class="hero-sub hero-enter">Answer seven questions to compile a complete design direction brief: mathematical color theory, contrast ratios, and typography pairing scales.</p>
             <div class="hero-ctas hero-enter">
-                <a href="#engine" class="btn btn-hero-primary">Generate a system</a>
+                <a href="#brief" class="btn btn-hero-primary">Start a brief</a>
             </div>
-
         </div>
         <!-- Caption rail: cells align to the band widths above, so each
              readout labels its band without printing text on the color. -->
-            <div class="rail-cell rail-dom">
-                <span id="hero-dominant"></span>
-            </div>
-            <div class="rail-cell rail-brand" id="hero-brand"></div>
-            <div class="rail-cell rail-accent" id="hero-accent"></div>
+        <div class="rail-cell rail-dom">
+            <span id="hero-dominant"></span>
         </div>
+        <div class="rail-cell rail-brand" id="hero-brand"></div>
+        <div class="rail-cell rail-accent" id="hero-accent"></div>
     </header>
 
-
-    <!-- ================= ENGINE ================= -->
-    <section class="section section-bleed" id="engine">
+    <section class="section section-bleed" id="brief">
         <div class="section-head">
-            <h2>The Engine</h2>
-            <p>Pick a category and generate. Every palette gets four colors with four jobs &mdash; canvas, voice, pop, anchor &mdash; in both light and dark, contrast-checked automatically. <a href="#method">How the ten laws behind it work &rarr;</a></p>
+            <h2>Design brief</h2>
+            <p>Define your design constraints. The Tradeoff Compiler will resolve them into a production-ready system brief.</p>
         </div>
-
-        <div class="workbench bleed-right">
-            <div class="controls">
-                <div class="field">
-                    <label for="ctl-category">Category</label>
-                    <select id="ctl-category">
-                        <option value="saas" selected>SaaS / dev tools</option>
-                        <option value="fnb">Food and drink / retail</option>
-                        <option value="wellness">Wellness / premium D2C</option>
-                        <option value="creator">Creator / streetwear</option>
-                        <option value="fintech">Fintech / B2B services</option>
-                        <option value="aitech">AI / premium tech</option>
-                        <option value="beauty">Beauty / luxury</option>
-                        <option value="hospitality">Hospitality / dining</option>
-                        <option value="climate">Climate / healthtech</option>
-                        <option value="heritage">Heritage / quiet luxury</option>
-                    </select>
-                </div>
-                <div class="field">
-                    <label for="ctl-brand">Lock a brand color <span class="optional">optional</span></label>
-                    <div class="lock-row">
-                        <input type="text" id="ctl-brand" class="mono" placeholder="#1F3FFF" maxlength="7" spellcheck="false">
-                        <button class="btn-mini" id="ctl-brand-clear" type="button" hidden>Clear</button>
-                    </div>
-                </div>
-                <div class="field field-toggle">
-                    <label class="toggle">
-                        <input type="checkbox" id="ctl-borrow">
-                        <span class="toggle-track" aria-hidden="true"></span>
-                        Break category
-                    </label>
-                    <p class="hint">Law 7: borrow a palette from a category you are not in. Standing out is mostly refusing to look like your neighbors.</p>
-                </div>
-                <div class="field">
-                    <label for="ctl-harmony">Secondary via <span class="optional">color-wheel math</span></label>
-                    <select id="ctl-harmony">
-                        <option value="auto" selected>Auto (mix of all)</option>
-                        <option value="complementary">Complementary</option>
-                        <option value="analogous">Analogous</option>
-                        <option value="split-complementary">Split-complementary</option>
-                        <option value="triadic">Triadic</option>
-                    </select>
-                    <p class="hint">Pin how the Secondary is rolled from the Primary hue, or leave it on Auto and let the seed pick.</p>
-                </div>
-                <button class="btn btn-primary btn-generate" id="ctl-generate" type="button">Generate</button>
-
-            </div>
-
-            <div class="output">
-                <div class="output-meta">
-                    <div class="output-meta-actions">
-                        <button class="btn-mini" id="copy-link" type="button">Copy link to this palette</button>
-                    </div>
-                </div>
-                <div class="swatch-row" id="swatch-row"></div>
-
-                <div class="ratio-band" id="ratio-band" aria-label="60-30-10 proportion band"></div>
-
-
-
-
-                <!-- The palette doing its actual job. Previously a set of
-                     fictional social/web mockups (Law 3); replaced
-                     2026-08-17 with the live site itself - the Engine's
-                     Primary/Secondary now drive Gamut's own nav, buttons,
-                     focus rings and badges (see SiteTheme in main.js), so
-                     scrolling back up to the nav or clicking any button on
-                     this page IS the "applied" proof now, in both themes,
-                     not a static stand-in for a fictional brand. -->
-
-                <div class="checks" id="contrast-checks"></div>
-
-
-
-                <div class="agency-panel" id="agency-panel">
-                    <span class="exports-label mono">Client documentation</span>
-                    <div class="agency-fields">
-                        <div class="field">
-                            <label for="agency-name">Your studio name</label>
-                            <input type="text" id="agency-name" placeholder="Marlowe Studio" spellcheck="false">
-                        </div>
-                        <div class="field">
-                            <label for="agency-client">Prepared for <span class="optional">client or project</span></label>
-                            <input type="text" id="agency-client" placeholder="Acme Co — Brand refresh" spellcheck="false">
-                        </div>
-                    </div>
-                </div>
-                <div class="exports" id="exports-row">
-                    <span class="exports-label mono">Export</span>
-                    <button class="btn-mini" data-export="css" type="button">CSS variables</button>
-                    <button class="btn-mini" data-export="tailwind" type="button">Tailwind v4</button>
-                    <button class="btn-mini" id="print-sheet" type="button">Print brand sheet</button>
-                </div>
-            </div>
+        <div class="workbench">
+            <!-- Empty shell for now -->
         </div>
     </section>
 
-
-
-
-    <!-- ================= METHOD ================= -->
     <section class="section section-bleed section-tint" id="method">
         <div class="section-head">
             <h2>The method under the hood</h2>
-            <p>The Engine is The Brand Color Bible turned into software. Four roles, ten laws, nine psychological signals. Nothing it outputs breaks its own rules.</p>
-        </div>
-
-        <!-- The rule arrives at the scale it describes, before the laws. -->
-        <div class="method-band-wrap bleed-full">
-            <div class="method-band">
-                <div class="mb mb-60"><span class="mb-pct">60</span><span class="mb-role">Dominant. The canvas, not the brand.</span></div>
-                <div class="mb mb-30"><span class="mb-pct">30</span><span class="mb-role">Primary. The color they remember.</span></div>
-                <div class="mb mb-10"><span class="mb-pct">10</span><span class="mb-role">Secondary.</span></div>
-            </div>
-            <p class="method-caption">Equal-weight colors fight. Stacked-weight colors sing.</p>
-        </div>
-
-        <!-- The laws applied to whatever the Engine last produced. Lives
-             here rather than in the Engine: the Engine is a workbench and
-             was getting crowded, and this is the section that explains
-             the reasoning anyway. -->
-        <div class="reading" id="reading">
-            <h3 class="reading-title">The laws, applied to your current palette</h3>
-            <ul class="reading-list" id="reading-list"></ul>
+            <p>Gamut operates on the ten structural laws of design. Nothing it outputs breaks its own rules.</p>
         </div>
 
         <div class="laws">
             <details>
                 <summary><span class="law-n mono">01</span>Pick a dark anchor before you pick a bright</summary>
-                <p>Bright plus bright is chaos. Bright plus dark is identity. Every loud brand that works has a black, navy, or charcoal grounding the noise. The Engine forges an Ink anchor into every palette.</p>
+                <p>Bright plus bright is chaos. Bright plus dark is identity. Every loud brand that works has a black, navy, or charcoal grounding the noise.</p>
             </details>
             <details>
                 <summary><span class="law-n mono">02</span>Two loud colors can lead together &mdash; nothing can lead muted</summary>
-                <p>Primary and Secondary are both allowed to run near full saturation; two confident voices can share a stage. What the law forbids is the other failure: everything muted, nothing leading. Which hue the Secondary takes is a separate, looser decision, resolved by real color-wheel math &mdash; complementary, analogous, split-complementary, or triadic, rolled from the Primary hue itself, and shown on the swatch. The law fixes the floor, not the hue.</p>
-            </details>
-            <details>
-                <summary><span class="law-n mono">03</span>Test at 5% of the screen, not 50%</summary>
-                <p>Most combos look great as a giant swatch and terrible as a real interface. That is why every generated palette renders into a live landing-page mock at realistic proportions before you export it.</p>
+                <p>Primary and Secondary are both allowed to run near full saturation; two confident voices can share a stage. What the law forbids is the other failure: everything muted, nothing leading.</p>
             </details>
             <details>
                 <summary><span class="law-n mono">04</span>Design the dark mode at the same time as the light</summary>
-                <p>If your brand color only works on white, you have a website background, not a brand color. Every export ships both deployments, contrast-checked against both canvases.</p>
+                <p>If your brand color only works on white, you have a website background, not a brand color. Every direction brief ships both light and dark canvas specs.</p>
             </details>
             <details>
                 <summary><span class="law-n mono">05</span>Two loud colors is a duet. Three is a circus</summary>
-                <p>Primary and Secondary can both shout. A third loud color doesn't add a voice, it starts a fight neither of them can win. The Fixer counts your brights and retires anything past two into neutrals.</p>
-            </details>
-            <details>
-                <summary><span class="law-n mono">06</span>Use color for hierarchy, not decoration</summary>
-                <p>Color should tell the eye where to go. If you cannot name what each color is doing for the user, the palette is decoration. Every Engine swatch ships with its job written on it.</p>
-            </details>
-            <details>
-                <summary><span class="law-n mono">07</span>Borrow a palette from a category you are not in</summary>
-                <p>Beauty colors for a SaaS. Hospitality colors for fintech. Standing out is mostly refusing to look like your category. The Break category toggle does exactly this, deliberately.</p>
+                <p>Primary and Secondary can both shout. A third loud color doesn't add a voice, it starts a fight neither of them can win.</p>
             </details>
             <details>
                 <summary><span class="law-n mono">08</span>Build the ramp, not the swatch</summary>
-                <p>A brand color is not one hex anymore; it is a family. Hover states, tinted surfaces, borders, pressed states, charts. Every swatch here opens into a ten-step tint-to-shade scale the day you pick it. If the color only works at one step, it is a poster, not a system.</p>
+                <p>A brand color is not one hex anymore; it is a family. Hover states, tinted surfaces, borders, pressed states. If the color only works at one step, it is a poster, not a system.</p>
             </details>
             <details>
                 <summary><span class="law-n mono">09</span>Contrast is a floor, not a vibe</summary>
-                <p>Body text needs 4.5:1 against its background; large text and UI need 3:1 &mdash; in both deployments. The Engine enforces the floor numerically on every palette it ships, shows you the ratios, and simulates four types of color-blind vision before you commit.</p>
-            </details>
-            <details>
-                <summary><span class="law-n mono">10</span>Check the culture map before crossing borders</summary>
-                <p>Your palette ships worldwide by default; red is luck in Shanghai and urgency in Chicago, white is craft in Copenhagen and mourning in Seoul. You rarely change the color &mdash; you change the deployment: a 30% hero in one market may need to be a 10% accent in another.</p>
+                <p>Body text needs 4.5:1 against its background; large text and UI need 3:1. The system enforces the floor numerically on every canvas layout.</p>
             </details>
         </div>
     </section>
 
-
-
-    <!-- ================= FAQ ================= -->
     <section class="section section-bleed section-tint" id="faq">
         <div class="section-head">
             <h2>Questions</h2>
         </div>
         <div class="faq">
-
             <details>
                 <summary>Can I keep my existing brand color?</summary>
-                <p>Yes. Lock any hex in the Engine and it builds the Dominant, Accent, and Ink around it, contrast-checked in both deployments. Your color leads; the system forms around it.</p>
+                <p>Yes. You can lock your primary hex code, and the brief compiler resolves the secondary and canvas tokens around it to satisfy contrast laws.</p>
             </details>
             <details>
-                <summary>Do the exports work for print?</summary>
-                <p>Every swatch carries CMYK values using an uncoated-stock approximation. For press-critical work, treat them as a proofing starting point and confirm against a calibrated profile.</p>
-            </details>
-            <details>
-                <summary>What does the print-shift warning on a swatch mean?</summary>
-                <p>Process inks cannot reproduce every screen color; saturated greens, cyans, and violets dull the most. When a color sits outside typical CMYK range, the swatch flags it and offers a press-safer alternate with the same hue. It is a designer's rule of thumb, not an ICC conversion, so it warns early rather than promising precision.</p>
-            </details>
-            <details>
-                <summary>Who owns the palettes I generate?</summary>
-                <p>You do. Everything the Engine produces is yours to use in client and commercial work.</p>
+                <summary>Who owns the briefs I generate?</summary>
+                <p>You do. All generated design specifications, code tokens, and briefs are yours to use commercially.</p>
             </details>
         </div>
     </section>
 
     </main>
 
-    <!-- Inverted close. Deliberately does NOT use the live-palette
-         wordmark classes: that mark is inked for legibility on the page
-         canvas and would disappear against this surface. -->
     <footer class="site-footer">
         <div class="footer-inner">
             <a href="#top" class="footer-mark" aria-label="Gamut, back to top">Gamut.</a>
@@ -311,26 +151,13 @@
         </div>
     </footer>
 
-    <!-- Printable brand sheet: populated by JS, styled by @media print -->
-    <div id="print-sheet-area" aria-hidden="true"></div>
-
     <div class="toast" id="toast" role="status">
         <span id="toast-msg"></span>
         <button class="toast-undo" id="toast-undo" type="button" hidden>Undo</button>
     </div>
 
-    <!-- Color-vision simulation matrices (applied via CSS filter: url()) -->
-    <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
-        <defs>
-            <filter id="cv-protanopia"><feColorMatrix type="matrix" values="0.567 0.433 0 0 0  0.558 0.442 0 0 0  0 0.242 0.758 0 0  0 0 0 1 0"/></filter>
-            <filter id="cv-deuteranopia"><feColorMatrix type="matrix" values="0.625 0.375 0 0 0  0.7 0.3 0 0 0  0 0.3 0.7 0 0  0 0 0 1 0"/></filter>
-            <filter id="cv-tritanopia"><feColorMatrix type="matrix" values="0.95 0.05 0 0 0  0 0.433 0.567 0 0  0 0.475 0.525 0 0  0 0 0 1 0"/></filter>
-            <filter id="cv-achromatopsia"><feColorMatrix type="matrix" values="0.299 0.587 0.114 0 0  0.299 0.587 0.114 0 0  0.299 0.587 0.114 0 0  0 0 0 1 0"/></filter>
-        </defs>
-    </svg>
-
     <script src="js/engine.js"></script>
     <script src="js/mood.js"></script>
     <script src="js/main.js"></script>
-</body>
+</body>>
 </html>
