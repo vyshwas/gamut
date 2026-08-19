@@ -87,4 +87,17 @@
 - `tools/regression.mjs`: Removed `tools/test-p6-extract.mjs` and both plugin test files from suite registry, removed DTCG shape/fidelity check section, removed the figma-plugin fetch grep check, and removed the load of `js/extract.js` in the sandbox. ✓
 - **Verification:** Ran `node tools/regression.mjs` and verified the suite is fully green (Exit Code: 0). ✓
 
+## Phase 3 — Delete the Studio Assistant and the LLM layer
+**Date:** 2026-08-19
+**Status:** PASS
+
+### Actions completed
+- Deleted files: `js/assistant.js`. (Kept `js/mood.js` as it is re-consumed in Phase 6). ✓
+- `index.html`: Removed `#assistant` link in navigation, the prompt helper link under hero buttons, the Assistant `#assistant` section, and the script tag for `js/assistant.js`. Removed generative APIs (Ollama localhost and Google Gemini) from the CSP. ✓
+- `js/main.js`: Removed `toggleAssistantFields()`, `syncAssistantSettings()`, `renderAssistantResult()`, `generateFromAssistant()`, their event listeners, `assistantResult` state initialization, and removed `.assistant` and `.pricing` from the intersection observer query selector. ✓
+- `css/style.css`: Removed all `.assistant`, `.assistant-input-row`, `.assistant-config`, `.assistant-settings`, `.assistant-result`, `.assistant-provider`, `.assistant-explanation`, `.assistant-chips`, `.assistant-chip*` rules, and removed references in structured depth comments. ✓
+- `README.md` & `PRODUCT.md`: Removed the "Studio Assistant" sections, quick start notes, and references to local Ollama and Gemini API configurations. ✓
+- **Verification:** Ran `node tools/regression.mjs` and verified the suite is fully green (Exit Code: 0). ✓
+
+
 

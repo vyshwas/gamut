@@ -17,7 +17,6 @@ const state = {
     history: [],
     saved: [],
     agency: null,
-    assistantResult: null,
     customTypePair: null
 };
 
@@ -1383,112 +1382,6 @@ function downloadAiPackage() {
     toast("AI Import Package ready.");
 }
 
-/* ---------- Studio Assistant ---------- */
-
-function toggleAssistantFields(provider) {
-    $("assistant-ollama-fields").hidden = provider !== "ollama";
-    $("assistant-gemini-fields").hidden = provider !== "gemini";
-}
-
-function syncAssistantSettings() {
-    const s = Assistant.loadSettings();
-    $("assistant-provider").value = s.provider;
-    $("assistant-ollama-model").value = s.ollamaModel;
-    $("assistant-gemini-key").value = s.geminiKey;
-    toggleAssistantFields(s.provider);
-}
-
-const ASSISTANT_PROVIDER_LABEL = {
-    ollama: "Local (Ollama)", gemini: "Gemini API", offline: "Offline keyword match"
-};
-
-function renderAssistantResult(r) {
-    $("assistant-result").hidden = false;
-    $("assistant-provider-used").textContent = "via " + (ASSISTANT_PROVIDER_LABEL[r.providerUsed] || r.providerUsed);
-    $("assistant-explanation").textContent = r.explanation || "";
-
-    const chips = $("assistant-chips");
-    chips.innerHTML = "";
-    r.keywords.forEach(k => {
-        const c = document.createElement("span");
-        c.className = "assistant-chip";
-        c.textContent = k;
-        chips.appendChild(c);
-    });
-    if (r.archetype) {
-        const c = document.createElement("span");
-        c.className = "assistant-chip assistant-chip-archetype";
-        c.textContent = E.ARCHETYPES[r.archetype].label;
-        chips.appendChild(c);
-    }
-    if (r.lockedBrand) {
-        const c = document.createElement("span");
-        c.className = "assistant-chip assistant-chip-hex mono";
-        c.style.setProperty("--chip-color", r.lockedBrand);
-        /* The chip's fill is a user-supplied hex, so its label has to be
-           derived from that hex rather than assumed dark. */
-        c.style.color = E.readableOn(r.lockedBrand);
-        c.textContent = r.lockedBrand;
-        chips.appendChild(c);
-    }
-    $("assistant-generate").disabled = !r.keywords.length && !r.archetype;
-}
-
-async function runAssistant() {
-    const btn = $("assistant-run");
-    /* Enter in the textarea bypasses the disabled button; without
-       this, rapid submits race and the slowest response wins. */
-    if (btn.disabled) return;
-    const text = $("assistant-input").value.trim();
-    if (!text) { toast("Type a brief first"); return; }
-    btn.disabled = true;
-    btn.textContent = "Thinking…";
-    try {
-        const result = await Assistant.interpret(text);
-        state.assistantResult = result;
-        renderAssistantResult(result);
-    } catch {
-        toast("Assistant failed unexpectedly");
-    } finally {
-        btn.disabled = false;
-        btn.textContent = "Interpret";
-    }
-}
-
-/* Business archetype takes priority when the brief named one -
-   the Bible's archetypes carry more nuance (dominant kind, exact
-   accent recipe) than a mood blend can. The mood lexicon handles
-   briefs with no business context, or as a fallback. */
-function generateFromAssistant() {
-    const r = state.assistantResult;
-    if (!r) return;
-    if (r.archetype) {
-        /* Reflect the interpreted settings into the real controls,
-           then run the normal generate path. Without this, syncUrl()
-           and the history entry read the PREVIOUS control state - a
-           shared link rebuilt a different palette than the one on
-           screen, and a later control tweak regenerated from the
-           wrong category. */
-        $("ctl-category").value = r.archetype;
-        $("ctl-borrow").checked = r.borrow === true;
-        $("ctl-brand").value = r.lockedBrand || "";
-        generate(true);
-    } else {
-        const customArchetype = window.Mood.resolveMood(r.keywords);
-        if (!customArchetype) { toast("Could not resolve a palette from this brief"); return; }
-        /* Mood palettes bypass the category control, but the lock is
-           still a control-owned setting - keep it in step for the
-           same reason. */
-        $("ctl-brand").value = r.lockedBrand || "";
-        $("ctl-brand-clear").hidden = !r.lockedBrand;
-        state.seed = Math.floor(Math.random() * 1e9);
-        const palette = E.generatePalette({ category: "custom", seed: state.seed, lockedBrand: r.lockedBrand, customArchetype });
-        state.typeIndex = 0;
-        renderPalette(palette);
-    }
-    $("engine").scrollIntoView({ behavior: scrollBehavior() });
-    toast("Palette generated from your brief");
-}
 
 /* ---------- Wire up ---------- */
 
@@ -1537,26 +1430,7 @@ document.addEventListener("DOMContentLoaded", () => {
         $("toast-undo").hidden = true;
     });
 
-    /* Studio Assistant */
-    syncAssistantSettings();
-    $("assistant-run").addEventListener("click", runAssistant);
-    $("assistant-input").addEventListener("keydown", e => {
-        /* Enter during IME composition is confirming characters,
-           not submitting. */
-        if (e.isComposing) return;
-        if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); runAssistant(); }
-    });
-    $("assistant-provider").addEventListener("change", () => toggleAssistantFields($("assistant-provider").value));
-    $("assistant-settings-save").addEventListener("click", () => {
-        Assistant.saveSettings({
-            provider: $("assistant-provider").value,
-            ollamaUrl: Assistant.loadSettings().ollamaUrl,
-            ollamaModel: $("assistant-ollama-model").value.trim() || "llama3.2",
-            geminiKey: $("assistant-gemini-key").value.trim()
-        });
-        toast("Assistant settings saved");
-    });
-    $("assistant-generate").addEventListener("click", generateFromAssistant);
+
 
     /* Engine. Control changes keep the seed so categories can be
        compared apples to apples; the Generate buttons mint a new one. */
@@ -1859,7 +1733,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             });
         }, { threshold: 0.15 });
-        document.querySelectorAll(".section-head, .assistant, .workbench, .fixer, .type-lab, .system-lab, .method-band-wrap, .laws, .pricing, .faq").forEach(el => {
+        document.querySelectorAll(".section-head, .workbench, .fixer, .type-lab, .system-lab, .method-band-wrap, .laws, .faq").forEach(el => {
             el.classList.add("reveal");
             io.observe(el);
         });

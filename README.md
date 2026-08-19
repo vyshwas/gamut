@@ -29,26 +29,10 @@ Designare/          (folder name predates the rename; the product is Gamut)
 
 ## Quick start
 
-Open `index.html` in a browser, or serve it with any static server. Everything on the site works either way **except the Studio Assistant's local-Ollama and Gemini-API providers**: browsers send `Origin: null` for `file://` pages, and Ollama's CORS layer rejects that outright (returns 403 on the preflight), so every request silently fails over to offline mode. Serve the folder over `http://` to use them - e.g. `python -m http.server` in this folder, then open `http://localhost:8000`. No other flags needed: Ollama reflects the request's Origin header for CORS by default on `http://` origins. The Assistant will tell you in-panel if it detects it's running from `file://`.
+Open `index.html` in a browser, or serve it with any static server.
 
-The local provider additionally needs [Ollama](https://ollama.com) installed and running (`ollama pull llama3.2`, then just have the Ollama app/service running in the background).
 
-## The Studio Assistant
 
-The conversation bar does **not** let an LLM invent colors. Every request is interpreted against two fixed, code-owned frameworks and nothing else:
-
-1. **The mood lexicon** (`js/mood.js`) - about 40 keywords (calm, luxurious, electric, moody...) each grounded in established color-emotion research (Kobayashi's Color Image Scale warm/cool-soft/hard axes; Itten's contrast of hue and saturation), mapped to a hue/saturation/lightness target and one of eight typographic personalities.
-2. **The ten business archetypes** (`ARCHETYPES` in `js/engine.js`) - the Brand Color Bible's own categories, used when a brief names a business/product type; these carry more nuance (dominant-canvas kind, exact accent recipe) than a mood blend alone, so a named archetype takes priority over a keyword blend when both are present.
-
-The interpreter's system prompt hard-codes both lists and instructs strict JSON output; every field in the response is re-validated in `js/assistant.js` against Gamut's own real archetype keys and lexicon words before it ever touches the palette generator - a hallucinated archetype name or an invented hex code is simply dropped. The palette itself is still built by `Engine.generatePalette`, so contrast floors and the ten laws hold exactly as they do for a manually-picked category.
-
-Three providers, tried in this order per the setting in the Assistant panel:
-
-- **Local (Ollama)**, default. No API key, no network egress beyond `localhost:11434`. Any small instruction-following model works; `llama3.2` (2GB) is fast enough for this. Avoid very large/unstable local models for this feature - not every locally-installed model is a safe choice here.
-- **Gemini API**, optional. Paste your own Google AI Studio key in the Assistant panel; it's stored only in this browser's `localStorage`, sent only to `generativelanguage.googleapis.com`, and used only for this interpretation call. Gives noticeably more reliable keyword/archetype picks than a 2GB local model.
-- **Offline keyword match**, the fallback. Plain substring search against the lexicon and archetype labels, no network call at all. Runs automatically if the chosen provider errors or is unreachable, so the feature never hard-fails.
-
-Typography note: business archetypes and the mood lexicon are deliberately kept on *disjoint* typography buckets (see `TYPE_PAIRS` / `TYPE_PAIRS_MOOD` in `js/engine.js`) so that, for example, "luxurious" and "nostalgic" - both used to collapse into one shared "craft" pairing - now get genuinely different real Google Fonts pairs. Every one of the ten archetypes was audited to use a unique typography bucket for the same reason.
 
 
 ## Verifying changes
@@ -58,9 +42,9 @@ Typography note: business archetypes and the mood lexicon are deliberately kept 
 ## Customization
 
 - All site tokens live at the top of `css/style.css`. The site itself runs the Bible v2's own identity: Combo 06 (charcoal + bone + electric lime) deployed per its own 60-30-10 rule, plus v2's blue `#2242E5` as the pop on light surfaces (method-band numbers, print-sheet role names), where lime can't carry text.
-- Palette archetypes (hue ranges per category) live in `ARCHETYPES` in `js/engine.js`. Each archetype's `mood` field selects its typography bucket - keep these unique across archetypes so two categories never look identical (see the Studio Assistant section above).
+- Palette archetypes (hue ranges per category) live in `ARCHETYPES` in `js/engine.js`. Each archetype's `mood` field selects its typography bucket - keep these unique across archetypes so two categories never look identical.
 - Typography pairs live in `TYPE_PAIRS` (the six original archetype moods) and `TYPE_PAIRS_MOOD` (the eight-way mv-* taxonomy the mood lexicon uses) in `js/engine.js`. All pairs must exist on Google Fonts.
-- The mood lexicon (keyword -> hue/sat/light target + typography tag) lives in `MOOD_LEXICON` in `js/mood.js`. Add a keyword there before referencing it in the Assistant's allowed vocabulary; the assistant only ever picks from words that actually exist in this file.
+- The mood lexicon (keyword -> hue/sat/light target + typography tag) lives in `MOOD_LEXICON` in `js/mood.js`. Used for resolving custom typography personalities based on the mood lexicon.
 - CMYK conversion is a naive uncoated approximation, flagged as such in the UI and print sheet. For press-critical accuracy you would integrate a proper ICC pipeline server-side.
 
 ## Browser support

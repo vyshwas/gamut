@@ -39,7 +39,6 @@
         <a href="#top" class="logo wordmark" aria-label="Gamut, home"><span class="wm-text">Gamut</span><span class="logo-dot wm-dot" aria-hidden="true">.</span></a>
         <div class="nav-links" id="nav-links">
             <a href="#engine">Engine</a>
-            <a href="#assistant">Assistant</a>
             <a href="#fixer">Fixer</a>
             <a href="#type">Type</a>
             <a href="#system">System</a>
@@ -82,10 +81,7 @@
                 <a href="#fixer" class="btn btn-hero-ghost">Fix an existing palette</a>
                 <span class="hero-hint mono" aria-hidden="true">press space</span>
             </div>
-            <!-- Names the third path without giving it equal button
-                 weight - the Assistant is a shortcut into the same
-                 Engine, not a competing destination. -->
-            <p class="hero-alt hero-enter"><a href="#assistant">Or just describe it in plain language &rarr;</a></p>
+
         </div>
         <!-- Caption rail: cells align to the band widths above, so each
              readout labels its band without printing text on the color. -->
@@ -102,54 +98,6 @@
         </div>
     </header>
 
-    <!-- ================= STUDIO ASSISTANT ================= -->
-    <section class="section" id="assistant">
-        <div class="section-head">
-            <h2>Studio Assistant</h2>
-            <p>Describe a mood, feeling, or brand brief in plain language and it fills in the Engine below for you &mdash; same laws, same contrast guarantees, just a shortcut past picking a category by hand. Prefer to pick one yourself? Skip straight to <a href="#engine">the Engine</a>.</p>
-        </div>
-
-        <div class="assistant">
-            <div class="assistant-input-row">
-                <textarea id="assistant-input" rows="2" placeholder="e.g. a calm, trustworthy wellness brand with a modern edge" spellcheck="false" aria-label="Describe your brand brief, mood, or feeling"></textarea>
-                <button class="btn btn-primary" id="assistant-run" type="button">Interpret</button>
-            </div>
-
-            <!-- Folded away by default (LAYOUT-BLUEPRINT 3.2). Exposed,
-                 these three fields made the section read as a settings
-                 panel rather than a prompt. -->
-            <details class="assistant-config">
-                <summary>Interpreter settings</summary>
-                <div class="assistant-settings">
-                    <div class="field field-inline">
-                        <label for="assistant-provider">Interpreter</label>
-                        <select id="assistant-provider">
-                            <option value="ollama">Local (Ollama)</option>
-                            <option value="gemini">Gemini API (your key)</option>
-                            <option value="offline">Offline keyword match</option>
-                        </select>
-                    </div>
-                    <div class="field field-inline" id="assistant-ollama-fields">
-                        <label for="assistant-ollama-model">Ollama model</label>
-                        <input type="text" id="assistant-ollama-model" class="mono" placeholder="llama3.2" spellcheck="false">
-                    </div>
-                    <div class="field field-inline" id="assistant-gemini-fields" hidden>
-                        <label for="assistant-gemini-key">Gemini API key</label>
-                        <input type="password" id="assistant-gemini-key" class="mono" placeholder="AIza..." spellcheck="false">
-                    </div>
-                    <button class="btn-mini" id="assistant-settings-save" type="button">Save settings</button>
-                </div>
-                <p class="hint">Local runs entirely on this machine via <a href="https://ollama.com" target="_blank" rel="noopener">Ollama</a>, nothing leaves your browser. Gemini API needs your own key, stored only in this browser&rsquo;s local storage. Offline mode does a plain keyword search with no network call at all.</p>
-            </details>
-
-            <div class="assistant-result" id="assistant-result" hidden>
-                <p class="assistant-provider mono" id="assistant-provider-used"></p>
-                <p class="assistant-explanation" id="assistant-explanation" aria-live="polite"></p>
-                <div class="assistant-chips" id="assistant-chips"></div>
-                <button class="btn btn-primary" id="assistant-generate" type="button" disabled>Generate this palette</button>
-            </div>
-        </div>
-    </section>
 
     <!-- ================= ENGINE ================= -->
     <section class="section section-bleed" id="engine">
@@ -261,11 +209,10 @@
                     <div class="history-row" id="history-row"></div>
                 </div>
 
-                <!-- Folded away by default, same disclosure pattern as the
-                     Assistant's interpreter settings: three open text fields
+                <!-- Folded away by default: three open text fields
                      for a feature most visitors (Free tier) can't use yet
                      read as a settings panel, not a prompt. -->
-                <details class="assistant-config agency-panel" id="agency-panel">
+                <details class="agency-panel" id="agency-panel">
                     <summary>Client documentation</summary>
                     <div class="agency-head">
                         <label class="toggle toggle-mini">
@@ -590,7 +537,6 @@
 
     <script src="js/engine.js"></script>
     <script src="js/mood.js"></script>
-    <script src="js/assistant.js"></script>
     <script src="js/aipack.js"></script>
     <script src="js/main.js"></script>
 </body>

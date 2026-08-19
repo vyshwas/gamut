@@ -687,7 +687,6 @@ button { font-family: inherit; cursor: pointer; }
    The sequence is 3-6-4-2-7-5-4-3 down the page, so no two adjacent
    sections share a density and every dense block is paid for by an
    airy one. Hero (2) and footer (2) bookend it. */
-#assistant { padding-block: 8rem; }     /* D:3  quietest, after the hero */
 #engine    { padding-block: 4.5rem; }   /* D:6  the workbench */
 #fixer     { padding-block: 6.5rem; }   /* D:4 */
 #type      { padding-block: 9rem; }     /* D:2  the gallery beat */
@@ -1302,106 +1301,6 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
     color: var(--bone);
 }
 
-/* ---------- Studio Assistant ---------- */
-
-/* LAYOUT-BLUEPRINT 3.2. The quietest section on the page, arriving
-   directly after the loudest. One narrow column, one large input, and
-   the provider fields folded away, so the default state reads as a
-   prompt rather than a control panel. */
-.assistant { max-width: 46rem; }
-
-.assistant-input-row { display: flex; gap: 0.8rem; }
-.assistant-input-row textarea {
-    flex: 1;
-    resize: vertical;
-    background: var(--surface-2);
-    color: var(--bone);
-    border: 1px solid var(--line);
-    padding: 1rem 1.1rem;
-    /* Larger than a form field: this is the section's main event. */
-    font-size: 1.05rem;
-    line-height: 1.5;
-    font-family: inherit;
-    border-radius: var(--r-sm);
-    min-height: 5.5rem;
-}
-.assistant-input-row textarea:focus { outline: none; border-color: var(--accent); }
-.assistant-input-row .btn { border: none; white-space: nowrap; align-self: flex-start; }
-
-.assistant-config {
-    margin-top: 1.4rem;
-    border-top: 1px solid var(--line);
-}
-.assistant-config summary {
-    list-style: none;
-    cursor: pointer;
-    padding: 0.9rem 0;
-    font-family: var(--font-mono);
-    font-size: 0.72rem;
-    letter-spacing: 0.04em;
-    color: var(--muted);
-    transition: color 0.2s var(--ease);
-}
-.assistant-config summary::-webkit-details-marker { display: none; }
-.assistant-config summary::after { content: "  +"; }
-.assistant-config[open] summary::after { content: "  \2212"; }
-.assistant-config summary:hover { color: var(--bone); }
-
-.assistant-settings {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    gap: 1rem;
-    margin-top: 0.2rem;
-}
-.field-inline { margin: 0; }
-.field-inline label {
-    display: block;
-    font-family: var(--font-display);
-    font-weight: 600;
-    font-size: 0.72rem;
-    color: var(--muted);
-    margin-bottom: 0.4rem;
-}
-.field-inline select, .field-inline input {
-    background: var(--surface-2);
-    color: var(--bone);
-    border: 1px solid var(--line);
-    padding: 0.55rem 0.7rem;
-    font-size: 0.85rem;
-    font-family: inherit;
-    border-radius: var(--r-sm);
-}
-
-.assistant-result {
-    margin-top: 1.6rem;
-    padding: 1.2rem 1.4rem;
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
-    border: 1px solid var(--line-strong);
-    border-radius: var(--r-md);
-}
-.assistant-provider { font-size: 0.72rem; color: var(--muted); margin: 0 0 0.4rem; }
-.assistant-explanation { margin: 0 0 0.9rem; }
-.assistant-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.1rem; }
-.assistant-chip {
-    display: inline-block;
-    border-radius: var(--r-pill);
-    padding: 0.35rem 0.75rem;
-    background: var(--surface-2);
-    border: 1px solid var(--line);
-    font-family: var(--font-mono);
-    font-size: 0.78rem;
-}
-.assistant-chip-archetype { border-color: var(--accent); }
-/* Label color is set inline from Engine.readableOn(); --bone is only the
-   pre-paint fallback. A fixed dark label here failed on dark hexes. */
-.assistant-chip-hex {
-    background: var(--chip-color);
-    color: var(--bone);
-    border-color: transparent;
-}
 
 /* ---------- Fixer ---------- */
 
@@ -1940,13 +1839,13 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
     /* Density pacing is a wide-screen device. On a phone every section
        is one column and the differences read as inconsistency, so the
        whole page falls back to one rhythm. */
-    #assistant, #engine, #fixer, #type,
+    #engine, #fixer, #type,
     #system, #method, #faq { padding-block: 4.5rem; }
 
     .swatch-row { grid-template-columns: 1fr 1fr; }
     .swatch-chip { height: 120px; }
 
-    .fixer-input-row, .assistant-input-row { flex-direction: column; }
+    .fixer-input-row { flex-direction: column; }
     .mb { padding: 0 0.6rem; }
     .mb-role { display: none; }
     .method-band { height: 72px; }
@@ -2044,10 +1943,10 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
    top of each component's own rules (normal cascade order, no
    !important) rather than as a blanket override - so it can never
    reach a selector that doesn't exist or a control it shouldn't
-   touch (radio/checkbox inputs, and disclosures like
-   .assistant-config and the law/FAQ <details> keep their plain
-   hairline - a glow on a "+" toggle reads as a broken button, not
-   an accent).
+    touch (radio/checkbox inputs, and disclosures like
+    the law/FAQ <details> keep their plain
+    hairline - a glow on a "+" toggle reads as a broken button, not
+    an accent).
 
    Radius follows design-context.md's rule: pill for buttons, a
    small step for nested blocks inside a card (form fields, swatch
