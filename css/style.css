@@ -693,7 +693,6 @@ button { font-family: inherit; cursor: pointer; }
 #type      { padding-block: 9rem; }     /* D:2  the gallery beat */
 #system    { padding-block: 4rem; }     /* D:7  densest, a real spec sheet */
 #method    { padding-block: 5.5rem; }   /* D:5 */
-#pricing   { padding-block: 6.5rem; }   /* D:4 */
 #faq       { padding-block: 8rem; }     /* D:3 */
 
 .section-head { max-width: 46rem; margin-bottom: 3.5rem; }
@@ -1680,65 +1679,6 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
 }
 .faq details p { padding-left: 0; }
 
-/* ---------- Pricing ---------- */
-
-/* LAYOUT-BLUEPRINT 3.8. Three equal cards is the single most templated
-   block on the web, and it also makes the page decide nothing. Here the
-   recommended tier is simply bigger: the composition carries the
-   recommendation, so no "Most popular" badge has to. Featured comes
-   first in the DOM as well as in the layout, so the reading order and
-   the visual order agree. */
-.pricing {
-    display: grid;
-    grid-template-columns: 1.6fr 0.7fr 0.7fr;
-    /* Real spacing, not a hairline grid - floating glass cards with
-       their own radius and border read as separate objects; a 1px
-       shared-background seam was a brutalist-grid pattern that fought
-       the rounded corners once each card got its own border. */
-    gap: 1rem;
-    align-items: stretch;
-}
-
-/* No card fills and no gaps: the hairline grid itself separates tiers,
-   which keeps the whole section flat per DESIGN.md. */
-.price-card {
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
-    padding: 2rem;
-    display: flex;
-    flex-direction: column;
-}
-.price-card h3 {
-    font-size: 1.05rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-}
-
-.price-card-featured { position: relative; padding: 2.5rem 2.25rem; }
-.price-card-featured h3 { font-size: 1.35rem; }
-.price-card-featured .price-num { font-size: 4rem; }
-.price-card-featured li { font-size: 0.92rem; color: var(--bone); }
-
-.price { margin: 1rem 0 1.5rem; }
-.price-num { font-family: var(--font-display); font-weight: 800; font-size: 2.4rem; letter-spacing: -0.04em; }
-.price-per { color: var(--muted); font-size: 0.9rem; }
-
-.price-card ul {
-    list-style: none;
-    margin: 0 0 2rem;
-    padding: 0;
-    flex: 1;
-}
-.price-card li {
-    font-size: 0.88rem;
-    color: var(--muted);
-    padding: 0.45rem 0;
-    border-bottom: 1px solid var(--line);
-}
-.price-card li:last-child { border-bottom: none; }
-
-.price-card .btn { text-align: center; }
 
 /* ---------- FAQ ---------- */
 
@@ -2001,13 +1941,11 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
        is one column and the differences read as inconsistency, so the
        whole page falls back to one rhythm. */
     #assistant, #engine, #fixer, #type,
-    #system, #method, #pricing, #faq { padding-block: 4.5rem; }
+    #system, #method, #faq { padding-block: 4.5rem; }
 
     .swatch-row { grid-template-columns: 1fr 1fr; }
     .swatch-chip { height: 120px; }
-    /* Featured tier is already first in the DOM, so no order swap. */
-    .pricing { grid-template-columns: 1fr; }
-    .price-card-featured { padding: 2rem; }
+
     .fixer-input-row, .assistant-input-row { flex-direction: column; }
     .mb { padding: 0 0.6rem; }
     .mb-role { display: none; }
@@ -2065,7 +2003,6 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
 @media (prefers-reduced-motion: reduce) {
     .hero-enter { opacity: 1; transform: none; animation: none; }
 }
-.studio-tag { font-size: 0.75em; text-transform: uppercase; color: var(--muted); margin-left: 0.5em; vertical-align: baseline; }
 
 /* ---------- Extractor (drift stats + form) ----------
    Reuses .map-row/.map-chip/.map-hex/.map-note from the Fixer's
@@ -2166,9 +2103,9 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
 select, input[type="text"], input[type="number"], textarea, .input {
     border-radius: var(--r-sm);
 }
-.price-card, .method-band { border-radius: var(--r-md); }
+.method-band { border-radius: var(--r-md); }
 
-.btn, .price-card, .method-band,
+.btn, .method-band,
 select, input[type="text"], input[type="number"], textarea, .input {
     border: 1px solid var(--line-strong);
 }
@@ -2176,7 +2113,7 @@ select, input[type="text"], input[type="number"], textarea, .input {
     border: 1px solid var(--line-strong);
 }
 
-.btn, .price-card, .method-band {
+.btn, .method-band {
     box-shadow: var(--shadow-soft);
 }
 
@@ -2254,40 +2191,7 @@ select, input[type="text"], input[type="number"], textarea, .input {
 }
 :root[data-theme="light"] .grain { opacity: 0.035; mix-blend-mode: multiply; }
 
-/* ---- Studio badge: a small glass/glow pill instead of a rotated
-   sticker - precise, not hand-made. Un-rotated, sits flush inline;
-   the glow deepens on hover instead of the badge lifting off the
-   page. */
-.studio-tag {
-    display: inline-flex;
-    align-items: center;
-    font-family: var(--font-mono);
-    font-size: 0.62rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    color: var(--lime);
-    background: var(--glass-bg);
-    border: 1px solid var(--line-strong);
-    border-radius: var(--r-pill);
-    padding: 0.1rem 0.55rem;
-    margin-left: 0.5em;
-    transition: box-shadow 0.15s var(--ease), border-color 0.15s var(--ease);
-    vertical-align: middle;
-}
-a:hover > .studio-tag, button:hover > .studio-tag,
-.studio-tag:hover {
-    border-color: var(--lime);
-    box-shadow: 0 0 0 3px var(--glow-primary);
-}
 
-:root[data-theme="light"] .studio-tag {
-    color: var(--lime-ink);
-}
-:root[data-theme="light"] a:hover > .studio-tag, 
-:root[data-theme="light"] button:hover > .studio-tag,
-:root[data-theme="light"] .studio-tag:hover {
-    border-color: var(--lime-ink);
-}
 
 /* ---- Clean-palette ring: the Fixer's "no law broken" verdict gets
    a soft glow ring instead of an ink stamp - the one moment of
@@ -2316,13 +2220,4 @@ a:hover > .studio-tag, button:hover > .studio-tag,
     border-color: var(--secondary);
 }
 
-/* ---- Featured-tier glow edge: the recommended pricing card gets a
-   soft lime glow along its top edge instead of a tape strip or a
-   "Most popular" pill - the composition already carries the
-   recommendation (bigger card, first in the DOM); this only adds
-   the same precision-glow language the rest of the page uses to
-   mark a real fact. */
-.price-card-featured {
-    position: relative;
-    box-shadow: 0 -1px 0 var(--lime), 0 12px 40px -16px var(--glow-primary), var(--shadow-soft);
-}
+

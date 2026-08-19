@@ -17,21 +17,10 @@ process.chdir(root);
 let totalFail = 0;
 const section = (name) => console.log(`\n=== ${name} ===`);
 
-// tools/test-l4.mjs issues + revokes real throwaway license codes as
-// part of its assertions, which writes those codes into the actual
-// licenses/revoked.json (not a temp file — the test isn't isolated
-// from production data). Snapshot it here and restore after the
-// suite runs, so `node tools/regression.mjs` never leaves committed
-// test pollution behind. This is a workaround, not a fix — the real
-// fix is giving test-l4.mjs its own revocation file, out of scope here.
-const revokedPath = path.join(root, 'licenses', 'revoked.json');
-const revokedSnapshot = fs.existsSync(revokedPath) ? fs.readFileSync(revokedPath) : null;
-
 // ---------- 1. Existing node test scripts ----------
 const EXISTING_SUITES = [
     'tools/test-b4-engine.mjs',
     'tools/test-p6-extract.mjs',
-    'tools/test-l4.mjs',
     'figma-plugin/test/plugin.test.mjs',
     'figma-plugin/test/extract-to-variables.test.mjs',
 ];
@@ -48,10 +37,6 @@ for (const suite of EXISTING_SUITES) {
     }
 }
 
-if (revokedSnapshot !== null) {
-    fs.writeFileSync(revokedPath, revokedSnapshot);
-    console.log('\n(restored licenses/revoked.json after test-l4.mjs test pollution)');
-}
 
 // ---------- 2. Load engine + extract in one sandbox for the new checks ----------
 const engineCode = fs.readFileSync(path.join(root, 'js', 'engine.js'), 'utf8');

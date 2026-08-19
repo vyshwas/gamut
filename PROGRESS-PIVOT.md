@@ -60,3 +60,16 @@
 | legal/contact.html | 59 |
 | bible/brand-color-bible-v2.html | 508 |
 | **TOTAL** | **9,679** |
+
+## Phase 1 — Delete the licensing and payments layer
+**Date:** 2026-08-19
+**Status:** PASS
+
+### Actions completed
+- Deleted files: `js/license.js`, `worker/`, `tools/license-admin.mjs`, `tools/test-l4.mjs`, `tools/export-worker-secrets.mjs`, `tools/generate-legal.mjs`, `licenses/`, `claim.html`, `legal/refunds.html`. ✓
+- `index.html`: Removed `license.js` script tag, 15 `studio-tag` badges, commented pricing block, CSP references to Razorpay and workers.dev, and license-related FAQ items. ✓
+- `js/main.js`: Removed 14 `Gate.has()` guards, `lockedToast()`, `updateLicenseUI()`, and redeem handlers. ✓
+- `css/style.css`: Removed all `.pricing`, `.price-card`, `.studio-tag`, `.price-card-featured` CSS styles. ✓
+- `tools/regression.mjs`: Removed `tools/test-l4.mjs` execution and `licenses/revoked.json` snapshot/restoration logic. ✓
+- Verified that grep for keywords `license`, `Gate.`, `razorpay`, `studio-tag`, `worker` yields zero hits in edited files. ✓
+

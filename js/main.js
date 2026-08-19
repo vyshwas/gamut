@@ -317,15 +317,6 @@ const Theme = (() => {
 
 let toastTimer;
 let toastUndoHandler = null;
-/* `undo`, when passed, is a zero-arg callback that reverses the
-   action just taken; the toast grows an "Undo" affordance and stays
-   up longer so a destructive click (e.g. deleting a saved palette)
-   is always recoverable without a blocking confirm() dialog. */
-function lockedToast() {
-    toast("This is a Studio feature");
-    const p = $("pricing");
-    if (p) p.scrollIntoView({ behavior: scrollBehavior(), block: "nearest" });
-}
 
 function toast(msg, undo) {
     const t = $("toast");
@@ -862,7 +853,6 @@ function syncAgencyFields() {
 }
 
 function onAgencyChange() {
-    if (!window.License.Gate.has("agency")) { lockedToast(); return; }
     persistAgency();
     if (state.palette) renderPrintSheet(state.palette);
 }
@@ -1140,21 +1130,6 @@ function renderTypeLab() {
 const EXTRACT_MAX_CHARS = 2 * 1024 * 1024; // 2MB of JSON text - generous headroom over the plugin's 3000-node scan cap
 
 function runExtractor(inventoryString) {
-    if (!window.License.Gate.has("extract-unlimited")) {
-        const today = new Date().toISOString().split('T')[0];
-        let countObj = { date: today, n: 0 };
-        try {
-            const stored = localStorage.getItem("gamut.extract.count");
-            if (stored) countObj = JSON.parse(stored);
-        } catch (e) {}
-        if (countObj.date !== today) countObj = { date: today, n: 0 };
-        if (countObj.n >= 3) {
-            lockedToast();
-            return;
-        }
-        countObj.n++;
-        localStorage.setItem("gamut.extract.count", JSON.stringify(countObj));
-    }
 
     if (typeof inventoryString !== "string" || !inventoryString.trim()) {
         toast("Paste or upload an inventory JSON first");
@@ -1271,7 +1246,6 @@ function adoptExtracted() {
    DTCG, ready to paste straight into the Figma plugin's Apply tab. */
 function copyExtractedForFigma() {
     if (!state.extracted) return;
-    if (!window.License.Gate.has("export-dtcg")) { lockedToast(); return; }
     const dtcg = E.exportDtcg(state.extracted.proposed.palette, currentPair());
     copyText(JSON.stringify(dtcg, null, 2), "Figma variables (DTCG)", $("extract-copy-figma"));
 }
@@ -1291,21 +1265,6 @@ function updateStepper(step) {
 }
 
 function runFixer() {
-    if (!window.License.Gate.has("fixer-unlimited")) {
-        const today = new Date().toISOString().split('T')[0];
-        let countObj = { date: today, n: 0 };
-        try {
-            const stored = localStorage.getItem("gamut.fixer.count");
-            if (stored) countObj = JSON.parse(stored);
-        } catch(e) {}
-        if (countObj.date !== today) countObj = { date: today, n: 0 };
-        if (countObj.n >= 3) {
-            lockedToast();
-            return;
-        }
-        countObj.n++;
-        localStorage.setItem("gamut.fixer.count", JSON.stringify(countObj));
-    }
 
     const hexes = E.parseHexList($("fix-input").value);
     if (hexes.length < 2) {
@@ -1517,7 +1476,6 @@ function renderPrintSheet(palette) {
 }
 
 function downloadSvgCard() {
-    if (!window.License.Gate.has("export-svg")) { lockedToast(); return; }
     if (!state.palette) return;
     const svg = E.exportSvgCard(state.palette, currentPair(), state.agency);
     const blob = new Blob([svg], { type: "image/svg+xml" });
@@ -1535,7 +1493,6 @@ function downloadSvgCard() {
    agent instead of a human: tokens.json, brand docs, and a prompt
    generated from that exact data, zipped with no server round trip. */
 function downloadAiPackage() {
-    if (!window.License.Gate.has("ai-package")) { lockedToast(); return; }
     if (!state.palette) return;
     const zip = AiPack.buildZip(state.palette, currentPair());
     const blob = new Blob([zip], { type: "application/zip" });
@@ -1741,11 +1698,9 @@ document.addEventListener("DOMContentLoaded", () => {
     $("ctl-borrow").addEventListener("change", () => generate(false));
     $("ctl-harmony").addEventListener("change", () => generate(false));
     $("ctl-brand").addEventListener("change", (e) => {
-        if (!window.License.Gate.has("lock-brand")) { lockedToast(); e.target.value = ""; return; }
         generate(false);
     });
     $("ctl-brand-clear").addEventListener("click", () => {
-        if (!window.License.Gate.has("lock-brand")) { lockedToast(); return; }
         $("ctl-brand").value = "";
         generate(false);
     });
@@ -1798,7 +1753,6 @@ document.addEventListener("DOMContentLoaded", () => {
         [$("swatch-row"), $("ratio-band")].filter(Boolean);
     document.querySelectorAll(".vision-btn").forEach(btn => {
         btn.addEventListener("click", () => {
-            if (!window.License.Gate.has("vision")) { lockedToast(); return; }
             document.querySelectorAll(".vision-btn").forEach(b => {
                 b.classList.remove("active");
                 b.setAttribute("aria-pressed", "false");
@@ -1814,7 +1768,6 @@ document.addEventListener("DOMContentLoaded", () => {
     state.saved = loadSavedList();
     renderSaved();
     $("save-palette").addEventListener("click", () => {
-        if (!window.License.Gate.has("save-palette")) { lockedToast(); return; }
         toggleSave();
     });
 
@@ -1848,7 +1801,6 @@ document.addEventListener("DOMContentLoaded", () => {
     /* Image extraction: downsample onto a canvas, quantize, hand
        the result to the Fixer. Everything stays client-side. */
     $("fix-image").addEventListener("change", e => {
-        if (!window.License.Gate.has("fix-image")) { lockedToast(); e.target.value = ""; return; }
         const file = e.target.files[0];
         e.target.value = "";
         if (!file) return;
@@ -1890,16 +1842,11 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll("[data-export]").forEach(btn => {
         btn.addEventListener("click", () => {
             if (!state.palette) return;
-            if (btn.dataset.export !== "css" && !window.License.Gate.has("export-" + btn.dataset.export)) {
-                lockedToast();
-                return;
-            }
             const [label, text] = EXPORTERS[btn.dataset.export](state.palette);
             copyText(text, label, btn);
         });
     });
     $("print-sheet").addEventListener("click", () => {
-        if (!window.License.Gate.has("print-sheet")) { lockedToast(); return; }
         window.print();
     });
     $("svg-card").addEventListener("click", downloadSvgCard);
@@ -1991,10 +1938,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     $("custom-type-apply").addEventListener("click", async () => {
-        if (!window.License.Gate.has("custom-type")) {
-            lockedToast();
-            return;
-        }
         const applyBtn = $("custom-type-apply");
         if (applyBtn.disabled) return; // guard against double-submit while a check is in flight
         const disp = $("custom-type-display").value.trim();
@@ -2077,54 +2020,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    /* License UI */
-    window.updateLicenseUI = function() {
-        if (!window.License) return;
-        const tier = License.tier();
-        const details = License.getDetails();
-        
-        const statusEl = $("license-status");
-        if (statusEl) {
-            if (tier === "free") {
-                statusEl.textContent = "Current plan: Free";
-                statusEl.style.color = "var(--muted)";
-            } else {
-                let text = `Current plan: ${tier.charAt(0).toUpperCase() + tier.slice(1)}`;
-                if (details && details.exp) {
-                    const d = new Date(details.exp);
-                    text += ` (expires ${d.toISOString().split('T')[0]})`;
-                } else if (details) {
-                    text += ` (lifetime)`;
-                }
-                statusEl.textContent = text;
-                statusEl.style.color = "var(--ink)";
-            }
-        }
-    };
 
-    const redeemBtn = $("license-redeem");
-    if (redeemBtn) {
-        redeemBtn.addEventListener("click", async () => {
-            const code = $("license-code").value.trim();
-            if (!code) return;
-            redeemBtn.disabled = true;
-            redeemBtn.textContent = "Verifying...";
-            
-            const result = await License.redeem(code);
-            redeemBtn.disabled = false;
-            redeemBtn.textContent = "Activate";
-            
-            if (result.ok) {
-                $("license-code").value = "";
-                toast(`License activated: ${result.tier} plan`);
-                updateLicenseUI();
-            } else {
-                toast(`Activation failed: ${result.reason}`);
-            }
-        });
-    }
-    
-    if (window.License) updateLicenseUI();
 
     /* First palette: restore a shared link if present, else fresh. */
     if (!restoreFromUrl()) generate(true);
