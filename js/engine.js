@@ -955,6 +955,200 @@ function moodFromColor(hex) {
     return "bold";
 }
 
+const ANSWER_SCHEMA = [
+    {
+        id: "q2",
+        label: "Market Position",
+        poleA: "Familiar (belongs in category)",
+        poleB: "Distinctive (stands out)"
+    },
+    {
+        id: "q3",
+        label: "Brand Temperament",
+        poleA: "Trusted",
+        poleB: "Exciting"
+    },
+    {
+        id: "q4",
+        label: "Audience Stance",
+        poleA: "Premium",
+        poleB: "Accessible"
+    },
+    {
+        id: "q5",
+        label: "Visual Volume",
+        poleA: "Calm",
+        poleB: "Loud"
+    },
+    {
+        id: "q6",
+        label: "Organizational Age",
+        poleA: "Established",
+        poleB: "New"
+    },
+    {
+        id: "q7",
+        label: "Strategic Core",
+        poleA: "Human",
+        poleB: "Precise"
+    }
+];
+
+function answersSeed(answers, variant = 1) {
+    const keys = ["category", "q2", "q3", "q4", "q5", "q6", "q7"];
+    const parts = keys.map(k => `${k}:${answers[k] || "A"}`);
+    parts.push(`v:${variant}`);
+    const str = parts.join("|");
+    let hash = 2166136261;
+    for (let i = 0; i < str.length; i++) {
+        hash ^= str.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+    }
+    return Math.abs(hash >>> 0);
+}
+
+const clampVal = (v, min, max) => Math.max(min, Math.min(max, v));
+
+function compileBrief(answers, variant = 1) {
+    const category = answers.category || "saas";
+    let baseKey = category;
+    const seed = answersSeed(answers, variant);
+
+    if (answers.q2 === "B") {
+        const others = ARCHETYPE_KEYS.filter(k => k !== category);
+        baseKey = others[seed % others.length];
+    }
+    const base = ARCHETYPES[baseKey];
+
+    const recipe = {
+        label: "Brief Direction",
+        signal: `Compiled from strategy brief: ${baseKey}.`,
+        brandHue: [...base.brandHue],
+        brandSat: [...base.brandSat],
+        brandLight: [...base.brandLight],
+        accentHue: [...base.accentHue],
+        dominant: base.dominant,
+        mood: base.mood
+    };
+
+    const rationale = [];
+    const ruledOut = [];
+
+    // Q2
+    if (answers.q2 === "B") {
+        rationale.push(`A distinctive positioning borrows color structures from the ${ARCHETYPES[baseKey].label} archetype to stand out.`);
+        ruledOut.push(`Category conformity is ruled out. The brand will not use the standard color codes of the ${ARCHETYPES[category].label} peer group.`);
+    } else {
+        rationale.push(`The visual direction uses the established ${base.label} category baseline to build immediate user familiarity.`);
+        ruledOut.push("Distinctive repositioning is ruled out. You will share visual space with competitors rather than looking like an outsider.");
+    }
+
+    // Q3
+    if (answers.q3 === "B") {
+        recipe.brandSat = [clampVal(recipe.brandSat[0] + 20, 8, 100), clampVal(recipe.brandSat[1] + 20, 8, 100)];
+        if (recipe.brandSat[0] < 60) recipe.brandSat[0] = 60;
+        rationale.push("High saturation levels are unlocked to emphasize energy and innovation.");
+        ruledOut.push("Quiet, highly muted conservative tones are ruled out.");
+    } else {
+        recipe.brandSat = [clampVal(recipe.brandSat[0] - 20, 8, 100), clampVal(recipe.brandSat[1] - 20, 8, 100)];
+        rationale.push("The brand uses lower saturation levels to convey quiet dependability and security.");
+        ruledOut.push("High-excitation colors (hot neon values, saturated reds/pinks) are ruled out.");
+    }
+
+    // Q4
+    const premium = answers.q4 === "A";
+    if (premium) {
+        if (recipe.dominant !== "dark" && recipe.dominant !== "dark-green" && recipe.dominant !== "sand" && recipe.dominant !== "cream") {
+            recipe.dominant = "dark";
+        }
+        rationale.push("Premium stance forces dark or warm cream background canvases.");
+        ruledOut.push("Bright light-saturated backgrounds and casual layouts are ruled out.");
+    } else {
+        if (recipe.dominant === "dark" || recipe.dominant === "dark-green") {
+            recipe.dominant = "cool-light";
+        }
+        rationale.push("Accessible positioning forces clean light backgrounds.");
+        ruledOut.push("Heavy dark canvases and high-contrast serifs are ruled out.");
+    }
+
+    // Q5
+    if (answers.q5 === "A") {
+        recipe.brandSat[1] = Math.min(recipe.brandSat[1], 60);
+        recipe.harmony = "analogous";
+        rationale.push("An analogous accent harmony is selected, ensuring the secondary color supports the brand without competing.");
+        ruledOut.push("High-contrast complementary color-wheel pops are ruled out.");
+    } else {
+        recipe.brandSat[0] = Math.max(recipe.brandSat[0], 70);
+        recipe.harmony = "complementary";
+        rationale.push("A high-contrast complementary pop is unlocked, ensuring call-to-actions demand immediate attention.");
+        ruledOut.push("Subtle, low-contrast accent styling is ruled out.");
+    }
+
+    // Q6 / Q7 typography and tokens
+    const established = answers.q6 === "A";
+    const human = answers.q7 === "A";
+
+    let mood = base.mood;
+    if (premium) {
+        if (established) {
+            mood = human ? "mv-editorial" : "mv-moody";
+        } else {
+            mood = human ? "mv-humanist" : "mv-technical";
+        }
+    } else {
+        if (established) {
+            mood = human ? "mv-humanist" : "mv-trust";
+        } else {
+            mood = human ? "mv-playful" : "mv-geometric";
+        }
+    }
+    recipe.mood = mood;
+
+    // Corner / radius
+    let corner = "balanced";
+    if (established) {
+        corner = "sharp";
+        rationale.push("Sharp element corners are enforced to emphasize stability and longevity.");
+        ruledOut.push("Modern tech-grotesk monospace fonts and rounded elements are ruled out.");
+    } else {
+        corner = "soft";
+        rationale.push("Soft, pill-shaped element corners are selected to feel current and friendly.");
+        ruledOut.push("Traditional book serifs and rigid sharp-angled boundaries are ruled out.");
+    }
+
+    // Density / spacing
+    let density = "regular";
+    if (human) {
+        density = "spacious";
+        // Warm hue shift
+        recipe.brandHue[0] = Math.round(recipe.brandHue[0] + (30 - recipe.brandHue[0]) * 0.3);
+        recipe.brandHue[1] = Math.round(recipe.brandHue[1] + (30 - recipe.brandHue[1]) * 0.3);
+        rationale.push("Warm color tones and spacious layouts are applied to keep the digital environment human.");
+        ruledOut.push("Dense monospace layouts and cold, hyper-efficient grids are ruled out.");
+    } else {
+        density = "compact";
+        // Cool hue shift
+        recipe.brandHue[0] = Math.round(recipe.brandHue[0] + (200 - recipe.brandHue[0]) * 0.3);
+        recipe.brandHue[1] = Math.round(recipe.brandHue[1] + (200 - recipe.brandHue[1]) * 0.3);
+        rationale.push("Cooler, technical tones and tight, structured spacing ratios are applied to convey precision.");
+        ruledOut.push("Traditional editorial serifs and airy, spacious whitespace structures are ruled out.");
+    }
+
+    // Normalize Hues
+    recipe.brandHue[0] = (Math.round(recipe.brandHue[0]) + 360) % 360;
+    recipe.brandHue[1] = (Math.round(recipe.brandHue[1]) + 360) % 360;
+
+    // Mutate internal SYSTEM_PROFILE to make scales/tokens correct
+    SYSTEM_PROFILE.custom = { density, corner };
+
+    return {
+        recipe,
+        seed,
+        rationale,
+        ruledOut
+    };
+}
+
 window.Engine = {
     hexToRgb, rgbToHex, hexToHsl, hslToHex,
     contrastRatio, contrastGrade, ensureContrast, ensureContrastVivid, readableOn,
@@ -964,5 +1158,6 @@ window.Engine = {
     getTypePairs, googleFontsUrl, moodFromColor,
     spacingScale, radiusScale, elevationScale, stateVariants,
     exportCss, exportTailwind, exportTokensJson,
-    nameColor, TYPE_PAIRS_MOOD, HARMONY_LABELS
+    nameColor, TYPE_PAIRS_MOOD, HARMONY_LABELS,
+    ANSWER_SCHEMA, answersSeed, compileBrief
 };

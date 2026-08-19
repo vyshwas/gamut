@@ -132,5 +132,17 @@
   - `css/style.css` line count = 1,201 (reduced by 922 lines from baseline 2,123, exceeding target >= 500 lines). ✓
   - Zero console errors on boot, and regression tests exit with 0. ✓
 
+## Phase 6 — Build the Tradeoff Compiler
+**Date:** 2026-08-19
+**Status:** PASS
+
+### Actions completed
+- `js/engine.js`: Added the seven-question `ANSWER_SCHEMA` data definition. Created `answersSeed(answers, variant)` utilizing a deterministic, stable FNV-1a 32-bit hash. Implemented `compileBrief(answers, variant)` which maps choices to a `customArchetype` recipe (adjusting brand hue/sat/light offsets, accent harmony family, and mapping typography combinations to `TYPE_PAIRS_MOOD` keys). Mutates `SYSTEM_PROFILE.custom` properties to dynamically set corner/density constraints. ✓
+- `tools/regression.mjs`: Added three node verification tests:
+  1. Determinism check (compiles 1,000 times, asserts byte-identical output). ✓
+  2. Contrast coverage sweep (generates all 3,200 pole/variant combinations, verifying contrast ratios meet WCAG floors). ✓
+  3. Sensitivity check (asserts flipping any question changes the compiled palette). ✓
+- **Verification:** Ran `node tools/regression.mjs` and verified all tests pass (exited with code 0). ✓
+
 
 
