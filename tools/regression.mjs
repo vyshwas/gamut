@@ -67,25 +67,7 @@ section('generatePalette contrast sweep (10 archetypes x 30 seeds x light/dark)'
     if (fails === 0) console.log('PASS: generatePalette contrast sweep'); else totalFail++;
 }
 
-// ---------- 4. fixPalette contrast sweep (large fuzz, all 3 strategies) ----------
-section('fixPalette contrast sweep (5000 random 4-hex inputs x 3 strategies)');
-{
-    let fails = 0, total = 0, minInk = Infinity;
-    for (let i = 0; i < 5000; i++) {
-        const seeds = Array.from({ length: 4 }, () => '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0'));
-        for (const strategy of ['preserve', 'balanced', 'maximize']) {
-            total++;
-            const res = Engine.fixPalette(seeds, { strategy });
-            const ink = res.swatches.find(c => c.role === 'Ink')?.hex;
-            const canvas = res.swatches.find(c => c.role === 'Dominant')?.hex;
-            const inkC = Engine.contrastRatio(ink, canvas);
-            minInk = Math.min(minInk, inkC);
-            if (inkC < 4.45) { fails++; console.error(`FAIL ${strategy} seeds=${JSON.stringify(seeds)} ink=${ink} canvas=${canvas} contrast=${inkC}`); }
-        }
-    }
-    console.log(`${total} runs, ${fails} failures. min ink contrast=${minInk.toFixed(3)}`);
-    if (fails === 0) console.log('PASS: fixPalette contrast sweep'); else totalFail++;
-}
+
 
 
 

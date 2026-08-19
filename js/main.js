@@ -104,9 +104,7 @@ function oklchToRgb({ L, C, H }) {
 /* Darken OR lighten `hex` in OKLCH, hue and relative chroma held,
    until it clears `min`:1 against `bgHex` - whichever direction the
    background demands. Shared by the wordmark (always darkens, toward
-   a fixed paper) and SiteTheme (either direction, toward whichever
-   canvas the live palette is currently deployed on). This product's
-   own Law 09 move, generalized. */
+   a fixed paper). This product's own Law 09 move, generalized. */
 function contrastSafe(hex, bgHex, min) {
     if (E.contrastRatio(hex, bgHex) >= min) return hex;
     const src = hexToOklch(hex);
@@ -169,75 +167,7 @@ const Wordmark = (() => {
     return { start, injectLive, setTheme };
 })();
 
-/* =========================================================
-   SiteTheme
-   The Engine's generated Primary/Secondary now drive Gamut's own
-   loud-color tokens (--lime family, --secondary family, both glow
-   pairs) - buttons, focus rings, the Studio badge, the featured-card
-   edge, everywhere the chrome already spent a saturated accent takes
-   the live palette instead of the locked hue, the same way the
-   wordmark already did. Structural tokens (canvas, surface, text,
-   borders, --danger) stay put; only the two "loud voice" roles go
-   live, matching Law 2's own framing of Primary/Secondary as the
-   product's two saturated colors.
 
-   Replaces the former mock social/web-hero panel (Law 3) - that
-   panel showed the palette applied to a fictional brand's formats;
-   this shows it applied to a real one, live, in both themes. Before
-   a first generation the site stays on its own locked identity, same
-   as the wordmark.
-
-   Primary is used as a flat FILL in the site's own chrome regardless
-   of site theme (Law 2: "unchanged across every pass"), so it only
-   needs one raw value plus a light-surface-safe ink variant for text/
-   border use (mirrors --lime / --lime-ink). Secondary is used
-   directly as TEXT/border on the page's own canvas in a couple of
-   spots, so unlike Primary it needs an independently contrast-checked
-   value per theme - --secondary-dark/-light feed the existing
-   --secondary indirection in style.css, and swap automatically with
-   the data-theme attribute the same way --accent already does. */
-const SiteTheme = (() => {
-    const CANVAS = { dark: "#0B0B0D", light: "#F4F4F6" };
-    const PAPER = "#F9F8F6";
-    const LIGHT_MIN = 9;
-    const TEXT_MIN = 4.5;
-
-    function hexToRgba(hex, a) {
-        const { r, g, b } = E.hexToRgb(hex);
-        return `rgba(${r}, ${g}, ${b}, ${a})`;
-    }
-
-    function lighten(hex, amount) {
-        const src = hexToOklch(hex);
-        return E.rgbToHex(oklchToRgb({ L: Math.min(0.97, src.L + amount), C: src.C, H: src.H }));
-    }
-
-    /* Called once per regenerate from renderPalette. No-op before the
-       first generation - the locked identity stays exactly as shipped. */
-    function injectLive(p) {
-        if (!p) return;
-        const root = document.documentElement.style;
-
-        const brand = p.swatches[1].hex;       // Primary, full saturation - same source the wordmark uses
-        const brandInk = contrastSafe(brand, PAPER, LIGHT_MIN); // same derivation as the wordmark's light-mode ink
-        root.setProperty("--lime", brand);
-        root.setProperty("--lime-hover", lighten(brand, 0.08));
-        root.setProperty("--lime-ink", brandInk);
-        root.setProperty("--on-primary", E.readableOn(brand));
-        root.setProperty("--glow-primary-dark", hexToRgba(brand, 0.08));
-        root.setProperty("--glow-primary-light", hexToRgba(brandInk, 0.06));
-
-        const accent = p.swatches[2].hex;      // Secondary, full saturation
-        const accentDark = contrastSafe(accent, CANVAS.dark, TEXT_MIN);
-        const accentLight = contrastSafe(accent, CANVAS.light, TEXT_MIN);
-        root.setProperty("--secondary-dark", accentDark);
-        root.setProperty("--secondary-light", accentLight);
-        root.setProperty("--glow-secondary-dark", hexToRgba(accentDark, 0.08));
-        root.setProperty("--glow-secondary-light", hexToRgba(accentLight, 0.07));
-    }
-
-    return { injectLive };
-})();
 
 /* =========================================================
    Theme
@@ -600,10 +530,6 @@ function buildSwatches(palette, row) {
     palette.swatches.forEach(s => {
         const d = document.createElement("div");
         d.className = "swatch";
-        const c = s.cmyk;
-        const shift = s.print && s.print.risk !== "none"
-            ? `<p class="swatch-print" title="Outside typical CMYK range. Heuristic estimate, not an ICC conversion.">print shift ${s.print.risk} &middot; safe <button class="safe-hex mono" data-hex="${s.print.safeHex}" type="button" aria-label="Copy press-safer alternate ${s.print.safeHex}">${s.print.safeHex}</button></p>`
-            : "";
         const harmonyBadge = (s.role === "Secondary" && palette.accentHarmony && HARMONY_SHORT[palette.accentHarmony])
             ? `<p class="swatch-harmony mono">${HARMONY_SHORT[palette.accentHarmony]}</p>`
             : "";
@@ -618,11 +544,8 @@ function buildSwatches(palette, row) {
                 <p class="swatch-job">${s.job}</p>
                 <p class="swatch-values">
                     <b>${s.hex}</b><br>
-                    rgb ${s.rgb.r} ${s.rgb.g} ${s.rgb.b}<br>
-                    cmyk ${c.c} ${c.m} ${c.y} ${c.k}
+                    rgb ${s.rgb.r} ${s.rgb.g} ${s.rgb.b}
                 </p>
-                <button class="shades-btn mono" data-hex="${s.hex}" data-role="${s.role}" type="button">shades</button>
-                ${shift}
             </div>`;
         row.appendChild(d);
     });
@@ -648,26 +571,7 @@ function renderChecks(palette) {
     });
 }
 
-/* ---------- Shades panel ---------- */
 
-function openShades(hex, role) {
-    const panel = $("shades-panel");
-    const strip = $("shades-strip");
-    $("shades-title").textContent = `${role} ${hex} scale`;
-    strip.innerHTML = "";
-    E.shadeScale(hex).forEach(step => {
-        const seg = document.createElement("button");
-        seg.className = "shade-seg";
-        seg.type = "button";
-        seg.style.background = step;
-        seg.dataset.label = step;
-        seg.style.setProperty("--label-color", labelColorFor(step));
-        seg.setAttribute("aria-label", "Copy " + step);
-        seg.addEventListener("click", () => copyText(step, step, seg));
-        strip.appendChild(seg);
-    });
-    panel.hidden = false;
-}
 
 /* ---------- History and saved palettes ---------- */
 
@@ -682,158 +586,18 @@ function currentSettings() {
     };
 }
 
-function miniStrip(palette, onClick) {
-    const strip = document.createElement("button");
-    strip.className = "mini-strip";
-    strip.type = "button";
-    const names = palette.swatches.map(s => s.name).join(" / ");
-    strip.title = names;
-    strip.setAttribute("aria-label", "Load palette: " + names);
-    const shares = [60, 30, 10, 8];
-    palette.swatches.forEach((s, i) => {
-        const seg = document.createElement("span");
-        seg.style.flex = `0 0 ${shares[i] / 1.08}%`;
-        seg.style.background = s.hex;
-        strip.appendChild(seg);
-    });
-    strip.addEventListener("click", onClick);
-    return strip;
-}
 
-/* Restoring bypasses the generator: the stored palette renders
-   exactly as it was, whether it came from a seed or the Fixer. */
-function restorePalette(entry) {
-    $("ctl-category").value = entry.settings.cat;
-    $("ctl-borrow").checked = entry.settings.borrow;
-    $("ctl-brand").value = entry.settings.lock;
-    $("ctl-brand-clear").hidden = !entry.settings.lock;
-    if (entry.settings.harmony) $("ctl-harmony").value = entry.settings.harmony;
-    /* != null, not truthiness: 0 is a real seed. */
-    if (entry.palette.seed != null) state.seed = entry.palette.seed;
-    else safeReplaceUrl(location.pathname + location.hash);
-    state.typeIndex = 0;
-    renderPalette(entry.palette);
-}
-
-function pushHistory(palette) {
-    const key = paletteKey(palette);
-    if (state.history[0] && state.history[0].key === key) return;
-    state.history = state.history.filter(h => h.key !== key);
-    state.history.unshift({ key, palette, settings: currentSettings() });
-    if (state.history.length > 12) state.history.length = 12;
-    renderHistory();
-}
-
-function renderHistory() {
-    const row = $("history-row");
-    row.innerHTML = "";
-    /* Skip the first entry: it is what's on screen. */
-    state.history.slice(1).forEach(entry => {
-        row.appendChild(miniStrip(entry.palette, () => restorePalette(entry)));
-    });
-    $("history-block").hidden = state.history.length < 2;
-}
-
-/* A saved entry has to be renderable end-to-end (mini strip AND a
-   later full restore), or one corrupt/legacy row in localStorage
-   throws inside DOMContentLoaded and takes the whole boot down with
-   it - dead buttons, no palette. Shape-check each entry, not just
-   the JSON parse. */
-function isValidSavedEntry(e) {
-    return !!(e && e.palette
-        && Array.isArray(e.palette.swatches)
-        && e.palette.swatches.length === 4
-        && e.palette.swatches.every(s => s && typeof s.hex === "string" && E.hexToRgb(s.hex))
-        && e.palette.deployments && e.palette.deployments.light && e.palette.deployments.dark
-        && Array.isArray(e.palette.contrasts)
-        && e.settings && typeof e.settings.cat === "string");
-}
-
-function loadSavedList() {
-    try {
-        const raw = JSON.parse(localStorage.getItem(SAVE_KEY));
-        return Array.isArray(raw) ? raw.filter(isValidSavedEntry) : [];
-    }
-    catch { return []; }
-}
-
-function persistSaved() {
-    try { localStorage.setItem(SAVE_KEY, JSON.stringify(state.saved)); }
-    catch { toast("Could not save (storage full?)"); }
-}
-
-function toggleSave() {
-    if (!state.palette) return;
-    const key = paletteKey(state.palette);
-    const at = state.saved.findIndex(s => s.key === key);
-    if (at >= 0) {
-        state.saved.splice(at, 1);
-        toast("Removed from saved");
-    } else {
-        state.saved.unshift({ key, palette: state.palette, settings: currentSettings() });
-        if (state.saved.length > 30) state.saved.length = 30;
-        toast("Palette saved on this device");
-        pulseCopied($("save-palette"));
-    }
-    persistSaved();
-    renderSaved();
-    syncSaveButton();
-}
-
-function syncSaveButton() {
-    if (!state.palette) return;
-    const saved = state.saved.some(s => s.key === paletteKey(state.palette));
-    $("save-palette").textContent = saved ? "Saved ✓" : "Save palette";
-}
-
-function renderSaved() {
-    const list = $("saved-list");
-    list.innerHTML = "";
-    state.saved.forEach(entry => {
-        const row = document.createElement("div");
-        row.className = "saved-row";
-        row.appendChild(miniStrip(entry.palette, () => restorePalette(entry)));
-        const del = document.createElement("button");
-        del.className = "saved-del mono";
-        del.type = "button";
-        del.textContent = "×";
-        del.setAttribute("aria-label", "Delete saved palette: " + entry.palette.swatches.map(s => s.name).join(" / "));
-        del.addEventListener("click", () => {
-            const at = state.saved.findIndex(s => s.key === entry.key);
-            if (at < 0) return;
-            state.saved.splice(at, 1);
-            persistSaved();
-            renderSaved();
-            syncSaveButton();
-            toast("Palette removed", () => {
-                state.saved.splice(at, 0, entry);
-                persistSaved();
-                renderSaved();
-                syncSaveButton();
-            });
-        });
-        row.appendChild(del);
-        list.appendChild(row);
-    });
-    $("saved-block").hidden = state.saved.length === 0;
-}
 
 /* ---------- Agency branding (white-label client docs) ---------- */
 
 function loadAgency() {
-    const defaults = { name: "", client: "", whiteLabel: false, logo: null };
-    /* Field-level validation, not just parse: these values land in
-       input .value, in printed output, and (the logo) in an <img src>.
-       A tampered or legacy shape must degrade to defaults, and only a
-       data:image/ URL is ever allowed back into src. */
+    const defaults = { name: "", client: "" };
     try {
         const raw = JSON.parse(localStorage.getItem(AGENCY_KEY));
         if (!raw || typeof raw !== "object") return defaults;
         return {
             name: typeof raw.name === "string" ? raw.name : "",
-            client: typeof raw.client === "string" ? raw.client : "",
-            whiteLabel: raw.whiteLabel === true,
-            logo: typeof raw.logo === "string" && raw.logo.startsWith("data:image/") ? raw.logo : null
+            client: typeof raw.client === "string" ? raw.client : ""
         };
     }
     catch { return defaults; }
@@ -847,8 +611,6 @@ function persistAgency() {
 function syncAgencyFields() {
     $("agency-name").value = state.agency.name;
     $("agency-client").value = state.agency.client;
-    $("agency-whitelabel").checked = state.agency.whiteLabel;
-    $("agency-logo-clear").hidden = !state.agency.logo;
 }
 
 function onAgencyChange() {
@@ -863,110 +625,17 @@ function renderPalette(palette) {
 
     renderHeroField({ ...palette, swatches: themedHeroSwatches(palette, Theme.current()) });
 
-    $("seed-label").textContent = palette.seed != null ? "seed " + palette.seed : "from the Fixer";
-
     renderReading(palette);
     renderSwatches(palette);
     renderBand($("ratio-band"), palette.swatches, false);
     renderChecks(palette);
 
-    /* The accent's harmony used to be appended here as jargon. It now
-       has a plain-language sentence in the reading panel instead, so
-       this line goes back to carrying only the category signal. */
-    $("engine-signal").textContent = palette.borrowed
-        ? `Borrowed recipe: ${palette.borrowed} (Law 7). ${palette.signal}`
-        : palette.signal || "";
-
-    renderTypeLab();
     renderPrintSheet(palette);
-    renderSystem(palette);
     syncUrl();
 
     /* The site's own chrome now reflects the current palette too, not
-       just the wordmark - see SiteTheme above. */
+       just the wordmark. */
     Wordmark.injectLive(palette);
-    SiteTheme.injectLive(palette);
-
-    $("shades-panel").hidden = true;
-    pushHistory(palette);
-    syncSaveButton();
-}
-
-/* ---------- Design system panel ---------- */
-
-function renderSystem(palette) {
-    const recipeKey = palette.recipeKey || "custom";
-    const domIsDark = E.hexToHsl(palette.swatches[0].hex).l < 40;
-
-    const spacing = E.spacingScale(recipeKey);
-    const spacingEl = $("spacing-strip");
-    spacingEl.innerHTML = "";
-    spacing.forEach(s => {
-        const bar = document.createElement("div");
-        bar.className = "spacing-bar";
-        bar.style.width = Math.max(2, s.px) + "px";
-        /* Brand, not the site accent: this is generated output. */
-        bar.style.background = palette.swatches[1].hex;
-        bar.title = `${s.name}: ${s.px}px`;
-        const label = document.createElement("span");
-        label.textContent = s.name;
-        bar.appendChild(label);
-        spacingEl.appendChild(bar);
-    });
-
-    const radius = E.radiusScale(recipeKey);
-    const radiusEl = $("radius-row");
-    radiusEl.innerHTML = "";
-    radius.forEach(r => {
-        const chip = document.createElement("div");
-        chip.className = "radius-chip";
-        chip.style.borderRadius = (r.px === 999 ? 24 : r.px) + "px";
-        chip.style.background = palette.swatches[1].hex;
-        chip.title = `${r.name}: ${r.px === 999 ? "full" : r.px + "px"}`;
-        const label = document.createElement("span");
-        label.textContent = r.name;
-        label.style.color = textOn(palette.swatches[1].hex);
-        chip.appendChild(label);
-        radiusEl.appendChild(chip);
-    });
-
-    /* Each card sits on its own step's surface. On a dark Dominant that
-       progressive lift is the only thing that makes elevation visible at
-       all - a near-black shadow on a near-black ground reads as nothing,
-       which is exactly what the panel used to show. */
-    const elevation = E.elevationScale(palette.swatches[3].hex, domIsDark, palette.swatches[0].hex);
-    const elevationEl = $("elevation-row");
-    elevationEl.innerHTML = "";
-    elevation.filter(e => e.name !== "0").forEach(e => {
-        const surface = e.surface || palette.swatches[0].hex;
-        const card = document.createElement("div");
-        card.className = "elevation-card";
-        card.style.boxShadow = e.css;
-        card.style.background = surface;
-        card.title = `elevation-${e.name}`;
-        const label = document.createElement("span");
-        label.textContent = e.name;
-        label.style.color = textOn(surface);
-        card.appendChild(label);
-        elevationEl.appendChild(card);
-    });
-
-    const statesEl = $("states-row");
-    statesEl.innerHTML = "";
-    ["primary", "secondary"].forEach(role => {
-        const source = role === "primary" ? palette.swatches[1].hex : palette.swatches[2].hex;
-        const s = E.stateVariants(source, palette.swatches[0].hex);
-        ["default", "hover", "active", "disabled"].forEach(key => {
-            const chip = document.createElement("div");
-            chip.className = "state-chip";
-            chip.style.background = s[key];
-            const label = document.createElement("span");
-            label.textContent = `${role} / ${key}`;
-            label.style.color = textOn(s[key]);
-            chip.appendChild(label);
-            statesEl.appendChild(chip);
-        });
-    });
 }
 
 function readLockedInput() {
@@ -1071,240 +740,17 @@ function currentPair() {
    by side instead of cycled one at a time. state.typeIndex still marks
    which one is selected, and currentPair() still reads it, so exports,
    the SVG card, and the print sheet keep working unchanged. */
-const SPECIMEN_DISPLAY = "Every color needs a job.";
-const SPECIMEN_BODY = "The brands that pop do not use better colors. They use the same colors with clearer intent: one anchors, one leads, one accents, and every surface gets the right one.";
-
-function renderTypeLab() {
-    const p = state.palette;
-    if (!p) return;
-
-    const pairs = E.getTypePairs(p.mood || "fresh").slice();
-    if (state.customTypePair) {
-        pairs.unshift(state.customTypePair);
-    }
-    const dep = p.deployments.light;
-    const selectedIndex = state.typeIndex % pairs.length;
-    const stack = $("type-rail");
-    stack.innerHTML = "";
-
-    pairs.forEach((pair, i) => {
-        loadPairFonts(pair);
-        const selected = i === selectedIndex;
-
-        const card = document.createElement("article");
-        card.className = "specimen-card" + (selected ? " is-selected" : "");
-        card.innerHTML = `
-            <div class="specimen">
-                <p class="specimen-display">${esc(SPECIMEN_DISPLAY)}</p>
-                <p class="specimen-body">${esc(SPECIMEN_BODY)}</p>
-            </div>
-            <div class="specimen-meta">
-                <span class="type-name">${esc(pair.display)}</span>
-                <span class="type-name type-name-body">+ ${esc(pair.body)}${pair.mono ? " + " + esc(pair.mono) : ""}</span>
-                <p class="specimen-note">${esc(pair.why)}</p>
-                <button class="btn-mini specimen-select" type="button" data-pair="${i}" aria-pressed="${selected}">${selected ? "In use" : "Use this pairing"}</button>
-            </div>`;
-
-        const spec = card.querySelector(".specimen");
-        spec.style.background = dep.bg;
-        spec.style.color = dep.ink;
-
-        const disp = card.querySelector(".specimen-display");
-        disp.style.fontFamily = `'${pair.display}', sans-serif`;
-        disp.style.fontWeight = pair.displayWeight;
-
-        const body = card.querySelector(".specimen-body");
-        body.style.fontFamily = `'${pair.body}', sans-serif`;
-
-        stack.appendChild(card);
-    });
-
-    $("type-rail-hint").textContent = pairs.length > 1
-        ? `${pairs.length} pairings prescribed for this palette's mood. The one in use drives the exports, the SVG card, and the print sheet.`
-        : "One pairing prescribed for this palette's mood.";
-}
-
-
-/* ---------- Fixer ---------- */
-
-function updateStepper(step) {
-    const s = $("fixer-stepper");
-    if (!s) return;
-    s.style.display = "block";
-    ["import", "review", "build", "export"].forEach(id => {
-        const el = $("step-" + id);
-        if (el) el.style.color = "var(--muted)";
-    });
-    const curr = $("step-" + step);
-    if (curr) curr.style.color = "var(--ink)";
-}
-
-function runFixer() {
-
-    const hexes = E.parseHexList($("fix-input").value);
-    if (hexes.length < 2) {
-        toast("Paste at least 2 hex codes");
-        $("fix-input").setAttribute("aria-invalid", "true");
-        return;
-    }
-    $("fix-input").setAttribute("aria-invalid", "false");
-    /* Say so instead of truncating silently - the mapping below would
-       otherwise list fewer colors than were pasted with no explanation. */
-    if (hexes.length > 6) {
-        hexes.length = 6;
-        toast("Using the first 6 distinct colors");
-    }
-
-    const strategy = document.querySelector('input[name="fix-strategy"]:checked')?.value || 'balanced';
-    const originalHexes = [...hexes];
-    const result = E.fixPalette(hexes, { strategy });
-    $("fixer-results").hidden = false;
-    $("fixer-compare").hidden = false;
-
-    const diag = $("diagnosis");
-    diag.innerHTML = "";
-    if (result.issues.length === 0) {
-        const div = document.createElement("div");
-        div.className = "diag-item clean";
-        div.innerHTML = `
-            <span class="diag-law">CLEAN</span>
-            <div>
-                <p class="diag-title">No law broken</p>
-                <p class="diag-text">This palette holds up. The Fixer still assigned each color its 60-30-10 job below.</p>
-            </div>`;
-        diag.appendChild(div);
-    } else {
-        result.issues.forEach(issue => {
-            const div = document.createElement("div");
-            div.className = "diag-item";
-            div.innerHTML = `
-                <span class="diag-law">LAW ${String(issue.law).padStart(2, "0")}</span>
-                <div>
-                    <p class="diag-title">${issue.title}</p>
-                    <p class="diag-text">${issue.detail}</p>
-                    <p class="diag-fix">Fix: ${issue.fix}</p>
-                </div>`;
-            diag.appendChild(div);
-        });
-    }
-
-    /* Before: N equal blocks, the palette as pasted. After: the same
-       colors reproportioned to 60-30-10 plus Ink. Read together, the
-       change in block widths is the argument the section is making. */
-    renderCompareStrip(
-        $("strip-before"), $("strip-before-caps"),
-        result.original.map(hex => ({ flex: "1", hex, label: hex }))
-    );
-
-    const shares = { Dominant: 60, Brand: 30, Accent: 10, Ink: 8 };
-    renderCompareStrip(
-        $("strip-after"), $("strip-after-caps"),
-        result.swatches.map(s => ({
-            /* 60+30+10+8 = 108, normalised back to 100. */
-            flex: `0 0 ${shares[s.role] / 1.08}%`,
-            hex: s.hex,
-            label: `${s.role} ${s.hex}`
-        }))
-    );
-
-    /* Provenance: every input color's fate, spelled out. */
-    const map = $("mapping");
-    map.innerHTML = "";
-    result.mapping.forEach(m => {
-        const row = document.createElement("div");
-        row.className = "map-row";
-        row.innerHTML = `<span class="map-chip" style="background:${esc(m.from)}"></span><span class="map-hex mono">${esc(m.from)}</span><span class="map-note">${esc(m.note)}</span>`;
-        map.appendChild(row);
-    });
-
-    state.fixed = result;
-    
-    updateStepper("review");
-    
-    // Summary Chips
-    const summary = [];
-    if (result.mapping.some(m => m.action === "adjusted" && (m.reason.includes("contrast") || m.reason.includes("Law 2")))) {
-        summary.push("✓ Contrast & legibility raised to floor");
-    }
-    const retired = result.mapping.filter(m => m.action === "retired").length;
-    if (retired > 0) {
-        summary.push(`✓ ${originalHexes.length} colors &rarr; ${result.swatches.length} roles`);
-    }
-    
-    if ($("fixer-summary")) {
-        $("fixer-summary").innerHTML = summary.map(s => `<span class="btn-mini" style="pointer-events: none; border-color: var(--line);">${s}</span>`).join("");
-    }
-    
-    // Magnitude notice
-    let totalHueDelta = 0, totalSatDelta = 0, count = 0;
-    result.mapping.forEach((m, i) => {
-        if (m.action !== "retired" && originalHexes[i] && m.swatch) {
-            const h1 = E.hexToHsl(originalHexes[i]);
-            const h2 = E.hexToHsl(m.swatch.hex);
-            totalHueDelta += Math.abs(h1[0] - h2[0]);
-            totalSatDelta += Math.abs(h1[1] - h2[1]);
-            count++;
-        }
-    });
-    const avgHueDelta = count ? totalHueDelta / count : 0;
-    const avgSatDelta = count ? totalSatDelta / count : 0;
-    
-    if ($("fixer-magnitude")) {
-        if (avgHueDelta > 15 || avgSatDelta > 15) {
-            $("fixer-magnitude").textContent = "This optimization noticeably changes the visual character of your brand to meet the laws.";
-        } else {
-            $("fixer-magnitude").textContent = "";
-        }
-    }
-
-    $("fixer-results").scrollIntoView({ behavior: scrollBehavior(), block: "nearest" });
-}
-
-function adoptFixed() {
-    updateStepper("build");
-    const sf = $("system-from-fixer");
-    if (sf) sf.style.display = "block";
-    $("system").scrollIntoView({ behavior: scrollBehavior(), block: "start" });
-    if (!state.fixed) return;
-    const f = state.fixed;
-    const palette = {
-        seed: null,
-        /* null, not the control panel's current value: this palette
-           came from pasted colors, and stamping an unrelated category
-           into it put a false provenance line in the token export. */
-        category: null,
-        mood: E.moodFromColor(f.swatches[1].hex),
-        signal: "Rebuilt by the Fixer. Every color now has a job.",
-        borrowed: null,
-        swatches: f.swatches,
-        deployments: f.deployments,
-        contrasts: f.contrasts
-    };
-    /* The old ?seed= no longer describes what's on screen. */
-    safeReplaceUrl(location.pathname + location.hash);
-    renderPalette(palette);
-    $("engine").scrollIntoView({ behavior: scrollBehavior() });
-    toast("Fixed palette loaded");
-}
-
 /* ---------- Exports ---------- */
 
 const EXPORTERS = {
     css: p => ["CSS variables", E.exportCss(p)],
-    tailwind: p => ["Tailwind theme", E.exportTailwind(p)],
-    scss: p => ["SCSS variables", E.exportScss(p)],
-    json: p => ["JSON", E.exportJson(p)],
-    tokens: p => ["Design system tokens", E.exportTokensJson(p, currentPair())],
-    dtcg: p => ["Figma variables (DTCG)", JSON.stringify(E.exportDtcg(p, currentPair()), null, 2)]
+    tailwind: p => ["Tailwind theme", E.exportTailwind(p)]
 };
 
 function renderPrintSheet(palette) {
     const area = $("print-sheet-area");
     const pair = currentPair();
     const rows = palette.swatches.map(s => {
-        const shift = s.print && s.print.risk !== "none"
-            ? `<br>Print gamut: ${s.print.risk} shift expected; press-safer alternate ${s.print.safeHex}`
-            : "";
         return `
         <div class="ps-row">
             <div class="ps-chip" style="background:${s.hex}"></div>
@@ -1312,8 +758,7 @@ function renderPrintSheet(palette) {
                 <p class="ps-role">${s.role} ${s.pct === "Text" ? "" : s.pct + "%"} &nbsp; ${s.name}</p>
                 HEX ${s.hex}<br>
                 RGB ${s.rgb.r} ${s.rgb.g} ${s.rgb.b}<br>
-                CMYK ${s.cmyk.c} ${s.cmyk.m} ${s.cmyk.y} ${s.cmyk.k}<br>
-                Job: ${s.job}${shift}
+                Job: ${s.job}
             </div>
         </div>`;
     }).join("");
@@ -1324,21 +769,15 @@ function renderPrintSheet(palette) {
             <p class="ps-type-body" style="font-family:'${pair.body}',sans-serif">Body: ${pair.body}${pair.mono ? " &nbsp; Numbers: " + pair.mono : ""}. ${pair.why}</p>
         </div>` : "";
 
-    /* White-label: swap the Gamut credit for the agency's own name
-       and stamp who the sheet was prepared for, so what a client
-       receives reads as the studio's work, not a tool's output. */
     const agency = state.agency;
-    const branded = agency.whiteLabel && agency.name.trim();
-    const title = branded ? esc(agency.name.trim()) : "Brand sheet";
+    const title = agency.name.trim() ? esc(agency.name.trim()) : "Brand brief";
     const sub = agency.client.trim()
         ? `Prepared for ${esc(agency.client.trim())}`
         : "Gamut. Deployed per the 60-30-10 rule.";
     const dateLine = `<p class="ps-date">${new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}</p>`;
-    const logo = branded && agency.logo ? `<img class="ps-logo" src="${esc(agency.logo)}" alt="">` : "";
 
     area.innerHTML = `
         <div class="ps-header">
-            ${logo}
             <div>
                 <p class="ps-title">${title}</p>
                 <p class="ps-sub">${sub}</p>
@@ -1346,40 +785,7 @@ function renderPrintSheet(palette) {
             </div>
         </div>
         ${rows}
-        ${typeBlock}
-        <p class="ps-note">CMYK values are an uncoated-stock approximation and gamut flags are heuristic. Confirm against a calibrated profile before press.</p>`;
-}
-
-function downloadSvgCard() {
-    if (!state.palette) return;
-    const svg = E.exportSvgCard(state.palette, currentPair(), state.agency);
-    const blob = new Blob([svg], { type: "image/svg+xml" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "brand-swatch-card.svg";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-    toast("SVG card downloaded");
-}
-
-/* Same tokens the exports above already carry, packaged for an AI
-   agent instead of a human: tokens.json, brand docs, and a prompt
-   generated from that exact data, zipped with no server round trip. */
-function downloadAiPackage() {
-    if (!state.palette) return;
-    const zip = AiPack.buildZip(state.palette, currentPair());
-    const blob = new Blob([zip], { type: "application/zip" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    /* != null, not truthiness: seed 0 is a real seed. */
-    a.download = `gamut-ai-package-${state.palette.seed != null ? state.palette.seed : "fixer"}.zip`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-    toast("AI Import Package ready.");
+        ${typeBlock}`;
 }
 
 
@@ -1435,15 +841,6 @@ document.addEventListener("DOMContentLoaded", () => {
     /* Engine. Control changes keep the seed so categories can be
        compared apples to apples; the Generate buttons mint a new one. */
     $("ctl-generate").addEventListener("click", () => generate(true));
-    $("hero-regen").addEventListener("click", () => generate(true));
-    /* Native anchor jump to #engine still fires (smooth, via the
-       html { scroll-behavior: smooth } rule) - this only adds the
-       regenerate so the CTA does both at once instead of landing on
-       a palette the user has already seen. */
-    const heroGenerateCta = $("hero-generate-cta");
-    if (heroGenerateCta) {
-        heroGenerateCta.addEventListener("click", () => generate(true));
-    }
     $("ctl-category").addEventListener("change", () => generate(false));
     $("ctl-borrow").addEventListener("change", () => generate(false));
     $("ctl-harmony").addEventListener("change", () => generate(false));
@@ -1455,14 +852,6 @@ document.addEventListener("DOMContentLoaded", () => {
         generate(false);
     });
 
-    /* Reveal-more toggles: the colorblind-vision variants and the
-       secondary export formats are rendered on load but hidden - this
-       just flips the [hidden] attribute and swaps the button's own
-       label, no other state to track since the content underneath
-       never changes. */
-    wireReveal("vision-toggle", "vision-more", "Check colorblind safety", "Hide colorblind variants");
-    wireReveal("exports-toggle", "exports-more", "More formats", "Fewer formats");
-
     $("copy-link").addEventListener("click", () => {
         if (state.palette && (state.palette.seed == null || state.palette.custom)) {
             toast("This palette has no link yet; export instead");
@@ -1471,116 +860,18 @@ document.addEventListener("DOMContentLoaded", () => {
         copyText(location.href, "Link", $("copy-link"));
     });
 
-    /* Copy hex on swatch click (also the print-safe alternates) */
+    /* Copy hex on swatch click */
     $("swatch-row").addEventListener("click", e => {
-        const shades = e.target.closest(".shades-btn");
-        if (shades) { openShades(shades.dataset.hex, shades.dataset.role); return; }
-        const safe = e.target.closest(".safe-hex");
-        if (safe) { copyText(safe.dataset.hex, safe.dataset.hex, safe); return; }
         const chip = e.target.closest(".swatch-chip");
         if (chip) copyText(chip.dataset.hex, chip.dataset.hex, chip);
     });
-    $("shades-close").addEventListener("click", () => { $("shades-panel").hidden = true; });
 
-    /* Spacebar generates, Coolors-style, unless the user is typing
-       or a button has focus (space already activates buttons). */
-    document.addEventListener("keydown", e => {
-        if (e.code !== "Space" || e.repeat) return;
-        const t = e.target;
-        if (t.closest && t.closest("input, textarea, select, button, [contenteditable]")) return;
-        e.preventDefault();
-        generate(true);
-    });
-
-    /* Color-vision simulation: an feColorMatrix filter over the
-       palette visuals themselves. Not extended to the live site chrome
-       (nav, buttons) even though those now carry the same colors -
-       a filter over sticky/backdrop-blur chrome risks its own
-       rendering bugs, and this couldn't be checked in a real browser
-       here. Simulating the swatches and the 60-30-10 band still tells
-       you whether the palette itself is colorblind-safe. */
-    const visionTargets = () =>
-        [$("swatch-row"), $("ratio-band")].filter(Boolean);
-    document.querySelectorAll(".vision-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-            document.querySelectorAll(".vision-btn").forEach(b => {
-                b.classList.remove("active");
-                b.setAttribute("aria-pressed", "false");
-            });
-            btn.classList.add("active");
-            btn.setAttribute("aria-pressed", "true");
-            const v = btn.dataset.vision;
-            visionTargets().forEach(el => { el.style.filter = v === "none" ? "" : `url(#cv-${v})`; });
-        });
-    });
-
-    /* Save / load palettes (localStorage, this device only) */
-    state.saved = loadSavedList();
-    renderSaved();
-    $("save-palette").addEventListener("click", () => {
-        toggleSave();
-    });
-
-    /* Agency branding for white-label client documentation */
+    /* Agency branding for client documentation */
     state.agency = loadAgency();
     syncAgencyFields();
     $("agency-name").addEventListener("input", () => { state.agency.name = $("agency-name").value; onAgencyChange(); });
     $("agency-client").addEventListener("input", () => { state.agency.client = $("agency-client").value; onAgencyChange(); });
-    $("agency-whitelabel").addEventListener("change", () => { state.agency.whiteLabel = $("agency-whitelabel").checked; onAgencyChange(); });
-    $("agency-logo").addEventListener("change", e => {
-        const file = e.target.files[0];
-        e.target.value = "";
-        if (!file) return;
-        if (file.size > 500 * 1024) { toast("Logo too large, keep it under 500KB"); return; }
-        const reader = new FileReader();
-        reader.onload = () => {
-            state.agency.logo = reader.result;
-            $("agency-logo-clear").hidden = false;
-            onAgencyChange();
-            toast("Logo saved");
-        };
-        reader.onerror = () => toast("Could not read that file");
-        reader.readAsDataURL(file);
-    });
-    $("agency-logo-clear").addEventListener("click", () => {
-        state.agency.logo = null;
-        $("agency-logo-clear").hidden = true;
-        onAgencyChange();
-    });
 
-    /* Image extraction: downsample onto a canvas, quantize, hand
-       the result to the Fixer. Everything stays client-side. */
-    $("fix-image").addEventListener("change", e => {
-        const file = e.target.files[0];
-        e.target.value = "";
-        if (!file) return;
-        const img = new Image();
-        img.onload = () => {
-            /* try/catch because onload does not mean drawable: an SVG
-               with no intrinsic size reports width 0 and drawImage /
-               getImageData can throw. An uncaught throw here left no
-               toast and leaked the object URL. */
-            try {
-                const c = document.createElement("canvas");
-                const scale = Math.min(1, 96 / Math.max(1, img.width, img.height));
-                c.width = Math.max(1, Math.round(img.width * scale));
-                c.height = Math.max(1, Math.round(img.height * scale));
-                const ctx = c.getContext("2d", { willReadFrequently: true });
-                ctx.drawImage(img, 0, 0, c.width, c.height);
-                const data = ctx.getImageData(0, 0, c.width, c.height).data;
-                const hexes = E.quantizeColors(data, 5);
-                if (hexes.length < 2) { toast("Could not read enough distinct colors"); return; }
-                $("fix-input").value = hexes.join(" ");
-                runFixer();
-            } catch {
-                toast("Could not read that image");
-            } finally {
-                URL.revokeObjectURL(img.src);
-            }
-        };
-        img.onerror = () => { URL.revokeObjectURL(img.src); toast("Could not read that image"); };
-        img.src = URL.createObjectURL(file);
-    });
     $("swatch-row").addEventListener("keydown", e => {
         if (e.key === "Enter" || e.key === " ") {
             const chip = e.target.closest(".swatch-chip");
@@ -1599,128 +890,6 @@ document.addEventListener("DOMContentLoaded", () => {
     $("print-sheet").addEventListener("click", () => {
         window.print();
     });
-    $("svg-card").addEventListener("click", downloadSvgCard);
-    $("ai-package").addEventListener("click", downloadAiPackage);
-
-
-
-    /* Fixer */
-    $("fix-run").addEventListener("click", runFixer);
-    $("fix-input").addEventListener("keydown", e => {
-        if (e.isComposing) return;
-        if (e.key === "Enter") runFixer();
-    });
-    $("fix-adopt").addEventListener("click", adoptFixed);
-
-    /* Type rail: delegated, because the cards are rebuilt on every
-       palette change. Selecting a pairing re-renders the rail and the
-       print sheet, which both read state.typeIndex. */
-    $("type-rail").addEventListener("click", e => {
-        const btn = e.target.closest(".specimen-select");
-        if (!btn) return;
-        state.typeIndex = Number(btn.dataset.pair);
-        renderTypeLab();
-        if (state.palette) renderPrintSheet(state.palette);
-    });
-
-    /* A font name is only ever used as a Google Fonts query param and
-       a CSSOM font-family value - neither is an HTML injection risk -
-       but an unrestricted charset still lets stray "&"/"=" characters
-       silently break the fonts.googleapis.com querystring, and stray
-       quotes break the CSSOM font-family value. Google Fonts family
-       names are themselves letters/digits/spaces (a few carry a
-       hyphen, e.g. "IBM Plex Sans"), so that's the honest allowlist. */
-    const FONT_NAME_RE = /^[A-Za-z0-9][A-Za-z0-9 \-]{0,58}[A-Za-z0-9]$/;
-
-    function reRenderTypeSurfaces() {
-        renderTypeLab();
-        if (state.palette) renderPrintSheet(state.palette);
-    }
-
-    /* Confirms a family actually resolves to real glyphs rather than
-       the browser's silent fallback. document.fonts.load() only matches
-       an @font-face rule already parsed into the document, so the
-       caller must await loadPairFonts() (which waits for the stylesheet's
-       load event) before calling this - otherwise the check races the
-       network fetch and reports real fonts as missing. Riding the
-       already-loaded stylesheet also means no separate network fetch
-       here, so it can't be blocked by CSP connect-src and has no
-       cross-origin response-reading concerns. */
-    async function fontActuallyLoaded(family, weight) {
-        if (!("fonts" in document)) return true; // very old browser: apply optimistically
-        try {
-            const faces = await document.fonts.load(`${weight} 16px "${family}"`);
-            return faces.length > 0;
-        } catch (e) {
-            return false;
-        }
-    }
-
-    $("custom-type-apply").addEventListener("click", async () => {
-        const applyBtn = $("custom-type-apply");
-        if (applyBtn.disabled) return; // guard against double-submit while a check is in flight
-        const disp = $("custom-type-display").value.trim();
-        const weight = Number($("custom-type-display-weight").value.trim() || "700") || 700;
-        const body = $("custom-type-body").value.trim();
-        const err = $("custom-type-error");
-        err.style.display = "none";
-
-        if (!disp || !body) {
-            err.textContent = "Both display and body fonts are required.";
-            err.style.display = "block";
-            return;
-        }
-        if (!FONT_NAME_RE.test(disp) || !FONT_NAME_RE.test(body)) {
-            err.textContent = "Font names can only contain letters, numbers, spaces, and hyphens.";
-            err.style.display = "block";
-            return;
-        }
-
-        const candidate = {
-            display: disp,
-            body: body,
-            displayWeight: weight,
-            bodyWeight: 400,
-            why: "Custom typography applied by you."
-        };
-
-        applyBtn.disabled = true;
-        applyBtn.textContent = "Checking font…";
-        try {
-            await loadPairFonts(candidate);
-            const [dispOk, bodyOk] = await Promise.all([
-                fontActuallyLoaded(disp, weight),
-                fontActuallyLoaded(body, 400)
-            ]);
-            if (!dispOk || !bodyOk) {
-                const missing = [!dispOk ? disp : null, !bodyOk ? body : null].filter(Boolean).join(" and ");
-                err.textContent = `Could not find "${missing}" on Google Fonts. Check the spelling and try again.`;
-                err.style.display = "block";
-                return;
-            }
-
-            state.customTypePair = candidate;
-            state.typeIndex = 0;
-            reRenderTypeSurfaces();
-            $("custom-type-reset").hidden = false;
-            toast("Custom pairing applied");
-        } finally {
-            applyBtn.disabled = false;
-            applyBtn.textContent = "Apply pairing";
-        }
-    });
-
-    $("custom-type-reset").addEventListener("click", () => {
-        state.customTypePair = null;
-        state.typeIndex = 0;
-        $("custom-type-display").value = "";
-        $("custom-type-body").value = "";
-        $("custom-type-display-weight").value = "700";
-        $("custom-type-error").style.display = "none";
-        $("custom-type-reset").hidden = true;
-        reRenderTypeSurfaces();
-        toast("Reset to the engine's own pairing");
-    });
 
     /* Scroll reveals */
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -1733,23 +902,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             });
         }, { threshold: 0.15 });
-        document.querySelectorAll(".section-head, .workbench, .fixer, .type-lab, .system-lab, .method-band-wrap, .laws, .faq").forEach(el => {
+        document.querySelectorAll(".section-head, .workbench, .method-band-wrap, .laws, .faq").forEach(el => {
             el.classList.add("reveal");
             io.observe(el);
         });
     }
 
-
-
     /* First palette: restore a shared link if present, else fresh. */
     if (!restoreFromUrl()) generate(true);
-});
-
-window.addEventListener("scroll", () => {
-    if ($("fixer-stepper") && $("fixer-stepper").style.display !== "none") {
-        const sys = $("system");
-        if (sys && sys.getBoundingClientRect().top < window.innerHeight / 2) {
-            updateStepper("export");
-        }
-    }
 });

@@ -99,5 +99,25 @@
 - `README.md` & `PRODUCT.md`: Removed the "Studio Assistant" sections, quick start notes, and references to local Ollama and Gemini API configurations. ✓
 - **Verification:** Ran `node tools/regression.mjs` and verified the suite is fully green (Exit Code: 0). ✓
 
+## Phase 4a — Delete the Fixer door, AI pack, and collection UI
+**Date:** 2026-08-19
+**Status:** PASS
+
+### Actions completed
+- Deleted files: `js/aipack.js`. ✓
+- `index.html`: Removed `#fixer`, `#type`, and `#system` links in navigation, the Fixer section `#fixer`, Type section `#type`, and System section `#system`. Removed saved-palettes block, shades-panel, history-row, spacebar generating hints, and download buttons for SVG card, SCSS, JSON, and AI package. ✓
+- `js/main.js`: Removed `openShades()`, `miniStrip()`, `restorePalette()`, `pushHistory()`, `renderHistory()`, `isValidSavedEntry()`, `loadSavedList()`, `persistSaved()`, `toggleSave()`, `syncSaveButton()`, `renderSaved()`, `runFixer()`, `adoptFixed()`, `updateStepper()`, `downloadSvgCard()`, `downloadAiPackage()`, spacebar listener, scroll reveal targets for fixer/type/system, and simplified `loadAgency()`, `syncAgencyFields()`, and `renderPrintSheet()`. Removed print gamut and CMYK outputs from `renderPrintSheet()`. Removed `SiteTheme` and its live chrome styling injection. ✓
+- `css/style.css`: Removed all `.fixer`, `.compare-band`, `.shades-panel`, `.shades-btn`, `.mini-strip`, `.saved-block`, `.saved-list`, `.saved-row`, `.saved-del`, `.vision-row`, `.vision-btn`, `.history-block`, `.history-row`, `.system-lab`, `.system-block`, `.spacing-strip`, `.spacing-bar`, `.radius-row`, `.elevation-row`, `.states-row`, `.radius-chip`, `.elevation-card`, `.state-chip`, `.type-stack`, `.specimen-card`, `.specimen`, `.specimen-display`, `.specimen-body`, `.specimen-meta`, `.type-name`, `.type-name-body`, `.specimen-note`, `.specimen-select`, `.type-rail-hint`, and `.custom-type-panel` CSS rules. ✓
+
+## Phase 4b — Delete now-dead engine code
+**Date:** 2026-08-19
+**Status:** PASS
+
+### Actions completed
+- `js/engine.js`: Removed functions `fixPalette()`, `quantizeColors()`, `rgbToCmyk()`, `gamutRisk()`, `exportScss()`, `exportJson()`, `exportSvgCard()`. Removed `cmyk` and `print` fields from `build()` swatch generator helper inside `generatePalette()`. Retained `diagnosePalette()` and `parseHexList()` (as they are needed for Phase 6 tradeoff compiler/brief rendering) and kept them in `window.Engine` exports. ✓
+- `tools/test-b4-engine.mjs`: Rewrote to test `diagnosePalette()` instead of `fixPalette()`. ✓
+- `tools/regression.mjs`: Removed `fixPalette` fuzz sweep; kept `generatePalette` contrast sweep. ✓
+- **Verification:** Ran `node tools/regression.mjs` and verified the entire suite passes cleanly with Exit Code: 0. ✓
+
 
 

@@ -10,64 +10,33 @@ const evaluate = new Function('window', `
 evaluate(context);
 const Engine = context.Engine;
 
-function getLuminance(r, g, b) {
-    const a = [r, g, b].map(v => {
-        v /= 255;
-        return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-    });
-    return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
-}
-
-function getContrast(hex1, hex2) {
-    const rgb1 = Engine.hexToRgb(hex1);
-    const rgb2 = Engine.hexToRgb(hex2);
-    if (!rgb1 || !rgb2) return 1;
-    const l1 = getLuminance(rgb1.r, rgb1.g, rgb1.b);
-    const l2 = getLuminance(rgb2.r, rgb2.g, rgb2.b);
-    const lightest = Math.max(l1, l2);
-    const darkest = Math.min(l1, l2);
-    return (lightest + 0.05) / (darkest + 0.05);
-}
-
-function runB4EngineTests() {
+function runDiagnoseTests() {
     let failed = 0;
-    let differCount = 0;
 
-    for (let i = 0; i < 100; i++) {
-        const seeds = [
-            '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0'),
-            '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0'),
-            '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0'),
-            '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')
-        ];
-
-        const resPreserve = Engine.fixPalette(seeds, { strategy: 'preserve' });
-        const resBalanced = Engine.fixPalette(seeds, { strategy: 'balanced' });
-        const resMaximize = Engine.fixPalette(seeds, { strategy: 'maximize' });
-
-        for (const res of [resPreserve, resBalanced, resMaximize]) {
-            const ink = res.swatches.find(c => c.role === 'Ink')?.hex;
-            const canvas = res.swatches.find(c => c.role === 'Dominant')?.hex || '#FFFFFF';
-            if (ink) {
-                const contrast = getContrast(ink, canvas);
-                if (contrast < 4.45) {
-                    console.error(`FAIL: Contrast floor failed for strategy. Expected >= 4.5, got ${contrast}`);
-                    failed++;
-                }
-            }
-        }
-
-        const strPreserve = JSON.stringify(resPreserve.swatches);
-        const strBalanced = JSON.stringify(resBalanced.swatches);
-        const strMaximize = JSON.stringify(resMaximize.swatches);
-
-        if (strPreserve !== strBalanced || strBalanced !== strMaximize) {
-            differCount++;
-        }
+    // Test Case 1: Palette with a dark anchor and high contrast
+    const cleanPalette = ['#FFFFFF', '#0B0B0D', '#00FF00', '#FF0000'];
+    const issuesClean = Engine.diagnosePalette(cleanPalette);
+    // Might have Law 2 everything is muted? No, green and red are highly saturated.
+    // Might have Law 5? No, only red/green are loud.
+    // Dominant: #FFFFFF, Ink: #0B0B0D (contrast ~21:1).
+    if (issuesClean.some(issue => issue.law === 1 || issue.law === 9)) {
+        console.error("FAIL: diagnosed clean palette as breaking Law 1 or Law 9");
+        failed++;
     }
 
-    if (differCount === 0) {
-        console.error("FAIL: Strategy selector produced identical outputs across all 100 seeds.");
+    // Test Case 2: Palette with no dark anchor (lightest/darkest are both light)
+    const lightOnly = ['#FFFFFF', '#EEEEEE', '#DDDDDD', '#CCCCCC'];
+    const issuesLightOnly = Engine.diagnosePalette(lightOnly);
+    if (!issuesLightOnly.some(issue => issue.law === 1)) {
+        console.error("FAIL: missed missing dark anchor in light-only palette");
+        failed++;
+    }
+
+    // Test Case 3: Too many loud colors
+    const tooManyLoud = ['#050505', '#FFFFFF', '#FF0000', '#00FF00', '#0000FF'];
+    const issuesLoud = Engine.diagnosePalette(tooManyLoud);
+    if (!issuesLoud.some(issue => issue.law === 5)) {
+        console.error("FAIL: missed too many loud colors");
         failed++;
     }
 
@@ -79,4 +48,4 @@ function runB4EngineTests() {
     }
 }
 
-runB4EngineTests();
+runDiagnoseTests();

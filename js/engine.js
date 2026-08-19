@@ -56,40 +56,7 @@ function hslToRgb({ h, s, l }) {
 function hslToHex(hsl) { return rgbToHex(hslToRgb(hsl)); }
 function hexToHsl(hex) { return rgbToHsl(hexToRgb(hex)); }
 
-/* Naive uncoated-stock approximation. Real print work needs a
-   calibrated profile; these values are a proofing starting point. */
-function rgbToCmyk({ r, g, b }) {
-    const rr = r / 255, gg = g / 255, bb = b / 255;
-    const k = 1 - Math.max(rr, gg, bb);
-    if (k === 1) return { c: 0, m: 0, y: 0, k: 100 };
-    return {
-        c: Math.round(((1 - rr - k) / (1 - k)) * 100),
-        m: Math.round(((1 - gg - k) / (1 - k)) * 100),
-        y: Math.round(((1 - bb - k) / (1 - k)) * 100),
-        k: Math.round(k * 100)
-    };
-}
 
-/* Print gamut risk. CMYK inks cannot reproduce highly saturated
-   mid-lightness RGB color; saturated greens, cyans, violets and
-   magentas suffer most. This is a designer's rule-of-thumb
-   heuristic, NOT an ICC conversion, and the UI labels it as such.
-   The safe alternate keeps hue and lightness, pulls saturation
-   to roughly what process inks can hold. */
-function gamutRisk(hex) {
-    const { h, s, l } = hexToHsl(hex);
-    if (l < 18 || l > 88 || s < 60) return { risk: "none", safeHex: hex };
-    /* Yellow is a process ink primary; saturated true yellows
-       (roughly h 38-62) print faithfully and must not be flagged.
-       Past 62 the mix needs cyan and the gamut collapses, which
-       is exactly why electric lime looks electric on screen. */
-    if (h >= 38 && h <= 62) return { risk: "none", safeHex: hex };
-    const fragile = (h > 62 && h <= 200) || (h >= 250 && h <= 330);
-    const threshold = fragile ? 72 : 88;
-    if (s <= threshold) return { risk: "none", safeHex: hex };
-    const safeHex = hslToHex({ h, s: threshold, l });
-    return { risk: s > threshold + 12 ? "high" : "moderate", safeHex };
-}
 
 /* ---------- 2. WCAG contrast ---------- */
 
@@ -268,40 +235,7 @@ function shadeScale(hex, steps = 10) {
     return out;
 }
 
-/* ---------- 4c. Image quantization ---------- */
 
-/* Dominant colors from raw RGBA pixel data (a downsampled canvas).
-   Coarse 4-bit bucketing, then a greedy pick of the most populous
-   cells that are far enough apart in hue/lightness to be distinct.
-   Saturated cells get a nudge so a photo of a red door on grey
-   brick returns the door, not five bricks. */
-function quantizeColors(data, count = 5) {
-    const buckets = new Map();
-    for (let i = 0; i < data.length; i += 4) {
-        if (data[i + 3] < 200) continue;
-        const r = data[i], g = data[i + 1], b = data[i + 2];
-        const key = ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4);
-        const cur = buckets.get(key) || { r: 0, g: 0, b: 0, n: 0 };
-        cur.r += r; cur.g += g; cur.b += b; cur.n++;
-        buckets.set(key, cur);
-    }
-    const cells = [...buckets.values()].map(c => {
-        const rgb = { r: c.r / c.n, g: c.g / c.n, b: c.b / c.n };
-        const hsl = rgbToHsl(rgb);
-        return { rgb, hsl, weight: c.n * (0.5 + hsl.s / 200) };
-    }).sort((a, b) => b.weight - a.weight);
-
-    const picked = [];
-    for (const c of cells) {
-        const distinct = picked.every(p => {
-            const dh = Math.min(Math.abs(p.hsl.h - c.hsl.h), 360 - Math.abs(p.hsl.h - c.hsl.h));
-            return dh > 24 || Math.abs(p.hsl.l - c.hsl.l) > 22 || Math.abs(p.hsl.s - c.hsl.s) > 35;
-        });
-        if (distinct) picked.push(c);
-        if (picked.length >= count) break;
-    }
-    return picked.map(c => rgbToHex(c.rgb));
-}
 
 /* ---------- 5. Archetypes (from the Bible's psychology + combos) ---------- */
 
@@ -546,7 +480,7 @@ function generatePalette({ category = "saas", seed = Date.now(), borrow = false,
 
     const build = hex => {
         const rgb = hexToRgb(hex);
-        return { hex, rgb, hsl: rgbToHsl(rgb), cmyk: rgbToCmyk(rgb), name: nameColor(hex), print: gamutRisk(hex) };
+        return { hex, rgb, hsl: rgbToHsl(rgb), name: nameColor(hex) };
     };
 
     const swatches = [
@@ -652,179 +586,6 @@ function diagnosePalette(hexes) {
     }
 
     return issues;
-}
-
-function fixPalette(hexes, options = { strategy: 'balanced' }) {
-    const issues = diagnosePalette(hexes);
-    const items = hexes.map(hex => ({ hex, hsl: hexToHsl(hex), note: null }));
-    
-    const strat = options.strategy;
-    const inkThresh = strat === 'preserve' ? 20 : strat === 'maximize' ? 40 : 30;
-    const muteThresh = strat === 'preserve' ? 25 : strat === 'maximize' ? 50 : 35;
-    const shoutSatThresh = strat === 'preserve' ? 55 : strat === 'maximize' ? 35 : 45;
-
-    /* Assign roles: lightest becomes Dominant, darkest becomes Ink,
-       most saturated of the rest becomes Brand, next becomes Accent.
-       Every input color gets an explicit fate in `mapping`; nothing
-       disappears silently. */
-    const byLight = [...items].sort((a, b) => b.hsl.l - a.hsl.l);
-    let dominant = byLight[0];
-    let inkSource = byLight[byLight.length - 1];
-    let middle = items.filter(i => i !== dominant && i !== inkSource);
-
-    /* Law 1 fix: forge an anchor if none exists. The failed anchor
-       candidate rejoins the pool and competes for Brand/Accent
-       instead of being dropped. */
-    let ink;
-    if (inkSource.hsl.l > inkThresh) {
-        middle.push(inkSource);
-        const seedHue = middle.length
-            ? [...middle].sort((a, b) => b.hsl.s - a.hsl.s)[0].hsl.h
-            : dominant.hsl.h;
-        ink = { hex: hslToHex({ h: seedHue, s: 18, l: 10 }), hsl: { h: seedHue, s: 18, l: 10 }, forged: true };
-    } else {
-        ink = inkSource;
-    }
-
-    middle.sort((a, b) => b.hsl.s - a.hsl.s);
-    let brand = middle[0] || null;
-    let accent = middle[1] || null;
-    let retired = middle.slice(2);
-    
-    if (strat === 'maximize') {
-        if (accent && Math.abs(accent.hsl.h - brand.hsl.h) < 20) {
-            retired.push(accent);
-            accent = null;
-        }
-    }
-
-    /* No primary candidate: promote the dominant's hue at full power. */
-    let brandSynth = false;
-    if (!brand) {
-        const h = dominant.hsl.h;
-        brand = { hsl: { h, s: 78, l: 42 }, hex: hslToHex({ h, s: 78, l: 42 }) };
-        brandSynth = true;
-    }
-
-    /* All muted fix: give the primary its voice back. */
-    const brandOrig = brand.hex;
-    if (brand.hsl.s < muteThresh) {
-        brand = { hsl: { ...brand.hsl, s: 80 }, hex: hslToHex({ ...brand.hsl, s: 80 }), src: brand };
-    }
-
-    /* Law 2 is disabled. Secondary is kept at high saturation if requested. */
-    let accentSynth = false;
-    const accentOrig = accent ? accent.hex : null;
-    if (!accent) {
-        const h = (brand.hsl.h + 180) % 360; // Complementary by default
-        const hsl = { h, s: Math.max(70, Math.round(brand.hsl.s * 0.9)), l: 55 };
-        accent = { hsl, hex: hslToHex(hsl) };
-        accentSynth = true;
-    }
-
-    /* Dominant must be a canvas, not a shout. */
-    const dominantOrig = dominant.hex;
-    if (dominant.hsl.s > shoutSatThresh && dominant.hsl.l < 88 && dominant.hsl.l > 40) {
-        const hsl = { h: dominant.hsl.h, s: 18, l: 94 };
-        dominant = { hsl, hex: hslToHex(hsl), src: dominant };
-    }
-
-    /* Contrast pass. */
-    const inkHex = ensureContrast(ink.hex, dominant.hex, 7);
-    const brandHex = ensureContrast(brand.hex, dominant.hex, 3);
-    const accentHex = ensureContrastVivid(accent.hex, dominant.hex, 3);
-
-    /* Provenance: one line per input color. */
-    const fate = new Map();
-    const fateAction = new Map();
-    const fateReason = new Map();
-    
-    fate.set(dominantOrig, dominant.hex === dominantOrig
-        ? "Kept as Dominant, the canvas."
-        : `Softened into the Dominant canvas ${dominant.hex}.`);
-    fateAction.set(dominantOrig, dominant.hex === dominantOrig ? "kept" : "adjusted");
-    fateReason.set(dominantOrig, dominant.hex === dominantOrig ? "" : "shout canvas");
-        
-    if (!ink.forged) {
-        fate.set(inkSource.hex, "Kept as Ink, the dark anchor.");
-        fateAction.set(inkSource.hex, inkHex === inkSource.hex ? "kept" : "adjusted");
-        fateReason.set(inkSource.hex, inkHex === inkSource.hex ? "" : "contrast");
-    }
-    if (!brandSynth) {
-        fate.set(brandOrig, brandHex === brandOrig
-            ? "Kept as Primary, the lead voice."
-            : `Adjusted to ${brandHex} as Primary.`);
-        fateAction.set(brandOrig, brandHex === brandOrig ? "kept" : "adjusted");
-        fateReason.set(brandOrig, brandHex === brandOrig ? "" : "contrast / mute");
-    }
-    if (!accentSynth && accentOrig) {
-        fate.set(accentOrig, accentHex === accentOrig
-            ? "Kept as Secondary."
-            : `Adjusted to ${accentHex} as Secondary.`);
-        fateAction.set(accentOrig, accentHex === accentOrig ? "kept" : "adjusted");
-        fateReason.set(accentOrig, accentHex === accentOrig ? "" : "contrast");
-    }
-    retired.forEach(r => {
-        fate.set(r.hex, "Retired to keep two voices, Primary and Secondary (Law 5).");
-        fateAction.set(r.hex, "retired");
-        fateReason.set(r.hex, "Law 5");
-    });
-
-    const mapping = hexes.map(hex => ({
-        from: hex,
-        note: fate.get(hex) || "Retired to keep two voices, Primary and Secondary (Law 5).",
-        action: fateAction.get(hex) || "retired",
-        reason: fateReason.get(hex) || "Law 5"
-    }));
-    if (ink.forged) mapping.push({ from: inkHex, note: "Forged: the dark anchor your palette was missing (Law 1).", action: "forged", reason: "Law 1" });
-    if (accentSynth) mapping.push({ from: accentHex, note: "Synthesized: a supporting secondary color.", action: "forged", reason: "synth" });
-
-    const build = (hex, role, pct, job) => {
-        const rgb = hexToRgb(hex);
-        return { hex, rgb, hsl: rgbToHsl(rgb), cmyk: rgbToCmyk(rgb), name: nameColor(hex), role, pct, job, print: gamutRisk(hex) };
-    };
-
-    const swatches = [
-        build(dominant.hex, "Dominant", "60", "The canvas. Backgrounds, large surfaces, breathing room."),
-        build(brandHex, "Primary", "30", "The color people remember. Logo, primary buttons, hero blocks."),
-        build(accentHex, "Secondary", "10", "The pop. CTAs, highlights, micro-interactions. Sparingly."),
-        build(inkHex, "Ink", "Text", "The anchor. Text and small UI, grounding the noise.")
-    ];
-    if (swatches[2].name === swatches[1].name) swatches[2].name = "Soft " + swatches[2].name;
-
-    // Wire up mapping to swatches
-    mapping.forEach(m => {
-        if (m.action !== "retired" && m.action !== "forged") {
-            if (m.from === dominantOrig) m.swatch = swatches[0];
-            else if (m.from === brandOrig) m.swatch = swatches[1];
-            else if (m.from === accentOrig) m.swatch = swatches[2];
-            else if (!ink.forged && m.from === inkSource.hex) m.swatch = swatches[3];
-        }
-    });
-
-    const domIsDark = hexToHsl(dominant.hex).l < 40;
-    const darkDominant = domIsDark ? dominant.hex : hslToHex({ h: brand.hsl.h, s: 12, l: 9 });
-
-    return {
-        issues,
-        original: hexes,
-        mapping,
-        swatches,
-        deployments: {
-            light: { bg: swatches[0].hex, ink: swatches[3].hex, brand: swatches[1].hex, accent: swatches[2].hex },
-            dark: {
-                bg: darkDominant,
-                ink: hslToHex({ h: hexToHsl(darkDominant).h, s: 8, l: 93 }),
-                brand: ensureContrast(brandHex, darkDominant, 3),
-                accent: ensureContrast(accentHex, darkDominant, 3)
-            }
-        },
-        contrasts: [
-            { pair: "Ink on Dominant", ratio: contrastRatio(swatches[3].hex, swatches[0].hex) },
-            { pair: "Primary on Dominant", ratio: contrastRatio(swatches[1].hex, swatches[0].hex) },
-            { pair: "Secondary on Dominant", ratio: contrastRatio(swatches[2].hex, swatches[0].hex) }
-        ]
-    };
 }
 
 /* ---------- 8. Typography pairing ---------- */
@@ -1128,39 +889,7 @@ ${shadowVars}
 }`;
 }
 
-function exportScss(p) {
-    const sys = systemTokens(p);
-    const spacingVars = sys.spacing.map(s => `$space-${s.name}: ${s.px}px;`).join("\n");
-    const radiusVars = sys.radius.map(r => `$radius-${r.name}: ${r.px === 999 ? "9999px" : r.px + "px"};`).join("\n");
-    const elevationVars = sys.elevation.filter(e => e.name !== "0").map(e => `$elevation-${e.name}: ${e.css};`).join("\n");
-    return `// ${brandLine(p)}
-$color-dominant: ${p.swatches[0].hex}; // 60
-$color-primary: ${p.swatches[1].hex};  // 30
-$color-secondary: ${p.swatches[2].hex}; // 10
-$color-ink: ${p.swatches[3].hex};      // text
 
-// Spacing
-${spacingVars}
-
-// Radius
-${radiusVars}
-
-// Elevation
-${elevationVars}`;
-}
-
-function exportJson(p) {
-    return JSON.stringify({
-        method: "60-30-10",
-        seed: p.seed || null,
-        colors: p.swatches.map(s => ({
-            role: s.role, share: s.pct, name: s.name, hex: s.hex,
-            rgb: s.rgb, cmyk: s.cmyk,
-            printGamut: s.print ? { risk: s.print.risk, safeHex: s.print.safeHex } : undefined
-        })),
-        deployments: p.deployments
-    }, null, 2);
-}
 
 /* The canonical multi-category token payload - one shape every export
    format derives from, and the shape an external consumer (a
@@ -1210,30 +939,7 @@ function brandLine(p) {
    roles, values, and the current type pairing. `branding` swaps
    the footer credit from Gamut to an agency's own name when
    white-labeling for a client deliverable. */
-function exportSvgCard(p, pair, branding) {
-    const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
-    const trimmedName = branding && branding.name ? branding.name.trim() : "";
-    const label = branding && branding.whiteLabel && trimmedName ? trimmedName : "Gamut";
-    const W = 840, chipW = W / 4;
-    const chips = p.swatches.map((s, i) => {
-        const x = i * chipW;
-        /* Contrast-picked, not lightness-picked: a mid-lightness
-           yellow must still get dark text. */
-        const tc = contrastRatio(s.hex, "#161616") >= contrastRatio(s.hex, "#F5F5F0")
-            ? "#161616" : "#F5F5F0";
-        return `
-    <rect x="${x}" y="0" width="${chipW}" height="300" fill="${s.hex}"/>
-    <text x="${x + 18}" y="230" fill="${tc}" font-size="15" font-weight="bold" font-family="Arial,sans-serif">${esc(s.role)} ${s.pct === "Text" ? "" : s.pct + "%"}</text>
-    <text x="${x + 18}" y="252" fill="${tc}" font-size="12" font-family="monospace">${s.hex}</text>
-    <text x="${x + 18}" y="270" fill="${tc}" font-size="11" opacity="0.75" font-family="monospace">cmyk ${s.cmyk.c} ${s.cmyk.m} ${s.cmyk.y} ${s.cmyk.k}</text>`;
-    }).join("");
-    const typeLine = pair ? `${pair.display} + ${pair.body}${pair.mono ? " + " + pair.mono : ""}` : "";
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="392" viewBox="0 0 ${W} 392">
-  <rect width="${W}" height="392" fill="#161616"/>${chips}
-  <text x="18" y="336" fill="#F5F5F0" font-size="15" font-weight="bold" font-family="Arial,sans-serif">${esc(typeLine)}</text>
-  <text x="18" y="362" fill="#8F8E86" font-size="11" font-family="monospace">60-30-10 deployment  |  ${esc(label)}</text>
-</svg>`;
-}
+
 
 /* Nearest type mood for an arbitrary brand color, so palettes
    arriving from the Fixer still get a fitting pairing. */
@@ -1250,13 +956,13 @@ function moodFromColor(hex) {
 }
 
 window.Engine = {
-    hexToRgb, rgbToHex, hexToHsl, hslToHex, rgbToCmyk, gamutRisk,
+    hexToRgb, rgbToHex, hexToHsl, hslToHex,
     contrastRatio, contrastGrade, ensureContrast, ensureContrastVivid, readableOn,
-    shadeScale, quantizeColors,
+    shadeScale,
     ARCHETYPES, generatePalette,
-    parseHexList, diagnosePalette, fixPalette,
+    parseHexList, diagnosePalette,
     getTypePairs, googleFontsUrl, moodFromColor,
     spacingScale, radiusScale, elevationScale, stateVariants,
-    exportCss, exportTailwind, exportScss, exportJson, exportTokensJson, exportSvgCard,
+    exportCss, exportTailwind, exportTokensJson,
     nameColor, TYPE_PAIRS_MOOD, HARMONY_LABELS
 };
