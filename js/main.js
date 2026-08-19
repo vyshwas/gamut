@@ -344,13 +344,214 @@ function generate() {
     state.palette = palette;
     renderHeroField({ ...palette, swatches: themedHeroSwatches(palette, Theme.current()) });
     Wordmark.injectLive(palette);
-
-    // Call Direction Brief renderer placeholder (Phase 8 will implement this)
-    if (typeof renderBrief === "function") {
-        renderBrief(compiled, palette);
-    }
-
+    renderBrief(compiled, palette);
     syncUrl();
+}
+
+window.switchTechTab = function(tabName) {
+    document.querySelectorAll(".tech-tab-content").forEach(el => el.classList.remove("active"));
+    document.querySelectorAll(".tab-btn").forEach(el => el.classList.remove("active"));
+    
+    document.getElementById("tab-" + tabName).classList.add("active");
+    if (window.event && window.event.currentTarget) {
+        window.event.currentTarget.classList.add("active");
+    } else if (window.event && window.event.target) {
+        window.event.target.classList.add("active");
+    }
+};
+
+window.copyText = function(elementId, successMsg) {
+    const code = document.getElementById(elementId).innerText;
+    navigator.clipboard.writeText(code).then(() => {
+        toast(successMsg);
+    }).catch(err => {
+        const textarea = document.createElement("textarea");
+        textarea.value = code;
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand("copy");
+            toast(successMsg);
+        } catch (e) {
+            toast("Failed to copy text");
+        }
+        document.body.removeChild(textarea);
+    });
+};
+
+function renderBrief(compiled, palette) {
+    const output = $("brief-output");
+    if (!output) return;
+
+    const fontPair = E.getTypePairs(compiled.recipe.mood)[compiled.seed % E.getTypePairs(compiled.recipe.mood).length];
+
+    // Load fonts dynamically
+    let fontLink = $("dynamic-fonts");
+    if (!fontLink) {
+        fontLink = document.createElement("link");
+        fontLink.id = "dynamic-fonts";
+        fontLink.rel = "stylesheet";
+        document.head.appendChild(fontLink);
+    }
+    fontLink.href = E.googleFontsUrl(fontPair);
+
+    // Apply specimen styles
+    output.style.setProperty("--font-display", `"${fontPair.display}", serif`);
+    output.style.setProperty("--font-body", `"${fontPair.body}", sans-serif`);
+    output.style.setProperty("--font-display-w", fontPair.displayWeight);
+    output.style.setProperty("--font-body-w", fontPair.bodyWeight);
+
+    const clientStr = state.agency.client || "Brand System Direction";
+    const studioStr = state.agency.name || "Designare Studio";
+    const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    let swatchesHtml = palette.swatches.map(s => `
+        <div class="swatch-item" style="--swatch-color: ${s.hex}">
+            <div class="swatch-color-box"></div>
+            <div class="swatch-details">
+                <span class="swatch-role">${s.role}</span>
+                <span class="swatch-hex mono">${s.hex}</span>
+                <span class="swatch-name">${s.name}</span>
+            </div>
+        </div>
+    `).join("");
+
+    const contrasts = [
+        { name: "Brand (Primary) on Canvas (Dominant)", ratio: E.contrastRatio(palette.swatches[1].hex, palette.swatches[0].hex), req: 3.0, desc: "Primary brand focus visibility" },
+        { name: "Accent (Secondary) on Canvas (Dominant)", ratio: E.contrastRatio(palette.swatches[2].hex, palette.swatches[0].hex), req: 3.0, desc: "Secondary action readability" },
+        { name: "Ink on Canvas (Dominant)", ratio: E.contrastRatio(palette.swatches[3].hex, palette.swatches[0].hex), req: 4.5, desc: "Body text contrast" },
+        { name: "Ink on Brand (Primary)", ratio: E.contrastRatio(palette.swatches[3].hex, palette.swatches[1].hex), req: 4.5, desc: "Contrast inside primary panels" },
+        { name: "Ink on Accent (Secondary)", ratio: E.contrastRatio(palette.swatches[3].hex, palette.swatches[2].hex), req: 4.5, desc: "Contrast inside secondary controls" }
+    ];
+
+    let contrastRows = contrasts.map(c => {
+        const pass = c.ratio >= c.req;
+        const warn = pass && (c.ratio < c.req + 0.5);
+        const statusClass = !pass ? "status-fail" : (warn ? "status-warn" : "status-pass");
+        const statusText = !pass ? "FAIL" : (warn ? "WARN" : "PASS");
+        return `
+            <tr>
+                <td>
+                    <div><b>${c.name}</b></div>
+                    <div class="table-sub">${c.desc}</div>
+                </td>
+                <td class="text-right mono">${c.ratio.toFixed(2)}:1</td>
+                <td class="text-center mono">${c.req.toFixed(1)}:1</td>
+                <td class="text-center"><span class="status-badge ${statusClass}">${statusText}</span></td>
+            </tr>
+        `;
+    }).join("");
+
+    output.innerHTML = `
+        <div class="brief-document">
+            <!-- Header Block -->
+            <div class="brief-header">
+                <div class="brief-title-row">
+                    <div>
+                        <h1 class="brief-title">System Direction Brief</h1>
+                        <p class="brief-subtitle">${esc(clientStr)}</p>
+                    </div>
+                    <div class="brief-meta">
+                        <p class="mono-label">Prepared by</p>
+                        <p class="meta-val">${esc(studioStr)}</p>
+                        <p class="mono-label mt-2">Date</p>
+                        <p class="meta-val">${dateStr}</p>
+                    </div>
+                </div>
+                <div class="brief-system-bar">
+                    <span>Seed: <b class="mono">${compiled.seed}</b></span>
+                    <span>Variant: <b class="mono">${state.variant} / 5</b></span>
+                    <span>Category: <b class="mono">${E.ARCHETYPES[state.answers.category].label}</b></span>
+                </div>
+            </div>
+
+            <!-- Strategy & Rules Column Grid -->
+            <div class="brief-grid-2">
+                <div class="brief-card">
+                    <h3>Strategic Alignment</h3>
+                    <p class="category-description">${E.ARCHETYPES[state.answers.category].signal}</p>
+                    <ul class="brief-list">
+                        ${compiled.rationale.map(r => `<li>${esc(r)}</li>`).join("")}
+                    </ul>
+                </div>
+                
+                <div class="brief-card">
+                    <h3>Negative Constraints</h3>
+                    <p class="category-description">Decisions are defined by what they rule out. These design paths are locked out by your choices:</p>
+                    <ul class="brief-list ruled-out-list">
+                        ${compiled.ruledOut.map(ro => `<li>${esc(ro)}</li>`).join("")}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Interactive Type Specimen -->
+            <div class="brief-card type-specimen-card">
+                <h3>Typographic Personality</h3>
+                <p class="mono-label mb-4">Pairing: ${fontPair.display} / ${fontPair.body} (${compiled.recipe.mood})</p>
+                <div class="specimen-preview">
+                    <h1 class="specimen-display-text" contenteditable="true" spellcheck="false">Bold Display Heading</h1>
+                    <p class="specimen-body-text" contenteditable="true" spellcheck="false">This is a live, editable preview of the body typeface pairing. Click here to type custom brand messaging. It is selected to project the exact strategic stance compiled by the Tradeoff system.</p>
+                    <div class="specimen-meta-row">
+                        <span class="mono">Display: ${fontPair.display} (${fontPair.displayWeight})</span>
+                        <span class="mono">Body: ${fontPair.body} (${fontPair.bodyWeight})</span>
+                        ${fontPair.mono ? `<span class="mono">Mono: ${fontPair.mono}</span>` : ""}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Swatches & Accessibility Grid -->
+            <div class="brief-card">
+                <h3>Palette & Contrast Verification</h3>
+                <div class="swatches-grid">
+                    ${swatchesHtml}
+                </div>
+
+                <table class="contrast-table">
+                    <thead>
+                        <tr>
+                            <th>Verification Pair</th>
+                            <th class="text-right">Contrast Ratio</th>
+                            <th class="text-center">Required</th>
+                            <th class="text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${contrastRows}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Technical Spec Exports -->
+            <div class="brief-card">
+                <div class="tech-tabs-header">
+                    <h3>Technical Token Specifications</h3>
+                    <div class="tech-tabs">
+                        <button class="tab-btn active" onclick="switchTechTab('css')">CSS</button>
+                        <button class="tab-btn" onclick="switchTechTab('tailwind')">Tailwind</button>
+                        <button class="tab-btn" onclick="switchTechTab('json')">JSON</button>
+                    </div>
+                </div>
+                <div class="tech-tab-content active" id="tab-css">
+                    <div class="code-wrapper">
+                        <button class="copy-btn" onclick="copyText('code-css', 'CSS copied!')">Copy</button>
+                        <pre><code id="code-css">${esc(E.exportCss(palette))}</code></pre>
+                    </div>
+                </div>
+                <div class="tech-tab-content" id="tab-tailwind">
+                    <div class="code-wrapper">
+                        <button class="copy-btn" onclick="copyText('code-tailwind', 'Tailwind CSS copied!')">Copy</button>
+                        <pre><code id="code-tailwind">${esc(E.exportTailwind(palette))}</code></pre>
+                    </div>
+                </div>
+                <div class="tech-tab-content" id="tab-json">
+                    <div class="code-wrapper">
+                        <button class="copy-btn" onclick="copyText('code-json', 'JSON tokens copied!')">Copy</button>
+                        <pre><code id="code-json">${esc(E.exportTokensJson(palette, fontPair))}</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 function syncUrl() {

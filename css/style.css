@@ -1319,5 +1319,531 @@ select, input[type="text"], input[type="number"], textarea, .input {
     }
 }
 
+/* ---------- Brief Renderer Layout & Styles ---------- */
+
+.brief-document {
+    display: flex;
+    flex-direction: column;
+    gap: 2.2rem;
+    padding-bottom: 3rem;
+}
+
+.brief-header {
+    border-bottom: 1px solid var(--line-strong);
+    padding-bottom: 1.5rem;
+}
+
+.brief-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    gap: 1.5rem;
+    margin-bottom: 1.2rem;
+}
+
+.brief-title {
+    font-size: 2.2rem;
+    font-family: var(--font-display);
+    font-weight: 800;
+    line-height: 1.1;
+    margin: 0;
+    color: var(--bone);
+}
+
+.brief-subtitle {
+    font-size: 1.1rem;
+    color: var(--muted);
+    margin: 0.4rem 0 0 0;
+}
+
+.brief-meta {
+    text-align: right;
+    font-size: 0.85rem;
+}
+
+.mt-2 { margin-top: 0.5rem; }
+.mb-4 { margin-bottom: 1rem; }
+
+.mono-label {
+    font-family: var(--font-mono);
+    color: var(--muted);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0;
+}
+
+.meta-val {
+    font-weight: 600;
+    color: var(--bone);
+    margin: 0.1rem 0 0 0;
+}
+
+.brief-system-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    border-top: 1px solid var(--line);
+    padding: 0.8rem 0;
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+.brief-system-bar span {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.brief-system-bar b {
+    color: var(--bone);
+}
+
+.brief-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+@media (max-width: 767px) {
+    .brief-grid-2 {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+}
+
+.brief-card {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    padding: 1.5rem;
+    position: relative;
+}
+
+.brief-card h3 {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0 0 1rem 0;
+    color: var(--bone);
+}
+
+.category-description {
+    font-size: 0.92rem;
+    color: var(--bone);
+    line-height: 1.5;
+    margin: 0 0 1.2rem 0;
+}
+
+.brief-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.brief-list li {
+    font-size: 0.88rem;
+    line-height: 1.45;
+    color: var(--muted);
+    position: relative;
+    padding-left: 1.2rem;
+}
+
+.brief-list li::before {
+    content: "▪";
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: var(--accent);
+}
+
+.ruled-out-list li::before {
+    content: "—";
+    color: var(--muted-strong);
+}
+
+/* Interactive type specimen */
+.type-specimen-card {
+    background: var(--surface-2);
+    border: 1px solid var(--line-strong);
+}
+
+.specimen-preview {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    padding: 2rem;
+    margin-top: 1rem;
+}
+
+.specimen-display-text {
+    font-family: var(--font-display);
+    font-weight: var(--font-display-w);
+    font-size: 2.8rem;
+    line-height: 1.1;
+    color: var(--bone);
+    margin: 0 0 1rem 0;
+    outline: none;
+    border-bottom: 1px dashed transparent;
+    transition: border-bottom-color 0.2s var(--ease);
+}
+
+.specimen-display-text:hover,
+.specimen-display-text:focus {
+    border-bottom-color: var(--line-strong);
+}
+
+.specimen-body-text {
+    font-family: var(--font-body);
+    font-weight: var(--font-body-w);
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: var(--bone);
+    margin: 0 0 2rem 0;
+    max-width: 650px;
+    outline: none;
+    border-bottom: 1px dashed transparent;
+    transition: border-bottom-color 0.2s var(--ease);
+}
+
+.specimen-body-text:hover,
+.specimen-body-text:focus {
+    border-bottom-color: var(--line-strong);
+}
+
+.specimen-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    border-top: 1px solid var(--line);
+    padding-top: 1rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+/* Swatches grid */
+.swatches-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.8rem;
+}
+
+@media (max-width: 599px) {
+    .swatches-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.swatch-item {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    overflow: hidden;
+    background: var(--surface);
+}
+
+.swatch-color-box {
+    height: 70px;
+    background: var(--swatch-color);
+    border-bottom: 1px solid var(--line);
+}
+
+.swatch-details {
+    padding: 0.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.swatch-role {
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+}
+
+.swatch-hex {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--bone);
+}
+
+.swatch-name {
+    font-size: 0.75rem;
+    color: var(--muted);
+}
+
+/* Accessibility contrast table */
+.contrast-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    margin-top: 1rem;
+}
+
+.contrast-table th,
+.contrast-table td {
+    padding: 0.85rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--line);
+}
+
+.contrast-table th {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    font-weight: normal;
+    background: var(--surface-2);
+}
+
+.table-sub {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-top: 0.15rem;
+}
+
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+
+.status-badge {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
+    font-weight: bold;
+    border-radius: var(--r-sm);
+}
+
+.status-pass {
+    background: rgba(144, 238, 144, 0.15);
+    color: #90EE90;
+    border: 1px solid rgba(144, 238, 144, 0.3);
+}
+
+.status-warn {
+    background: rgba(255, 165, 0, 0.15);
+    color: #FFA500;
+    border: 1px solid rgba(255, 165, 0, 0.3);
+}
+
+.status-fail {
+    background: rgba(255, 99, 71, 0.15);
+    color: #FF6347;
+    border: 1px solid rgba(255, 99, 71, 0.3);
+}
+
+/* Technical Token Tabs & Pre/code blocks */
+.tech-tabs-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 1.2rem;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 0.5rem;
+}
+
+.tech-tabs-header h3 {
+    margin: 0;
+}
+
+.tech-tabs {
+    display: flex;
+    gap: 0.4rem;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    padding: 0.2rem;
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    padding: 0.3rem 0.6rem;
+    cursor: pointer;
+    border-radius: var(--r-sm);
+    transition: all 0.2s var(--ease);
+}
+
+.tab-btn:hover {
+    color: var(--bone);
+}
+
+.tab-btn.active {
+    background: var(--surface-2);
+    color: var(--accent);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.tech-tab-content {
+    display: none;
+}
+
+.tech-tab-content.active {
+    display: block;
+}
+
+.code-wrapper {
+    position: relative;
+    border-radius: var(--r-sm);
+    overflow: hidden;
+}
+
+.code-wrapper pre {
+    margin: 0;
+    padding: 1.2rem;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    overflow-x: auto;
+    font-size: 0.85rem;
+    max-height: 380px;
+}
+
+.copy-btn {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    background: var(--surface-2);
+    border: 1px solid var(--line-strong);
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    padding: 0.3rem 0.6rem;
+    cursor: pointer;
+    border-radius: var(--r-sm);
+    transition: all 0.2s var(--ease);
+}
+
+.copy-btn:hover {
+    color: var(--bone);
+    border-color: var(--accent);
+}
+
+/* ---------- 7. Media Print Stylesheet (A4 portrait presentation brief) ---------- */
+
+@media print {
+    *, ::before, ::after {
+        background: transparent !important;
+        color: #000 !important;
+        box-shadow: none !important;
+        text-shadow: none !important;
+    }
+
+    body {
+        background: #FFF !important;
+        color: #000 !important;
+        font-size: 10pt;
+        line-height: 1.4;
+    }
+
+    /* Hide UI controls and chrome */
+    .site-header,
+    footer,
+    #theme-toggle,
+    .controls,
+    .btn-hero-primary,
+    .section-head,
+    .copy-btn,
+    .tech-tabs,
+    #faq,
+    #method {
+        display: none !important;
+    }
+
+    /* Flatten columns & container layout for printing */
+    .workbench {
+        display: block !important;
+    }
+
+    .output {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .brief-document {
+        gap: 1.8rem;
+    }
+
+    .brief-title {
+        font-size: 26pt;
+        color: #000 !important;
+    }
+
+    .brief-subtitle {
+        font-size: 14pt;
+        color: #555 !important;
+    }
+
+    .brief-card {
+        background: #FFF !important;
+        border: 1px solid #CCC !important;
+        page-break-inside: avoid;
+        padding: 1.2rem;
+        margin-bottom: 1.2rem;
+    }
+
+    .specimen-preview {
+        background: #FFF !important;
+        border: 1px solid #CCC !important;
+        padding: 1.5rem;
+    }
+
+    .specimen-display-text {
+        font-size: 28pt;
+        color: #000 !important;
+    }
+
+    .specimen-body-text {
+        font-size: 11pt;
+        color: #222 !important;
+    }
+
+    .swatch-item {
+        background: #FFF !important;
+        border: 1px solid #CCC !important;
+    }
+
+    .swatch-color-box {
+        /* CSS print background coloring hack for standard browsers */
+        background: var(--swatch-color) !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .status-badge {
+        border: 1px solid #000 !important;
+        background: transparent !important;
+        color: #000 !important;
+    }
+
+    .tech-tab-content pre {
+        background: #FFF !important;
+        border: 1px solid #CCC !important;
+        font-size: 8pt;
+        max-height: none;
+        overflow: visible;
+        white-space: pre-wrap;
+    }
+
+    @page {
+        size: A4 portrait;
+        margin: 1.8cm;
+    }
+}
+
+
 
 
