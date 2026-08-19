@@ -2004,48 +2004,6 @@ select[aria-invalid="true"], input[aria-invalid="true"] {
     .hero-enter { opacity: 1; transform: none; animation: none; }
 }
 
-/* ---------- Extractor (drift stats + form) ----------
-   Reuses .map-row/.map-chip/.map-hex/.map-note from the Fixer's
-   mapping table (same provenance vocabulary, same visual language). */
-.extract-input-row { margin-bottom: 2rem; }
-.extract-input-row textarea {
-    width: 100%;
-    box-sizing: border-box;
-    padding: 1rem;
-    border: 1px solid var(--line);
-    border-radius: var(--r-sm);
-    /* Was var(--surface-1)/var(--fg) - neither token exists in this
-       system (only --surface/--surface-2/--bone), so the textarea
-       was rendering unthemed in both deployments. */
-    background: var(--surface-2);
-    color: var(--bone);
-}
-.extract-input-row .extract-actions {
-    margin-top: 1rem;
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-    flex-wrap: wrap;
-}
-.extract-input-row .hint { margin-top: 0.5rem; }
-.extract-results h3 { margin-bottom: 1.5rem; }
-.extract-drift {
-    margin-bottom: 2rem;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-}
-.extract-stat {
-    background: var(--surface-2);
-    padding: 1rem;
-    border-radius: var(--r-sm);
-}
-.extract-stat .exports-label { margin-bottom: 0.5rem; display: block; }
-.extract-confidence {
-    margin-bottom: 1.5rem;
-    color: var(--muted);
-}
-.extract-adopt-row { margin-top: 3rem; margin-bottom: 3rem; }
 
 /* ---------- Custom typography panel ---------- */
 .custom-type-panel {

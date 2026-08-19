@@ -1201,32 +1201,6 @@ function exportTokensJson(p, pair) {
    fixPalette() output since both share .swatches/.deployments and
    systemTokens() already falls back recipeKey->"custom" for palettes
    with no archetype (Fixer/Extractor output). */
-function exportDtcg(p, pair) {
-    const sys = systemTokens(p);
-    const d = p.deployments;
-    const colorGroup = dep => ({
-        dominant: { $type: "color", $value: dep.bg },
-        primary: { $type: "color", $value: dep.brand },
-        secondary: { $type: "color", $value: dep.accent },
-        ink: { $type: "color", $value: dep.ink }
-    });
-    const dimensionGroup = () => {
-        const out = {};
-        sys.spacing.forEach(s => { out[`spacing-${s.name}`] = { $type: "dimension", $value: `${s.px}px` }; });
-        sys.radius.forEach(r => { out[`radius-${r.name}`] = { $type: "dimension", $value: r.px === 999 ? "9999px" : `${r.px}px` }; });
-        return out;
-    };
-    const typographyGroup = () => pair ? {
-        display: { $type: "typography", $value: { fontFamily: pair.display } },
-        body: { $type: "typography", $value: { fontFamily: pair.body } }
-    } : {};
-
-    return {
-        schema: "gamut.dtcg.v1",
-        Light: { color: colorGroup(d.light), dimension: dimensionGroup(), typography: typographyGroup() },
-        Dark: { color: colorGroup(d.dark) }
-    };
-}
 
 function brandLine(p) {
     return p.swatches.map(s => `${s.role} ${s.hex}`).join("  ");
@@ -1283,6 +1257,6 @@ window.Engine = {
     parseHexList, diagnosePalette, fixPalette,
     getTypePairs, googleFontsUrl, moodFromColor,
     spacingScale, radiusScale, elevationScale, stateVariants,
-    exportCss, exportTailwind, exportScss, exportJson, exportTokensJson, exportSvgCard, exportDtcg,
+    exportCss, exportTailwind, exportScss, exportJson, exportTokensJson, exportSvgCard,
     nameColor, TYPE_PAIRS_MOOD, HARMONY_LABELS
 };

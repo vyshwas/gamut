@@ -73,3 +73,18 @@
 - `tools/regression.mjs`: Removed `tools/test-l4.mjs` execution and `licenses/revoked.json` snapshot/restoration logic. ✓
 - Verified that grep for keywords `license`, `Gate.`, `razorpay`, `studio-tag`, `worker` yields zero hits in edited files. ✓
 
+## Phase 2 — Delete the Extract door
+**Date:** 2026-08-19
+**Status:** PASS
+
+### Actions completed
+- Deleted files and folders: `js/extract.js`, `figma-plugin/`, `tools/test-p6-extract.mjs`. ✓
+- `index.html`: Removed `#extract` link in navigation, the Extractor `#extract` section, and the script tag for `js/extract.js`. ✓
+- `js/main.js`: Removed `runExtractor()`, `adoptExtracted()`, `copyExtractedForFigma()`, and all their associated DOM event listeners. ✓
+- `js/engine.js`: Removed `exportDtcg()` and its exports mapping in `window.Engine`. ✓
+- `css/style.css`: Removed all `.extract-input-row`, `.extract-actions`, `.extract-results`, `.extract-drift`, `.extract-stat`, `.extract-confidence`, and `.extract-adopt-row` rules. ✓
+- `README.md` & `PRODUCT.md`: Removed all paragraphs, sections, file structures, and positioning remarks regarding Figma Extract and DTCG variables. ✓
+- `tools/regression.mjs`: Removed `tools/test-p6-extract.mjs` and both plugin test files from suite registry, removed DTCG shape/fidelity check section, removed the figma-plugin fetch grep check, and removed the load of `js/extract.js` in the sandbox. ✓
+- **Verification:** Ran `node tools/regression.mjs` and verified the suite is fully green (Exit Code: 0). ✓
+
+
