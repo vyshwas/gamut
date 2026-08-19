@@ -1,52 +1,40 @@
 # Gamut
 
-A brand color palette generator, palette fixer, and typography pairing tool built on The Brand Color Bible v2 methodology: the 60-30-10 rule, the ten laws of color, and nine psychology profiles. Plain HTML, CSS and JavaScript. No build step, no framework, no backend required to demo.
+A deterministic strategy tradeoff compiler that resolves design constraints into a production-ready System Direction Brief. Built with vanilla HTML, CSS, and JavaScript. No build step, no framework, no backend required.
 
 ## What it does
 
-- **The Engine.** Generates 4-role palettes (Dominant 60 / Brand 30 / Accent 10 / Ink anchor) seeded by industry category. Every output obeys the laws: dark anchor forged in (Law 1), accent saturation held at 60-80% of the brand's (Law 2), rendered into live landing-page mocks at realistic proportions (Law 3), and shipped with a dark deployment built at the same time as the light (Law 4). The "Break category" toggle deliberately borrows another category's recipe (Law 7).
-- **The Fixer.** Paste 2-6 hex codes. It diagnoses violations against the laws by name, rebuilds the palette with roles assigned using selectable strategies (Preserve, Balanced, Maximize), shows before/after with transparent summary chips, and can load the result into the Engine.
-- **Type pairings.** Each palette mood maps to display+body pairs the Bible prescribes (rounded impact, editorial serif, geometric sans, heavy display, clean grotesk, mono+grotesk), loaded live from Google Fonts and rendered in the current palette.
-- **Print + digital values.** Every swatch carries HEX, RGB, and CMYK (uncoated approximation) plus a print-gamut check: colors outside typical CMYK range get flagged with a press-safer alternate (heuristic, honestly labeled; not ICC). Exports: CSS variables (with dark-mode block), Tailwind v4 `@theme`, SCSS, JSON, a downloadable SVG swatch card, and a printable brand sheet including the type pairing (`window.print()` with `print-color-adjust: exact`).
-- **The Design System.** Every palette also generates a matched spacing scale, corner-radius personality, a tinted elevation/shadow family, and hover/active/disabled/focus states for Brand and Accent — driven by the same archetype signal as the colors, not a generic set bolted on after. CSS/Tailwind/SCSS exports include these automatically; a separate structured JSON export (`gamut.tokens.v1`) carries the full system in one versioned, provenanced payload. See `DESIGN-SYSTEM-SPEC.md`.
-- **Shareable palettes.** Seed and settings live in the URL (`?cat=&seed=&borrow=&lock=`), so any generated palette can be bookmarked or sent to a client. The Fixer reports the fate of every input color (kept / adjusted / retired, with the law that caused it).
-- **Studio Assistant.** A conversation bar: describe a brief or a mood in plain language ("a calm, trustworthy wellness brand with a modern edge") and it's interpreted onto Gamut's own frameworks - never onto invented hex codes. See "The Studio Assistant" below.
-- **AI Import Package.** A one-click ZIP (`js/aipack.js`) built for handing a palette to an AI coding or design agent instead of a human: the full `gamut.tokens.v1` payload, a `brand-system.json` provenance file, a generated `brand-book.md`, and a `figma-import.md` prompt written straight off that data. Attach the ZIP to Claude Code, Codex, Cursor, Gemini CLI, Windsurf, or anything that can build a Figma file, and it has everything needed - no AI involved in generating it, and byte-for-byte identical on every re-export of the same palette.
+- **The Tradeoff Compiler.** Instead of random generation, Gamut compiles design direction from seven forced-choice strategy tradeoffs (Category, Market Position, Brand Temperament, Audience Stance, Visual Volume, Organizational Age, and Strategic Core).
+- **The Direction Brief.** Renders a unified, client-presentation-ready brief including:
+  1. *Title block:* Custom white-labeling (studio and client names), creation date, and stable variant ID.
+  2. *Strategy summary:* Positive strategic rationales mapped directly to the inputs.
+  3. *Negative constraints:* Explanations of what design paths were ruled out by the strategic choices.
+  4. *Interactive type specimen:* Selected from an eight-way typography pairings taxonomy, loaded from Google Fonts, with editable display/body text fields.
+  5. *Accessibility grid:* Swatches (Dominant, Primary, Secondary, Ink) and WCAG AAA/AA contrast ratio verification.
+  6. *Technical specifications:* Code exports for CSS custom properties, Tailwind v4 `@theme` directives, and canonical JSON token payloads.
+- **Shareable state.** State is entirely encoded in URL query parameters (`?cat=&q2=&q3=&q4=&q5=&q6=&q7=&v=&lock=&studio=&client=`). Bookmarking or sharing the URL reloads the exact same compiled state deterministically.
+- **Museum Editorial styling.** Styled with flat, minimal, typography-centric aesthetics using Combo 06 (Lime/Charcoal/Bone). Prints/Save-as-PDFs beautifully onto a standard A4 portrait layout.
 
 ## File structure
 
 ```
-Designare/          (folder name predates the rename; the product is Gamut)
-  index.html        structure + all copy
-  css/style.css     tokens + styling + print sheet styles
-  js/engine.js      color math, generation, fixing, type/system tokens (no DOM)
-  js/mood.js        mood-keyword lexicon, independent of the business archetypes
-  js/assistant.js   LLM interpreter: Ollama / Gemini API / offline keyword match
-  js/aipack.js      deterministic AI Import Package ZIP builder
-  js/main.js        UI wiring
-  tools/            regression.mjs (Phase 9 suite), other node test scripts
+Designare/
+  index.html        Structural body and markup
+  css/style.css     Tokens, custom input styling, and media print layout
+  js/engine.js      Tradeoff compiler, answers seed, and contrast/token math (no DOM)
+  js/mood.js        Mood-keyword lexicon mapping
+  js/main.js        UI state management, listeners, and URL encoding/decoding
+  tools/            regression.mjs (fuzzing, determinism, and contrast checks)
 ```
 
 ## Quick start
 
-Open `index.html` in a browser, or serve it with any static server.
-
-
-
-
+Open `index.html` in any web browser, or serve the directory statically using any local server.
 
 ## Verifying changes
 
-`node tools/regression.mjs` runs the full Phase 9 suite in one command: every existing test script, a `generatePalette` contrast sweep (all archetypes x 30 seeds x both deployments), a `fixPalette` fuzz sweep (5,000 random inputs x 3 strategies), and a few anti-pattern greps. Node-level only.
-
-## Customization
-
-- All site tokens live at the top of `css/style.css`. The site itself runs the Bible v2's own identity: Combo 06 (charcoal + bone + electric lime) deployed per its own 60-30-10 rule, plus v2's blue `#2242E5` as the pop on light surfaces (method-band numbers, print-sheet role names), where lime can't carry text.
-- Palette archetypes (hue ranges per category) live in `ARCHETYPES` in `js/engine.js`. Each archetype's `mood` field selects its typography bucket - keep these unique across archetypes so two categories never look identical.
-- Typography pairs live in `TYPE_PAIRS` (the six original archetype moods) and `TYPE_PAIRS_MOOD` (the eight-way mv-* taxonomy the mood lexicon uses) in `js/engine.js`. All pairs must exist on Google Fonts.
-- The mood lexicon (keyword -> hue/sat/light target + typography tag) lives in `MOOD_LEXICON` in `js/mood.js`. Used for resolving custom typography personalities based on the mood lexicon.
-- CMYK conversion is a naive uncoated approximation, flagged as such in the UI and print sheet. For press-critical accuracy you would integrate a proper ICC pipeline server-side.
-
-## Browser support
-
-Modern evergreen browsers. `backdrop-filter` on the nav degrades gracefully.
+Run `node tools/regression.mjs` to execute the full verification suite:
+1. *Determinism check:* Asserts the same answer set compiled 1,000 times produces byte-identical palettes.
+2. *Contrast coverage sweep:* Verifies all 3,200 potential brief/variant combinations clear WCAG contrast floors.
+3. *Sensitivity check:* Verifies flipping any strategy tradeoff changes the generated output.
+4. *Anti-pattern greps:* Enforces token schema naming contracts and styling invariants.
