@@ -1,7 +1,7 @@
 /* =========================================================
-   GAMUT ENGINE - UI wiring (Collapsed for Brief Intake)
-   One source of truth: `state.palette`. The hero card renders
-   from it.
+   GAMUT ENGINE - UI wiring (Strategic Brief Intake)
+   One source of truth: `state.answers`, `state.variant`,
+   `state.lockedBrand`, `state.agency`.
    ========================================================= */
 
 "use strict";
@@ -9,9 +9,25 @@
 const E = window.Engine;
 
 const state = {
-    palette: null,
-    seed: Math.floor(Math.random() * 1e9)
+    answers: {
+        category: "saas",
+        q2: "A",
+        q3: "A",
+        q4: "A",
+        q5: "A",
+        q6: "A",
+        q7: "A"
+    },
+    variant: 1,
+    lockedBrand: null,
+    agency: {
+        name: "",
+        client: ""
+    },
+    palette: null
 };
+
+const AGENCY_KEY = "gamut.agency.v1";
 
 function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
 
@@ -19,9 +35,6 @@ const $ = id => document.getElementById(id);
 
 const prefersReduced = () =>
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-/* Smooth scrolling is motion; the preference asks us not to. */
-const scrollBehavior = () => (prefersReduced() ? "auto" : "smooth");
 
 /* history.replaceState throws SecurityError on file:// in Chromium. */
 function safeReplaceUrl(url) {
@@ -254,35 +267,130 @@ function renderHeroField(palette) {
     field.setAttribute("aria-label", "Live palette preview: " + described.join(", "));
 }
 
-/* ---------- Main generate / sync ---------- */
+/* ---------- State / UI Sync and Generation ---------- */
 
-function generate(newSeed = true) {
-    if (newSeed) state.seed = Math.floor(Math.random() * 1e9);
-    const palette = E.generatePalette({
-        category: "saas",
-        seed: state.seed
+function loadAgency() {
+    const defaults = { name: "", client: "" };
+    try {
+        const raw = JSON.parse(localStorage.getItem(AGENCY_KEY));
+        if (!raw || typeof raw !== "object") return defaults;
+        return {
+            name: typeof raw.name === "string" ? raw.name : "",
+            client: typeof raw.client === "string" ? raw.client : ""
+        };
+    }
+    catch { return defaults; }
+}
+
+function persistAgency() {
+    try { localStorage.setItem(AGENCY_KEY, JSON.stringify(state.agency)); }
+    catch { /* not fatal */ }
+}
+
+function readLockedInput() {
+    const raw = $("ctl-brand").value.trim();
+    if (!raw) return { locked: null, invalid: false };
+    const hex = raw.startsWith("#") ? raw : "#" + raw;
+    if (!E.hexToRgb(hex)) return { locked: null, invalid: true };
+    return { locked: hex, invalid: false };
+}
+
+function readInputs() {
+    state.answers.category = $("ctl-category").value;
+    const questions = ["q2", "q3", "q4", "q5", "q6", "q7"];
+    questions.forEach(q => {
+        const checked = document.querySelector(`input[name="ctl-${q}"]:checked`);
+        state.answers[q] = checked ? checked.value : "A";
     });
+
+    const { locked, invalid } = readLockedInput();
+    state.lockedBrand = locked;
+    $("ctl-brand").setAttribute("aria-invalid", String(invalid));
+    $("ctl-brand-clear").hidden = !locked;
+
+    state.variant = parseInt($("ctl-var-val").textContent, 10) || 1;
+    state.agency.name = $("agency-name").value.trim();
+    state.agency.client = $("agency-client").value.trim();
+}
+
+function writeInputs() {
+    $("ctl-category").value = state.answers.category;
+    const questions = ["q2", "q3", "q4", "q5", "q6", "q7"];
+    questions.forEach(q => {
+        const val = state.answers[q];
+        const rad = document.querySelector(`input[name="ctl-${q}"][value="${val}"]`);
+        if (rad) rad.checked = true;
+    });
+
+    $("ctl-brand").value = state.lockedBrand || "";
+    $("ctl-brand-clear").hidden = !state.lockedBrand;
+    $("ctl-var-val").textContent = state.variant;
+    $("agency-name").value = state.agency.name;
+    $("agency-client").value = state.agency.client;
+}
+
+function generate() {
+    readInputs();
+    persistAgency();
+
+    const compiled = E.compileBrief(state.answers, state.variant);
+    const palette = E.generatePalette({
+        seed: compiled.seed,
+        lockedBrand: state.lockedBrand,
+        customArchetype: compiled.recipe,
+        harmony: compiled.recipe.harmony || "auto"
+    });
+
     state.palette = palette;
     renderHeroField({ ...palette, swatches: themedHeroSwatches(palette, Theme.current()) });
     Wordmark.injectLive(palette);
+
+    // Call Direction Brief renderer placeholder (Phase 8 will implement this)
+    if (typeof renderBrief === "function") {
+        renderBrief(compiled, palette);
+    }
+
     syncUrl();
 }
 
 function syncUrl() {
-    const p = state.palette;
-    if (!p || p.seed == null) return;
     const q = new URLSearchParams();
-    q.set("seed", p.seed);
+    q.set("cat", state.answers.category);
+    q.set("q2", state.answers.q2);
+    q.set("q3", state.answers.q3);
+    q.set("q4", state.answers.q4);
+    q.set("q5", state.answers.q5);
+    q.set("q6", state.answers.q6);
+    q.set("q7", state.answers.q7);
+    q.set("v", state.variant);
+    if (state.lockedBrand) q.set("lock", state.lockedBrand.slice(1));
+    if (state.agency.name) q.set("studio", state.agency.name);
+    if (state.agency.client) q.set("client", state.agency.client);
     safeReplaceUrl("?" + q.toString() + location.hash);
 }
 
 function restoreFromUrl() {
     const q = new URLSearchParams(location.search);
-    if (!q.has("seed")) return false;
-    const seed = parseInt(q.get("seed"), 10);
-    if (!Number.isFinite(seed)) return false;
-    state.seed = seed;
-    generate(false);
+    if (!q.has("cat") && !q.has("v")) return false;
+
+    if (q.has("cat")) state.answers.category = q.get("cat");
+    const questions = ["q2", "q3", "q4", "q5", "q6", "q7"];
+    questions.forEach(qKey => {
+        if (q.has(qKey)) state.answers[qKey] = q.get(qKey);
+    });
+
+    if (q.has("v")) state.variant = parseInt(q.get("v"), 10) || 1;
+    if (q.has("lock") && E.hexToRgb("#" + q.get("lock"))) {
+        state.lockedBrand = "#" + q.get("lock").toUpperCase();
+    } else {
+        state.lockedBrand = null;
+    }
+
+    if (q.has("studio")) state.agency.name = q.get("studio");
+    if (q.has("client")) state.agency.client = q.get("client");
+
+    writeInputs();
+    generate();
     return true;
 }
 
@@ -346,5 +454,47 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    if (!restoreFromUrl()) generate(true);
+    // Load initial agency state from localStorage
+    const savedAgency = loadAgency();
+    state.agency.name = savedAgency.name;
+    state.agency.client = savedAgency.client;
+
+    writeInputs();
+
+    // Event listeners for intake UI
+    $("ctl-category").addEventListener("change", () => generate());
+    
+    const questions = ["q2", "q3", "q4", "q5", "q6", "q7"];
+    questions.forEach(q => {
+        document.querySelectorAll(`input[name="ctl-${q}"]`).forEach(rad => {
+            rad.addEventListener("change", () => generate());
+        });
+    });
+
+    $("ctl-brand").addEventListener("input", () => generate());
+    $("ctl-brand-clear").addEventListener("click", () => {
+        $("ctl-brand").value = "";
+        generate();
+    });
+
+    $("ctl-var-prev").addEventListener("click", () => {
+        if (state.variant > 1) {
+            state.variant--;
+            $("ctl-var-val").textContent = state.variant;
+            generate();
+        }
+    });
+
+    $("ctl-var-next").addEventListener("click", () => {
+        if (state.variant < 5) {
+            state.variant++;
+            $("ctl-var-val").textContent = state.variant;
+            generate();
+        }
+    });
+
+    $("agency-name").addEventListener("input", () => generate());
+    $("agency-client").addEventListener("input", () => generate());
+
+    if (!restoreFromUrl()) generate();
 });

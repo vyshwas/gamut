@@ -80,7 +80,154 @@
             <p>Define your design constraints. The Tradeoff Compiler will resolve them into a production-ready system brief.</p>
         </div>
         <div class="workbench">
-            <!-- Empty shell for now -->
+            <div class="controls">
+                <div class="field">
+                    <label for="ctl-category">1. Category / Context</label>
+                    <select id="ctl-category">
+                        <option value="saas" selected>SaaS / dev tools</option>
+                        <option value="fnb">Food and drink / retail</option>
+                        <option value="wellness">Wellness / premium D2C</option>
+                        <option value="creator">Creator / streetwear</option>
+                        <option value="fintech">Fintech / B2B services</option>
+                        <option value="aitech">AI / premium tech</option>
+                        <option value="beauty">Beauty / luxury</option>
+                        <option value="hospitality">Hospitality / dining</option>
+                        <option value="climate">Climate / healthtech</option>
+                        <option value="heritage">Heritage / quiet luxury</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <span class="field-title">2. Market Position</span>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="ctl-q2" value="A" checked>
+                            <span class="radio-design"></span>
+                            Familiar (belongs in category)
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="ctl-q2" value="B">
+                            <span class="radio-design"></span>
+                            Distinctive (stands out)
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <span class="field-title">3. Brand Temperament</span>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="ctl-q3" value="A" checked>
+                            <span class="radio-design"></span>
+                            Trusted
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="ctl-q3" value="B">
+                            <span class="radio-design"></span>
+                            Exciting
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <span class="field-title">4. Audience Stance</span>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="ctl-q4" value="A" checked>
+                            <span class="radio-design"></span>
+                            Premium
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="ctl-q4" value="B">
+                            <span class="radio-design"></span>
+                            Accessible
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <span class="field-title">5. Visual Volume</span>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="ctl-q5" value="A" checked>
+                            <span class="radio-design"></span>
+                            Calm
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="ctl-q5" value="B">
+                            <span class="radio-design"></span>
+                            Loud
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <span class="field-title">6. Organizational Age</span>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="ctl-q6" value="A" checked>
+                            <span class="radio-design"></span>
+                            Established
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="ctl-q6" value="B">
+                            <span class="radio-design"></span>
+                            New
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <span class="field-title">7. Strategic Core</span>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="ctl-q7" value="A" checked>
+                            <span class="radio-design"></span>
+                            Human
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="ctl-q7" value="B">
+                            <span class="radio-design"></span>
+                            Precise
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label for="ctl-brand">Lock a brand color <span class="optional">optional</span></label>
+                    <div class="lock-row">
+                        <input type="text" id="ctl-brand" class="mono" placeholder="#1F3FFF" maxlength="7" spellcheck="false">
+                        <button class="btn-mini" id="ctl-brand-clear" type="button" hidden>Clear</button>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <span class="field-title">Variant Selection</span>
+                    <div class="stepper">
+                        <button class="btn-stepper" id="ctl-var-prev" type="button" aria-label="Previous variant">&larr;</button>
+                        <span class="stepper-val mono" id="ctl-var-val">1</span>
+                        <button class="btn-stepper" id="ctl-var-next" type="button" aria-label="Next variant">&rarr;</button>
+                    </div>
+                    <p class="hint">All five satisfy this brief.</p>
+                </div>
+
+                <div class="agency-panel">
+                    <span class="exports-label mono">Documentation Details</span>
+                    <div class="field">
+                        <label for="agency-name">Your studio name</label>
+                        <input type="text" id="agency-name" placeholder="Marlowe Studio" spellcheck="false">
+                    </div>
+                    <div class="field">
+                        <label for="agency-client">Prepared for <span class="optional">client or project</span></label>
+                        <input type="text" id="agency-client" placeholder="Acme Co — Brand refresh" spellcheck="false">
+                    </div>
+                </div>
+            </div>
+
+            <div class="output">
+                <!-- Brief output / Direction Brief renderer will populate this in Phase 8 -->
+                <div id="brief-output"></div>
+            </div>
         </div>
     </section>
 

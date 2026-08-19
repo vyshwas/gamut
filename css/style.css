@@ -1198,4 +1198,126 @@ select, input[type="text"], input[type="number"], textarea, .input {
     border-color: var(--secondary);
 }
 
+/* ---------- Intake UI Custom Controls ---------- */
+
+.field-title {
+    display: block;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 0.82rem;
+    letter-spacing: 0.005em;
+    margin-bottom: 0.55rem;
+}
+
+.radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.radio-label {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    font-size: 0.9rem;
+    color: var(--muted);
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+}
+
+.radio-label input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.radio-design {
+    width: 14px;
+    height: 14px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-sm);
+    background: var(--surface-2);
+    position: relative;
+    flex-shrink: 0;
+    transition: border-color 0.2s var(--ease);
+}
+
+.radio-label:hover .radio-design,
+.radio-label input:focus-visible + .radio-design {
+    border-color: var(--accent);
+}
+
+.radio-label input:checked + .radio-design {
+    border-color: var(--accent);
+    background: var(--accent);
+}
+
+.radio-label input:checked ~ span:not(.radio-design) {
+    color: var(--bone);
+}
+
+/* Stepper styling */
+.stepper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--surface-2);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-sm);
+    width: fit-content;
+    overflow: hidden;
+}
+
+.btn-stepper {
+    background: none;
+    border: none;
+    color: var(--bone);
+    padding: 0.5rem 0.8rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.2s var(--ease);
+}
+
+.btn-stepper:hover {
+    background: var(--surface);
+    color: var(--accent);
+}
+
+.stepper-val {
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 0 0.5rem;
+    min-width: 1.5rem;
+    text-align: center;
+    color: var(--bone);
+}
+
+/* Grid layout for brief workspace */
+.workbench {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    gap: 2.5rem;
+    align-items: start;
+}
+
+.controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1.6rem;
+    position: sticky;
+    top: calc(var(--nav-h) + 12px);
+}
+
+@media (max-width: 1023px) {
+    .workbench {
+        grid-template-columns: 1fr;
+    }
+    .controls {
+        position: static;
+    }
+}
+
+
 

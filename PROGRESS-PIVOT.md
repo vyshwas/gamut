@@ -144,5 +144,15 @@
   3. Sensitivity check (asserts flipping any question changes the compiled palette). ✓
 - **Verification:** Ran `node tools/regression.mjs` and verified all tests pass (exited with code 0). ✓
 
+## Phase 7 — Build the intake UI
+**Date:** 2026-08-19
+**Status:** PASS
+
+### Actions completed
+- `index.html`: Implemented intake UI controls inside the `#brief` section workbench. Rendered Q1 category dropdown, Q2..Q7 forced tradeoffs as custom CSS styled radio buttons, locked brand color text field, a 1..5 variant stepper, and white-label text inputs (your studio name, prepared for). ✓
+- `css/style.css`: Added styling rules for the new custom intake controls: `.field-title`, `.radio-group`, `.radio-label`, `.radio-design`, `.stepper`, `.btn-stepper`, `.stepper-val`, and responsive grid layout for `.workbench` and `.controls`. ✓
+- `js/main.js`: Added state objects `state.answers`, `state.variant`, `state.lockedBrand`, and `state.agency`. Implemented input reading (`readInputs()`) and writing (`writeInputs()`), immediate re-compiling/generating on input events, and URL query parameter encoding (`syncUrl()`) and decoding (`restoreFromUrl()`) to support bookmarking/round-trips. ✓
+- **Verification:** Verified every input is reachable via keyboard, changing any tradeoff updates the seed and hero colors instantly, and reloading the page with URL query parameters perfectly restores the state and renders identical swatches/preview. ✓
+
 
 
