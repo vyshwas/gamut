@@ -230,6 +230,8 @@ function paintThemedPreview() {
     renderHeroField({ ...state.palette, swatches });
 }
 
+const HINT_QUESTIONS = ["q2", "q3", "q4", "q5", "q6", "q7"];
+
 const HERO_SHARES = { Dominant: 60, Primary: 30, Secondary: 10 };
 const HERO_RAIL_CELLS = { Dominant: "hero-dominant", Primary: "hero-brand", Secondary: "hero-accent" };
 
@@ -309,8 +311,6 @@ function readInputs() {
     $("ctl-brand-clear").hidden = !locked;
 
     state.variant = parseInt($("ctl-var-val").textContent, 10) || 1;
-    state.agency.name = $("agency-name").value.trim();
-    state.agency.client = $("agency-client").value.trim();
 }
 
 function writeInputs() {
@@ -325,8 +325,6 @@ function writeInputs() {
     $("ctl-brand").value = state.lockedBrand || "";
     $("ctl-brand-clear").hidden = !state.lockedBrand;
     $("ctl-var-val").textContent = state.variant;
-    $("agency-name").value = state.agency.name;
-    $("agency-client").value = state.agency.client;
 }
 
 function generate() {
@@ -334,6 +332,10 @@ function generate() {
     persistAgency();
 
     const compiled = E.compileBrief(state.answers, state.variant);
+    HINT_QUESTIONS.forEach((q, i) => {
+        const el = $(`hint-${q}`);
+        if (el) el.textContent = compiled.ruledOut[i] || "";
+    });
     const palette = E.generatePalette({
         seed: compiled.seed,
         lockedBrand: state.lockedBrand,
@@ -420,8 +422,8 @@ function renderBrief(compiled, palette) {
         { name: "Brand (Primary) on Canvas (Dominant)", ratio: E.contrastRatio(palette.swatches[1].hex, palette.swatches[0].hex), req: 3.0, desc: "Primary brand focus visibility" },
         { name: "Accent (Secondary) on Canvas (Dominant)", ratio: E.contrastRatio(palette.swatches[2].hex, palette.swatches[0].hex), req: 3.0, desc: "Secondary action readability" },
         { name: "Ink on Canvas (Dominant)", ratio: E.contrastRatio(palette.swatches[3].hex, palette.swatches[0].hex), req: 4.5, desc: "Body text contrast" },
-        { name: "Ink on Brand (Primary)", ratio: E.contrastRatio(palette.swatches[3].hex, palette.swatches[1].hex), req: 4.5, desc: "Contrast inside primary panels" },
-        { name: "Ink on Accent (Secondary)", ratio: E.contrastRatio(palette.swatches[3].hex, palette.swatches[2].hex), req: 4.5, desc: "Contrast inside secondary controls" }
+        { name: "Text-on-Primary vs Brand", ratio: E.contrastRatio(palette.onBrand, palette.swatches[1].hex), req: 4.5, desc: "Dedicated text color for content inside primary panels/buttons" },
+        { name: "Text-on-Secondary vs Accent", ratio: E.contrastRatio(palette.onAccent, palette.swatches[2].hex), req: 4.5, desc: "Dedicated text color for content inside secondary controls" }
     ];
 
     let contrastRows = contrasts.map(c => {
@@ -449,11 +451,11 @@ function renderBrief(compiled, palette) {
                 <div class="brief-title-row">
                     <div>
                         <h1 class="brief-title">System Direction Brief</h1>
-                        <p class="brief-subtitle">${esc(clientStr)}</p>
+                        <p class="brief-subtitle" contenteditable="true" spellcheck="false" data-agency-field="client">${esc(clientStr)}</p>
                     </div>
                     <div class="brief-meta">
                         <p class="mono-label">Prepared by</p>
-                        <p class="meta-val">${esc(studioStr)}</p>
+                        <p class="meta-val" contenteditable="true" spellcheck="false" data-agency-field="name">${esc(studioStr)}</p>
                         <p class="mono-label mt-2">Date</p>
                         <p class="meta-val">${dateStr}</p>
                     </div>
@@ -694,8 +696,23 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    $("agency-name").addEventListener("input", () => generate());
-    $("agency-client").addEventListener("input", () => generate());
+    /* Agency name/client now live inside the rendered brief itself
+       (moved from intake-time sidebar to export-time document, per
+       roadmap item 8) — editable in place, delegated since renderBrief
+       rebuilds #brief-output on every generate(). */
+    const briefOutput = $("brief-output");
+    if (briefOutput) {
+        briefOutput.addEventListener("input", e => {
+            const field = e.target.closest("[data-agency-field]");
+            if (!field) return;
+            state.agency[field.dataset.agencyField] = field.textContent.trim();
+            persistAgency();
+            syncUrl();
+        });
+    }
+
+    const exportPdfBtn = $("ctl-export-pdf");
+    if (exportPdfBtn) exportPdfBtn.addEventListener("click", () => window.print());
 
     if (!restoreFromUrl()) generate();
 });

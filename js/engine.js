@@ -503,10 +503,21 @@ function generatePalette({ category = "saas", seed = Date.now(), borrow = false,
     const lightBrand = ensureContrast(brandHex, lightDominant, 3);
     const lightAccent = ensureContrastVivid(accentHex, lightDominant, 3);
 
+    /* Dedicated text colors for content that sits ON the Primary/Secondary
+       fills themselves (a button label, a filled chip) - the single global
+       Ink swatch is picked to read on the Dominant canvas and has no
+       guarantee against an arbitrary Primary/Secondary hue (measured://>90%
+       of generated palettes fail Ink-on-Brand/Ink-on-Accent at 4.5:1).
+       readableOn() already exists for exactly this - guaranteed clearance
+       against an arbitrary background - it was just never called. */
+    const onBrand = readableOn(brandHex, 4.5);
+    const onAccent = readableOn(accentHex, 4.5);
+
     return {
         seed, category, recipeKey, borrowed: (borrow && !customArchetype) ? ARCHETYPES[recipeKey].label : null,
         custom: !!customArchetype, customLabel: customArchetype ? customArchetype.label : null,
         signal: A.signal, mood: A.mood, swatches,
+        onBrand, onAccent,
         accentHarmony: accentHarmony.name,
         deployments: {
             light: { bg: lightDominant, ink: lightInk, brand: lightBrand, accent: lightAccent },
@@ -839,6 +850,8 @@ function exportCss(p) {
   --color-primary: ${p.swatches[1].hex};
   --color-secondary: ${p.swatches[2].hex};
   --color-ink: ${p.swatches[3].hex};
+  --color-on-primary: ${p.onBrand};
+  --color-on-secondary: ${p.onAccent};
   --color-primary-hover: ${sys.states.primary.hover};
   --color-primary-active: ${sys.states.primary.active};
   --color-secondary-hover: ${sys.states.secondary.hover};
@@ -876,6 +889,8 @@ function exportTailwind(p) {
   --color-primary: ${p.swatches[1].hex};
   --color-secondary: ${p.swatches[2].hex};
   --color-ink: ${p.swatches[3].hex};
+  --color-on-primary: ${p.onBrand};
+  --color-on-secondary: ${p.onAccent};
   --color-dominant-dark: ${d.dark.bg};
   --color-primary-dark: ${d.dark.brand};
   --color-secondary-dark: ${d.dark.accent};
@@ -903,6 +918,8 @@ function exportTokensJson(p, pair) {
         source: { product: "gamut", seed: p.seed || null, category: p.category || null, recipeKey: p.recipeKey || "custom" },
         color: {
             roles: Object.fromEntries(p.swatches.map(s => [s.role.toLowerCase(), s.hex])),
+            onPrimary: p.onBrand,
+            onSecondary: p.onAccent,
             deployments: p.deployments,
             states: sys.states
         },

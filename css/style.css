@@ -98,6 +98,8 @@
     --accent: var(--lime);
     --focus: var(--lime);
     --danger: #FF5C5C;         /* fail/destructive, 6.5:1 on canvas    */
+    --success: #4ADE80;        /* status: pass, 11.3:1 on canvas       */
+    --warning: #FFB454;        /* status: warn, 11.2:1 on canvas       */
 
     --nav-bg: rgba(11, 11, 13, 0.72);
     --chip-hover-ring: rgba(237, 237, 239, 0.3);
@@ -159,6 +161,8 @@
     --accent: var(--lime-ink);
     --focus: var(--lime-ink);
     --danger: #C42D17;         /* 5.1:1 on --canvas                    */
+    --success: #198044;        /* status: pass, 4.5:1 on --canvas      */
+    --warning: #A05908;        /* status: warn, 4.9:1 on --canvas      */
 
     --nav-bg: rgba(244, 244, 246, 0.72);
     --chip-hover-ring: rgba(16, 16, 20, 0.25);
@@ -348,6 +352,15 @@ button { font-family: inherit; cursor: pointer; }
 }
 .btn-mini:hover { border-color: var(--accent); }
 .btn-mini:active { transform: translateY(1px); }
+
+/* The one action that hands the brief off (print / save as PDF) reads
+   as a sidebar action, not a stray inline chip like Clear. */
+#ctl-export-pdf {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin-top: 0.4rem;
+}
 
 /* ---------- Nav ----------
    Scoped to .site-nav, never to the bare `nav` element. The footer also
@@ -903,34 +916,12 @@ button { font-family: inherit; cursor: pointer; }
 
 /* ---------- Print brand sheet ---------- */
 
-#print-sheet-area { display: none; }
-
-@media print {
-    body > *:not(#print-sheet-area) { display: none !important; }
-    body { background: #fff; color: #111; }
-    #print-sheet-area {
-        display: block !important;
-        padding: 2rem;
-        /* Without this, browsers strip the color chips from the
-           one sheet whose entire job is showing color. */
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-    .ps-header { display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 1.6rem; }
-    .ps-logo { max-width: 90px; max-height: 90px; object-fit: contain; }
-    .ps-title { font-family: var(--font-display); font-weight: 900; font-size: 1.8rem; margin: 0 0 0.4rem; }
-    .ps-sub { font-family: var(--font-mono); font-size: 0.7rem; color: #666; margin: 0; }
-    .ps-date { font-family: var(--font-mono); font-size: 0.65rem; color: #999; margin: 0.3rem 0 0; }
-    .ps-row { display: flex; border: 1px solid #ddd; margin-bottom: 1.2rem; break-inside: avoid; }
-    .ps-chip { width: 130px; height: 130px; flex-shrink: 0; }
-    .ps-data { padding: 0.9rem 1.2rem; font-family: var(--font-mono); font-size: 0.72rem; line-height: 1.8; }
-    /* v2: on light surfaces the pop is blue, not lime (Law 08 — lime can't carry text on white). */
-    .ps-role { font-family: var(--font-display); font-weight: 800; font-size: 0.95rem; color: var(--blue); }
-    .ps-type { border: 1px solid #ddd; padding: 1rem 1.2rem; margin-bottom: 1.2rem; break-inside: avoid; }
-    .ps-type-display { font-size: 2rem; margin: 0.3rem 0; }
-    .ps-type-body { font-size: 0.85rem; color: #444; margin: 0; }
-    .ps-note { font-size: 0.68rem; color: #888; margin-top: 1.5rem; font-family: var(--font-mono); }
-}
+/* The old two-door build's standalone print sheet (#print-sheet-area,
+   .ps-*) is gone — that markup no longer exists in index.html since
+   the pivot, so this whole block was dead CSS. The live Direction
+   Brief prints directly via the `.brief-document` ruleset further
+   down this file (see "Media Print Stylesheet"), triggered by the
+   Export PDF button in the intake sidebar. */
 
 /* ---------- Responsive ---------- */
 
@@ -1087,6 +1078,33 @@ select, input[type="text"], input[type="number"], textarea, .input {
 select, input[type="text"], input[type="number"], textarea, .input {
     border: 1px solid var(--line-strong);
 }
+
+/* Native <select> chrome is the one uncustomized control in an
+   otherwise fully custom system (radios, steppers, buttons all have
+   their own design) — it was rendering with the browser's default
+   arrow/list, which reads as foreign against the glass/dark surface
+   around it. Two arrow SVGs (not one + currentColor) because a
+   data-URI background-image can't resolve CSS custom properties. */
+select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-color: var(--surface-2);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238B8B93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 14px;
+    padding: 0.55rem 2.25rem 0.55rem 0.75rem;
+    color: var(--bone);
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: border-color 0.2s var(--ease);
+}
+select:hover, select:focus-visible { border-color: var(--accent); }
+:root[data-theme="light"] select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B6B76' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+}
 .swatch-chip {
     border: 1px solid var(--line-strong);
 }
@@ -1207,6 +1225,17 @@ select, input[type="text"], input[type="number"], textarea, .input {
     font-size: 0.82rem;
     letter-spacing: 0.005em;
     margin-bottom: 0.55rem;
+}
+
+/* Ruled-out consequence text, live next to the question that caused it
+   — the same reasoning compileBrief() already computes for the final
+   document, surfaced at decision time instead of only after the fact. */
+.field-hint {
+    font-size: 0.72rem;
+    font-style: italic;
+    color: var(--muted);
+    margin: 0.5rem 0 0;
+    line-height: 1.4;
 }
 
 .radio-group {
@@ -1377,6 +1406,24 @@ select, input[type="text"], input[type="number"], textarea, .input {
     font-weight: 600;
     color: var(--bone);
     margin: 0.1rem 0 0 0;
+}
+
+/* Studio name / client name moved here from the intake sidebar
+   (roadmap item 8) — edited in place, in the document they actually
+   belong to, using the same quiet hover/focus affordance as the
+   type specimen's contenteditable text below. */
+.brief-subtitle[contenteditable],
+.meta-val[contenteditable] {
+    cursor: text;
+    border-bottom: 1px dashed transparent;
+    outline: none;
+    transition: border-color 0.2s var(--ease);
+}
+.brief-subtitle[contenteditable]:hover,
+.brief-subtitle[contenteditable]:focus,
+.meta-val[contenteditable]:hover,
+.meta-val[contenteditable]:focus {
+    border-bottom-color: var(--line-strong);
 }
 
 .brief-system-bar {
@@ -1623,21 +1670,21 @@ select, input[type="text"], input[type="number"], textarea, .input {
 }
 
 .status-pass {
-    background: rgba(144, 238, 144, 0.15);
-    color: #90EE90;
-    border: 1px solid rgba(144, 238, 144, 0.3);
+    background: color-mix(in srgb, var(--success) 15%, transparent);
+    color: var(--success);
+    border: 1px solid color-mix(in srgb, var(--success) 30%, transparent);
 }
 
 .status-warn {
-    background: rgba(255, 165, 0, 0.15);
-    color: #FFA500;
-    border: 1px solid rgba(255, 165, 0, 0.3);
+    background: color-mix(in srgb, var(--warning) 15%, transparent);
+    color: var(--warning);
+    border: 1px solid color-mix(in srgb, var(--warning) 30%, transparent);
 }
 
 .status-fail {
-    background: rgba(255, 99, 71, 0.15);
-    color: #FF6347;
-    border: 1px solid rgba(255, 99, 71, 0.3);
+    background: color-mix(in srgb, var(--danger) 15%, transparent);
+    color: var(--danger);
+    border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
 }
 
 /* Technical Token Tabs & Pre/code blocks */

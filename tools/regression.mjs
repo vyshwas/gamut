@@ -67,6 +67,29 @@ section('generatePalette contrast sweep (10 archetypes x 30 seeds x light/dark)'
     if (fails === 0) console.log('PASS: generatePalette contrast sweep'); else totalFail++;
 }
 
+// ---------- 3b. onBrand/onAccent contrast sweep: the dedicated
+// text-on-fill colors the UI now shows instead of reusing the global
+// Ink swatch (which does not reliably clear 4.5:1 against an arbitrary
+// Primary/Secondary - measured >90%/78% failure before this fix). ----------
+section('onBrand/onAccent contrast sweep (10 archetypes x 30 seeds)');
+{
+    let fails = 0, total = 0, minOnBrand = Infinity, minOnAccent = Infinity;
+    for (const cat of Object.keys(Engine.ARCHETYPES)) {
+        for (let seed = 0; seed < 30; seed++) {
+            total++;
+            const p = Engine.generatePalette({ category: cat, seed });
+            const onBrandC = Engine.contrastRatio(p.onBrand, p.swatches[1].hex);
+            const onAccentC = Engine.contrastRatio(p.onAccent, p.swatches[2].hex);
+            minOnBrand = Math.min(minOnBrand, onBrandC);
+            minOnAccent = Math.min(minOnAccent, onAccentC);
+            if (onBrandC < 4.45) { fails++; console.error(`FAIL onBrand ${cat} seed=${seed} = ${onBrandC}`); }
+            if (onAccentC < 4.45) { fails++; console.error(`FAIL onAccent ${cat} seed=${seed} = ${onAccentC}`); }
+        }
+    }
+    console.log(`${total} palettes, ${fails} failures. min onBrand=${minOnBrand.toFixed(2)} onAccent=${minOnAccent.toFixed(2)}`);
+    if (fails === 0) console.log('PASS: onBrand/onAccent contrast sweep'); else totalFail++;
+}
+
 // ---------- 4. compileBrief Determinism test ----------
 section('compileBrief Determinism (10 combinations x 1000 iterations)');
 {

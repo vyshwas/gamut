@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gamut - Generate production-ready design systems</title>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://generativelanguage.googleapis.com http://localhost:11434 https://fonts.googleapis.com https://fonts.gstatic.com">
-    <meta name="description" content="Generate production-ready design systems from a brief, category, hexes, or image. Complete with typography, tokens, and exports.">
+    <title>Gamut - Direction briefs that end "make it pop"</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com">
+    <meta name="description" content="A seven-question Direction Brief - palette, contrast, typography - that resolves vague client feedback before the first mockup. For brand and freelance designers.">
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23D4FF00'/%3E%3Ctext x='16' y='23' font-family='Arial Black,sans-serif' font-size='20' font-weight='900' text-anchor='middle' fill='%23141414'%3EG%3C/text%3E%3C/svg%3E">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -58,9 +58,9 @@
     <header class="hero" id="top">
         <div class="hero-field" id="hero-field" role="img" aria-label="Live palette preview"></div>
         <div class="hero-content">
-            <p class="hero-kicker hero-enter" aria-hidden="true"><span class="hero-kicker-dot"></span>Design Direction</p>
-            <h1 class="hero-enter">Align design strategy before you paint.</h1>
-            <p class="hero-sub hero-enter">Answer seven questions to compile a complete design direction brief: mathematical color theory, contrast ratios, and typography pairing scales.</p>
+            <p class="hero-kicker hero-enter" aria-hidden="true"><span class="hero-kicker-dot"></span>For brand &amp; freelance designers</p>
+            <h1 class="hero-enter">Stop arguing about &ldquo;make it pop.&rdquo;</h1>
+            <p class="hero-sub hero-enter">Seven forced-choice questions compile a Direction Brief - palette, contrast ratios, typography pairing - that gives your client's feedback something to push against, before the first draft.</p>
             <div class="hero-ctas hero-enter">
                 <a href="#brief" class="btn btn-hero-primary">Start a brief</a>
             </div>
@@ -111,6 +111,7 @@
                             Distinctive (stands out)
                         </label>
                     </div>
+                    <p class="field-hint" id="hint-q2"></p>
                 </div>
 
                 <div class="field">
@@ -127,6 +128,7 @@
                             Exciting
                         </label>
                     </div>
+                    <p class="field-hint" id="hint-q3"></p>
                 </div>
 
                 <div class="field">
@@ -143,6 +145,7 @@
                             Accessible
                         </label>
                     </div>
+                    <p class="field-hint" id="hint-q4"></p>
                 </div>
 
                 <div class="field">
@@ -159,6 +162,7 @@
                             Loud
                         </label>
                     </div>
+                    <p class="field-hint" id="hint-q5"></p>
                 </div>
 
                 <div class="field">
@@ -175,6 +179,7 @@
                             New
                         </label>
                     </div>
+                    <p class="field-hint" id="hint-q6"></p>
                 </div>
 
                 <div class="field">
@@ -191,6 +196,7 @@
                             Precise
                         </label>
                     </div>
+                    <p class="field-hint" id="hint-q7"></p>
                 </div>
 
                 <div class="field">
@@ -211,17 +217,7 @@
                     <p class="hint">All five satisfy this brief.</p>
                 </div>
 
-                <div class="agency-panel">
-                    <span class="exports-label mono">Documentation Details</span>
-                    <div class="field">
-                        <label for="agency-name">Your studio name</label>
-                        <input type="text" id="agency-name" placeholder="Marlowe Studio" spellcheck="false">
-                    </div>
-                    <div class="field">
-                        <label for="agency-client">Prepared for <span class="optional">client or project</span></label>
-                        <input type="text" id="agency-client" placeholder="Acme Co — Brand refresh" spellcheck="false">
-                    </div>
-                </div>
+                <button class="btn-mini" id="ctl-export-pdf" type="button">Export brief as PDF</button>
             </div>
 
             <div class="output">
@@ -306,5 +302,5 @@
     <script src="js/engine.js"></script>
     <script src="js/mood.js"></script>
     <script src="js/main.js"></script>
-</body>>
+</body>
 </html>
